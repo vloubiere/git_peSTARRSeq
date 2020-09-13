@@ -1,45 +1,58 @@
-setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+setwd("/groups/stark/vloubiere/data/pe_STARRSeq/")
 require(data.table)
 require(DESeq2)
 
 #----------------------------------------------#
 # 1- Load counts
 #----------------------------------------------#
-dat <- data.table(file= list.files("/groups/stark/vloubiere/data/pe_STARRSeq/Rdata", "SCR1.*UMI", full.names= T))
-dat[, sample:= gsub("libvl002_SCR1_|_UMI.rds", "", basename(file))]
-dat <- dat[, readRDS(file), .(file, sample)]
-dat <- dcast(dat, enh_L+enh_R~sample, value.var = "counts", fill = 0)
-dat[, input_rep1:= as.integer(rowSums(.SD, na.rm= T)), .SDcols= c("input_rep1", "input_rep2")]
-dat$input_rep2 <- NULL
-colnames(dat)[11] <- "input_rep2"
-dat[, input_merge:= rowSums(.SD, na.rm= T), .SDcols= grep("input", colnames(dat))]
-dat[, DSCP_merge:= rowSums(.SD, na.rm= T), .SDcols= grep("DSCP", colnames(dat))]
-saveRDS(dat, "/groups/stark/vloubiere/data/pe_STARRSeq/Rdata/libvl002_SCR1_raw_counts.rds")
-dat <- dat[input_merge >= 30]
-saveRDS(dat, "/groups/stark/vloubiere/data/pe_STARRSeq/Rdata/libvl002_SCR1_clean_counts_table_final.rds")
+if(!file.exists("Rdata/all_uniq_counts.rds"))
+{
+  dat <- data.table(file= list.files("Rdata", "SCR1.*uniq.UMI.rds", full.names= T))
+  dat[, sample:= gsub("libvl002_SCR1_|.uniq.UMI.rds", "", basename(file))]
+  dat <- dat[, readRDS(file), .(file, sample)]
+  dat <- dat[, .(counts= .N), c(colnames(dat))]
+  saveRDS(dat, "Rdata/all_uniq_counts.rds")
+}
+dat <- readRDS("Rdata/all_uniq_counts.rds")
+# Merge rep 1 and 2
+mer <- data.table(old= paste0("input_rep", 1:6), new= paste0("input_rep", c(1,1,2,3,4,5)))
+dat[mer, sample:= i.new, on= "sample==old"]
+dat <- dat[, .(counts= sum(counts)), .(sample, enh_L, enh_R)]
+# dcast and low counts cutoff
+mat <- dcast(dat, enh_L+enh_R~sample, value.var = "counts", fill = 0)
+mat[, check:= rowSums(.SD)>20, .SDcols= patterns("input")]
+mat <- mat[(check), !"check"]
+mat[, rn:= paste0(enh_L, "_vs_", enh_R), .(enh_L, enh_R)]
 
 #----------------------------------------------#
 # 2- DESeq 2
 #----------------------------------------------#
 # Format tables
-sampleTable <- data.table(sample= grep("rep", colnames(dat), value= T))
-sampleTable[, c("condition", "replicate") := tstrsplit(sample, "_")]
-sampleTable <- data.frame(sampleTable[, -1], row.names= sampleTable$sample)
-ctls_idx <- which(grepl("^control", dat$enh_L) & grepl("^control", dat$enh_R) & dat$enh_L != dat$enh_R)
-cols <- rownames(sampleTable)
-DF <- data.frame(dat[, ..cols], row.names = dat[, paste0(enh_L, ".", enh_R), .(enh_L, enh_R)][, V1])
-DF <- DF+1
-# Differential analysis
-dds <- DESeqDataSetFromMatrix(countData= DF, colData= sampleTable, design= ~replicate+condition)
-# sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[ctls_idx,])+0.1)
-sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[ctls_idx,]))
-res <- DESeq(dds)
-diff <- as.data.table(as.data.frame(lfcShrink(res, contrast= c("condition", "DSCP", "input"))), keep.rownames= T)
-diff <- diff[, c("enh_L", "enh_R") := tstrsplit(rn, "[.]")]
-diff <- diff[, .(enh_L, enh_R, baseMean, log2FoldChange, padj)]
-boxplot(diff[ctls_idx, log2FoldChange])
+if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/dds_result_object.rds"))
+{
+  sampleTable <- grep("rep", colnames(mat), value = T)
+  sampleTable <- data.frame(condition= sapply(sampleTable, function(x) strsplit(x, "_")[[1]][1]),
+                            replicate= sapply(sampleTable, function(x) strsplit(x, "_")[[1]][2]),
+                            row.names= sampleTable)
+  DF <- data.frame(mat[, DSCP_rep1:input_rep5], row.names = mat$rn)
+  # DESeq2
+  dds <- DESeqDataSetFromMatrix(countData= DF, colData= sampleTable, design= ~replicate+condition)
+  # sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[grep("control.*vs.*control", rownames(DF)),]+0.25)) # Use pseudocounts
+  controls <- apply(as.matrix(DF[grep("control.*vs.*control", rownames(DF)),]), 2, sum)
+  sizeFactors(dds) <- controls/min(controls)
+  res <- DESeq(dds)
+  saveRDS(res, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/dds_result_object.rds")
+  # Differential expression
+  diff <- as.data.table(as.data.frame(lfcShrink(res, contrast= c("condition", "DSCP", "input"))), keep.rownames= T)
+  diff[, c("enh_L", "enh_R"):= tstrsplit(rn, "_vs_")]
+  diff <- diff[, .(enh_L, enh_R, baseMean, log2FoldChange, lfcSE, stat, pvalue, padj)]
+  saveRDS(diff, "Rdata/DESeq2_FC_table.rds")
+}else
+{
+  diff <- readRDS("Rdata/DESeq2_FC_table.rds")
+}
+boxplot(diff[grepl("control", enh_L) & grepl("control", enh_R), log2FoldChange], notch= T)
 abline(h= 0, lty= 2)
-saveRDS(diff, "Rdata/B_DESeq2_control_pairs.rds")
 
 #----------------------------------------------#
 # 3- Robust controls
@@ -85,5 +98,5 @@ exp[exp, log2FoldChange_rev:= i.log2FoldChange, on= c("enh_L==enh_R", "enh_R==en
 clean <- exp[diff, , on=c("enh_L", "enh_R")]
 clean <- unique(clean[, .(enh_L, enh_R, baseMean= i.baseMean, log2FoldChange= i.log2FoldChange, padj= i.padj, log2FoldChange_rev,
                           median_L, median_R, log2FC_add, diff)])
-saveRDS(clean, "Rdata/B_SCR1_peSTARRSeq_final_table.rds")
+saveRDS(clean, "Rdata/SCR1_peSTARRSeq_final_table.rds")
 
