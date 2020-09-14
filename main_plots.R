@@ -151,3 +151,12 @@ plot(dat[enh_R==SGL, .(median_L, 2^diff)], las= 1, ylab= "observed/expected", xl
      pch= 19, col= adjustcolor("grey", 0.7), main= paste("sgl enhancer left"), cex= 0.8)
 abline(h=1, lty= 2)
 dev.off()
+
+
+
+
+test <- apply(as.matrix(lib[grepl("_A_|_B_|_C_", lib$ID), ATAC_log2FC:dUTX663_log2FC]), 2, function(x){lim<-quantile(x, c(0.01, 0.99)); x[x<lim[1]]<-lim[1]; x[x>lim[2]]<-lim[2]; return(x)})
+par(mar= c(10,5,5,10))
+my_pheatmap(test[, c("H3K27ac_log2FC", "H3K27me3_log2FC", "H3K4me1_log2FC", "H3K4me2_log2FC", "H3K4me3_log2FC", "ATAC_log2FC")], 
+            cutree_rows = 9, cl_lwd = 3, col = colorRampPalette(c("black", "blue", "yellow"))(100), scale= "column", clustering_dist_rows = "manhattan")
+
