@@ -46,10 +46,10 @@ if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/dds_result_o
   diff <- as.data.table(as.data.frame(lfcShrink(res, contrast= c("condition", "DSCP", "input"))), keep.rownames= T)
   diff[, c("enh_L", "enh_R"):= tstrsplit(rn, "_vs_")]
   diff <- diff[, .(enh_L, enh_R, baseMean, log2FoldChange, lfcSE, stat, pvalue, padj)]
-  saveRDS(diff, "Rdata/DESeq2_FC_table.rds")
+  saveRDS(diff, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/DESeq2_FC_table.rds")
 }else
 {
-  diff <- readRDS("Rdata/DESeq2_FC_table.rds")
+  diff <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/DESeq2_FC_table.rds")
 }
 boxplot(diff[grepl("control", enh_L) & grepl("control", enh_R), log2FoldChange], notch= T)
 abline(h= 0, lty= 2)
@@ -98,5 +98,5 @@ exp[exp, log2FoldChange_rev:= i.log2FoldChange, on= c("enh_L==enh_R", "enh_R==en
 clean <- exp[diff, , on=c("enh_L", "enh_R")]
 clean <- unique(clean[, .(enh_L, enh_R, baseMean= i.baseMean, log2FoldChange= i.log2FoldChange, padj= i.padj, log2FoldChange_rev,
                           median_L, median_R, log2FC_add, diff)])
-saveRDS(clean, "Rdata/SCR1_peSTARRSeq_final_table.rds")
+saveRDS(clean, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/SCR1_peSTARRSeq_final_table.rds")
 

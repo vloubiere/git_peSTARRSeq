@@ -55,82 +55,43 @@ if(!file.exists("Rdata/enriched_motifs_counts.rds"))
 #-----------------------------------------------#
 # 3- SOM motifs
 #-----------------------------------------------#
+dat <- readRDS("Rdata/enriched_motifs_counts.rds")
+dmat <- dcast(dat, variable~rn, value.var = "value")
+mat <- log2(as.matrix(dmat, 1)+1)
+mat <- scale(mat) 
+mat <- apply(mat, 2, function(x)
+{
+  lim <- quantile(x, 0.025, 0.975)
+  x[x<lim[1]] <- lim[1]
+  x[x>lim[2]] <- lim[2]
+  return(x)
+})
+
 if(!file.exists("Rdata/som_enriched_motifs.rds"))
 {
-  dat <- readRDS("Rdata/enriched_motifs_counts.rds")
-  dmat <- dcast(dat, variable~rn, value.var = "value")
-  mat <- log2(as.matrix(dmat, 1)+1)
-  mat <- scale(mat) 
-  mat <- apply(mat, 2, function(x)
-  {
-    lim <- quantile(x, 0.025, 0.975)
-    x[x<lim[1]] <- lim[1]
-    x[x>lim[2]] <- lim[2]
-    return(x)
-  })
-  
   mygrid <- somgrid(xdim= 6, ydim= 6, topo = 'hexagonal', toroidal = T)
   set.seed(1234)
   som.model <- supersom(mat, grid = mygrid, rlen = 500)
   saveRDS(som.model, "Rdata/som_enriched_motifs.rds")
-  
-  pdf("pdf/som_enriched_motifs_clustering_diag_plots.pdf")
-  par(mfrow= c(4, 4))
-  for(type in c("changes", "dist.neighbours", "counts", "mapping", "quality"))
-  {
-    plot(som.model, type= type, palette.name = colorRampPalette(c("blue", "yellow")), shape= "straight", border= "black")
-  }
-  dev.off()
-  
-  pdf("pdf/som_enriched_motifs_clustering_pheatmap.pdf")
-  pl <- mat[order(som.model$unit.classif),]
-  my_pheatmap(pl, cluster_rows = F, col= colorRampPalette(c("blue", "yellow"))(100), plot_dendro_col = F)
-  abline(h= 1-which(diff(som.model$unit.classif[order(som.model$unit.classif)])!=0)/nrow(mat), lwd= 1, col= "white")
-  dev.off()
+}else
+{
+  som.model <- readRDS("Rdata/som_enriched_motifs.rds")
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-mat <- mat[order(som.model$unit.classif),]
-pdf("test.pdf")
-my_pheatmap(mat, cluster_rows = F, col= colorRampPalette(c("blue", "yellow"))(100))
-abline(h= 1-which(diff(som.model$unit.classif[order(som.model$unit.classif)])!=0)/791, lwd=2, col= "white")
-dev.off()
-
-## use hierarchical clustering to cluster the codebook vectors
-fviz_nbclust(as.matrix(object.distances(som.model, "codes")), FUN = hcut, method = "wss", k.max = 30)
-som.model$hclust <- cutree(hclust(object.distances(som.model, "codes")), 9)
-
-
-# diagnostic plots
-Cc <- colorRampPalette(c("black", "blue", "yellow"))
-
+pdf("pdf/som_enriched_motifs_clustering_diag_plots.pdf")
 par(mfrow= c(4, 4))
 for(type in c("changes", "dist.neighbours", "counts", "mapping", "quality"))
 {
-  plot(som.model, type= type, palette.name = Cc, shape= "straight", border= "black")
-  # if(type != "changes")
-  # {
-  #   add.cluster.boundaries(som.model, som.model$hclust, lwd= 3, col= "red")
-  # }
+  plot(som.model, type= type, palette.name = colorRampPalette(c("blue", "yellow")), shape= "straight", border= "black")
 }
-for(what in names(som.model$codes))
-{
-  plot(som.model, type= "codes", whatmap= what, shape= "straight", border= "black")
-  add.cluster.boundaries(som.model, som.model$hclust, lwd= 3, col= "red")
-}
+dev.off()
+
+pdf("pdf/som_enriched_motifs_clustering_pheatmap.pdf")
+pl <- mat[order(som.model$unit.classif),]
+my_pheatmap(pl, cluster_rows = F, col= colorRampPalette(c("blue", "yellow", "white"))(100), plot_dendro_col = F)
+abline(h= 1-which(diff(som.model$unit.classif[order(som.model$unit.classif)])!=0)/nrow(mat), lwd= 1, col= "white")
+dev.off()
+
+
+
+

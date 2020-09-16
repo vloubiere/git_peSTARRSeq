@@ -111,7 +111,6 @@ mot_cl <- as.data.table(t(as.data.table(som$codes)), keep.rownames = T)
 colnames(mot_cl)[-1] <- paste0("motif_cl", seq(ncol(mot_cl)-1))
 lib <- cbind(lib, mot_cl[, !"rn"])
 
-saveRDS(lib, "Rdata/C_features.rds")
-              
-              
+saveRDS(lib, "Rdata/lib_features.rds")
+
               
