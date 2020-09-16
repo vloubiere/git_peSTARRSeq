@@ -20,7 +20,6 @@ lib <- lib[!detail=="ecoli"]
 if(!file.exists("Rdata/all_motifs_counts_lib.rds"))
 {
   load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAerts/TF_clusters_PWMs.RData")
-  DT <- as.data.table(TF_clusters_PWMs$metadata)
   hit <- matchMotifs(TF_clusters_PWMs$All_pwms_log_odds, GRanges(lib$coor), genome= "dm3", p.cutoff= 5e-4, bg="even", out= "scores")
   counts <- as.matrix(motifCounts(hit))
   colnames(counts) <- name(TF_clusters_PWMs$All_pwms_log_odds)
@@ -91,6 +90,23 @@ pl <- mat[order(som.model$unit.classif),]
 my_pheatmap(pl, cluster_rows = F, col= colorRampPalette(c("blue", "yellow", "white"))(100), plot_dendro_col = F)
 abline(h= 1-which(diff(som.model$unit.classif[order(som.model$unit.classif)])!=0)/nrow(mat), lwd= 1, col= "white")
 dev.off()
+
+#-----------------------------------------------#
+# 4- Identify representative motifs
+#-----------------------------------------------#
+load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAerts/TF_clusters_PWMs.RData")
+cl <- data.table(cl= som.model$unit.classif, 
+                 dist= som.model$distances, 
+                 motif= rownames(som.model$data[[1]]))
+cl[, Dmel:= TF_clusters_PWMs$metadata$Dmel[match(motif, TF_clusters_PWMs$metadata$motif_name)]]
+cl[, best_match:= motif[which.min(dist)], cl]
+cl[, Dmel:= paste0(unique(na.omit(Dmel)), collapse= "__"), cl]
+cl <- unique(cl[, .(cl, best_match, Dmel)])
+
+som.model <- readRDS("Rdata/som_enriched_motifs.rds")
+som.model$info <- cl
+saveRDS(som.model, "Rdata/som_enriched_motifs.rds")
+
 
 
 
