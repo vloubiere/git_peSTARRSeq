@@ -1,13 +1,13 @@
 setwd("/groups/stark/vloubiere/genomes/")
-source("/groups/stark/vloubiere/scripts/shell/R_wrappers/my_wrappers.R")
+sapply(list.files("/groups/stark/vloubiere/functions/", ".R", full.names = T), source)
 require(data.table)
 require(Biostrings)
 
 # Load lib 
-lib <- as.data.table(readRDS("/groups/stark/vloubiere/projects/0002_library_design/Rdata/TWIST008_library_design_112019/vl_library_112019.rds"))
+lib <- as.data.table(readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/library/vl_library_112019.rds"))
 
 # Load templates for template switching control
-ts <- fread("/groups/stark/vloubiere/projects/0002_library_design/Rdata/TWIST008_library_design_112019/template_switching_templates.txt")
+ts <- fread("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/library/template_switching_templates.txt")
 # Add extra nt for consistency with the TWIST library
 ts[, oligo_full_sequence:= paste0("G", oligo_full_sequence, "CACCG")]
 

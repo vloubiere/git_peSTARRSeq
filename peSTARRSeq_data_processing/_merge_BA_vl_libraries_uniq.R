@@ -1,5 +1,5 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-source("/groups/stark/vloubiere/scripts/R_functions/R_shell_cmd_wrap_1.0.R")
+sapply(list.files("/groups/stark/vloubiere/functions/", ".R", full.names = T), source)
 require(data.table)
 require(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 require(BSgenome.Dmelanogaster.UCSC.dm3)
@@ -9,8 +9,8 @@ require(GenomicRanges)
 #------------------------------------------#
 # Merge BA and my TWIST into a single non-redundant clean object
 #------------------------------------------#
-vl <- as.data.table(readRDS("Rdata/vl_library_112019.rds"))
-BA <- fread("Rdata/BA_300bp_TWIST_STARRSeq.txt")
+vl <- as.data.table(readRDS("Rdata/library/vl_library_112019.rds"))
+BA <- fread("Rdata/library/BA_300bp_TWIST_STARRSeq.txt")
 lib <- merge(BA[, .(ID_BA= ID, BA_group= Group, BA_enhancer_group= enhancer_group, BA_enh_group_detail= enhancer_group_detail, 
                     dev_log2FoldChange, hk_log2FoldChange, seqnames, start, end, width, strand)], 
              vl[, .(ID_BA= BA_ID, ID_vl, group, detail, seqnames, start, end, width, strand)], all.x= T, all.y= T)
@@ -39,4 +39,4 @@ lib[uniq_group== "control" & is.na(uniq_detail), uniq_detail:= "flat_genomic_reg
 
 # SAVE
 clean <- lib[, .(ID= uniq_id, group= uniq_group, detail= uniq_detail, coor= as.character(GRanges(lib[, seqnames:strand])), dev_log2FoldChange, hk_log2FoldChange)]
-saveRDS(clean, "Rdata/uniq_library_final.rds")
+saveRDS(clean, "Rdata/library/uniq_library_final.rds")

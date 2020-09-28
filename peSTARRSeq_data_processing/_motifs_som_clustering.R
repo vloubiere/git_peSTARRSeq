@@ -10,14 +10,14 @@ require(seqLogo)
 require(TFBSTools)
 require(kohonen)
 
-lib <- readRDS("Rdata/uniq_library_final.rds")
+lib <- readRDS("Rdata/library/uniq_library_final.rds")
 lib <- lib[!detail=="ecoli"]
 
 #-----------------------------------------------#
 # 1- Motif counts
 #-----------------------------------------------#
 # Count hits low cutoff
-if(!file.exists("Rdata/all_motifs_counts_lib.rds"))
+if(!file.exists("Rdata/motifs/all_motifs_counts_lib.rds"))
 {
   load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAerts/TF_clusters_PWMs.RData")
   hit <- matchMotifs(TF_clusters_PWMs$All_pwms_log_odds, GRanges(lib$coor), genome= "dm3", p.cutoff= 5e-4, bg="even", out= "scores")
@@ -25,15 +25,15 @@ if(!file.exists("Rdata/all_motifs_counts_lib.rds"))
   colnames(counts) <- name(TF_clusters_PWMs$All_pwms_log_odds)
   rownames(counts) <- lib$ID
   counts <- as.data.table(counts, keep.rownames = T)
-  saveRDS(counts, "Rdata/all_motifs_counts_lib.rds")
+  saveRDS(counts, "Rdata/motifs/all_motifs_counts_lib.rds")
 }
 
 #-----------------------------------------------#
 # 2- Select motifs enriched in at least one of the lib groups
 #-----------------------------------------------#
-if(!file.exists("Rdata/enriched_motifs_counts.rds"))
+if(!file.exists("Rdata/motifs/enriched_motifs_counts.rds"))
 {
-  counts <- readRDS("Rdata/all_motifs_counts_lib.rds")
+  counts <- readRDS("Rdata/motifs/all_motifs_counts_lib.rds")
   
   dat <- melt(counts, id.vars= "rn")
   dat[lib, group:= i.group, on= "rn==ID"]
@@ -48,13 +48,13 @@ if(!file.exists("Rdata/enriched_motifs_counts.rds"))
     mot[[c_gr]] <- sub[estimate>2 & p.value<0.00001, variable]
   }
   enriched_motifs_counts <- dat[variable %in% unique(unlist(mot))]
-  saveRDS(enriched_motifs_counts, "Rdata/enriched_motifs_counts.rds")
+  saveRDS(enriched_motifs_counts, "Rdata/motifs/enriched_motifs_counts.rds")
 }
 
 #-----------------------------------------------#
 # 3- SOM motifs
 #-----------------------------------------------#
-dat <- readRDS("Rdata/enriched_motifs_counts.rds")
+dat <- readRDS("Rdata/motifs/enriched_motifs_counts.rds")
 dmat <- dcast(dat, variable~rn, value.var = "value")
 mat <- log2(as.matrix(dmat, 1)+1)
 mat <- scale(mat) 
@@ -66,18 +66,18 @@ mat <- apply(mat, 2, function(x)
   return(x)
 })
 
-if(!file.exists("Rdata/som_enriched_motifs.rds"))
+if(!file.exists("Rdata/motifs/som_enriched_motifs.rds"))
 {
   mygrid <- somgrid(xdim= 6, ydim= 6, topo = 'hexagonal', toroidal = T)
   set.seed(1234)
   som.model <- supersom(mat, grid = mygrid, rlen = 500)
-  saveRDS(som.model, "Rdata/som_enriched_motifs.rds")
+  saveRDS(som.model, "Rdata/motifs/som_enriched_motifs.rds")
 }else
 {
-  som.model <- readRDS("Rdata/som_enriched_motifs.rds")
+  som.model <- readRDS("Rdata/motifs/som_enriched_motifs.rds")
 }
 
-pdf("pdf/som_enriched_motifs_clustering_diag_plots.pdf")
+pdf("pdf/peSTARRSeq/som_enriched_motifs_clustering_diag_plots.pdf")
 par(mfrow= c(4, 4))
 for(type in c("changes", "dist.neighbours", "counts", "mapping", "quality"))
 {
@@ -85,7 +85,7 @@ for(type in c("changes", "dist.neighbours", "counts", "mapping", "quality"))
 }
 dev.off()
 
-pdf("pdf/som_enriched_motifs_clustering_pheatmap.pdf")
+pdf("pdf/peSTARRSeq/som_enriched_motifs_clustering_pheatmap.pdf")
 pl <- mat[order(som.model$unit.classif),]
 my_pheatmap(pl, cluster_rows = F, col= colorRampPalette(c("blue", "yellow", "white"))(100), plot_dendro_col = F)
 abline(h= 1-which(diff(som.model$unit.classif[order(som.model$unit.classif)])!=0)/nrow(mat), lwd= 1, col= "white")
@@ -103,9 +103,9 @@ cl[, best_match:= motif[which.min(dist)], cl]
 cl[, Dmel:= paste0(unique(na.omit(Dmel)), collapse= "__"), cl]
 cl <- unique(cl[, .(cl, best_match, Dmel)])
 
-som.model <- readRDS("Rdata/som_enriched_motifs.rds")
+som.model <- readRDS("Rdata/motifs/som_enriched_motifs.rds")
 som.model$info <- cl
-saveRDS(som.model, "Rdata/som_enriched_motifs.rds")
+saveRDS(som.model, "Rdata/motifs/som_enriched_motifs.rds")
 
 
 

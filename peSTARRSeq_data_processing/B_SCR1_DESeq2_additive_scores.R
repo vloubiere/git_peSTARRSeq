@@ -1,19 +1,19 @@
-setwd("/groups/stark/vloubiere/data/pe_STARRSeq/")
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(DESeq2)
 
 #----------------------------------------------#
 # 1- Load counts
 #----------------------------------------------#
-if(!file.exists("Rdata/all_uniq_counts.rds"))
+if(!file.exists("db/Rdata/all_uniq_counts.rds"))
 {
   dat <- data.table(file= list.files("Rdata", "SCR1.*uniq.UMI.rds", full.names= T))
   dat[, sample:= gsub("libvl002_SCR1_|.uniq.UMI.rds", "", basename(file))]
   dat <- dat[, readRDS(file), .(file, sample)]
   dat <- dat[, .(counts= .N), c(colnames(dat))]
-  saveRDS(dat, "Rdata/all_uniq_counts.rds")
+  saveRDS(dat, "db/Rdata/all_uniq_counts.rds")
 }
-dat <- readRDS("Rdata/all_uniq_counts.rds")
+dat <- readRDS("db/Rdata/all_uniq_counts.rds")
 # Merge rep 1 and 2
 mer <- data.table(old= paste0("input_rep", 1:6), new= paste0("input_rep", c(1,1,2,3,4,5)))
 dat[mer, sample:= i.new, on= "sample==old"]
@@ -28,7 +28,7 @@ mat[, rn:= paste0(enh_L, "_vs_", enh_R), .(enh_L, enh_R)]
 # 2- DESeq 2
 #----------------------------------------------#
 # Format tables
-if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/dds_result_object.rds"))
+if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/dds_result_object.rds"))
 {
   sampleTable <- grep("rep", colnames(mat), value = T)
   sampleTable <- data.frame(condition= sapply(sampleTable, function(x) strsplit(x, "_")[[1]][1]),
@@ -41,15 +41,15 @@ if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/dds_result_o
   controls <- apply(as.matrix(DF[grep("control.*vs.*control", rownames(DF)),]), 2, sum)
   sizeFactors(dds) <- controls/min(controls)
   res <- DESeq(dds)
-  saveRDS(res, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/dds_result_object.rds")
+  saveRDS(res, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/dds_result_object.rds")
   # Differential expression
   diff <- as.data.table(as.data.frame(lfcShrink(res, contrast= c("condition", "DSCP", "input"))), keep.rownames= T)
   diff[, c("enh_L", "enh_R"):= tstrsplit(rn, "_vs_")]
   diff <- diff[, .(enh_L, enh_R, baseMean, log2FoldChange, lfcSE, stat, pvalue, padj)]
-  saveRDS(diff, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/DESeq2_FC_table.rds")
+  saveRDS(diff, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/DESeq2_FC_table.rds")
 }else
 {
-  diff <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/DESeq2_FC_table.rds")
+  diff <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/DESeq2_FC_table.rds")
 }
 boxplot(diff[grepl("control", enh_L) & grepl("control", enh_R), log2FoldChange], notch= T)
 abline(h= 0, lty= 2)
@@ -96,7 +96,8 @@ exp[, diff:= log2FoldChange-log2FC_add]
 exp[exp, log2FoldChange_rev:= i.log2FoldChange, on= c("enh_L==enh_R", "enh_R==enh_L")]
 # SAVE short table
 clean <- exp[diff, , on=c("enh_L", "enh_R")]
-clean <- unique(clean[, .(enh_L, enh_R, baseMean= i.baseMean, log2FoldChange= i.log2FoldChange, padj= i.padj, log2FoldChange_rev,
+clean <- unique(clean[, .(ID= paste0(enh_L, "_vs_", enh_R), enh_L, enh_R, baseMean= i.baseMean, log2FoldChange= i.log2FoldChange, padj= i.padj, log2FoldChange_rev,
                           median_L, median_R, log2FC_add, diff)])
-saveRDS(clean, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/SCR1_peSTARRSeq_final_table.rds")
+
+saveRDS(clean, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table.rds")
 

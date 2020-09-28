@@ -5,10 +5,13 @@ require(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 require(BSgenome.Dmelanogaster.UCSC.dm3)
 require(org.Dm.eg.db)
 require(GenomicRanges)
+require(seqinr)
 require(motifmatchr)
+require(PWMEnrich)
+require(TFBSTools)
 require(seqLogo)
 
-lib <- readRDS("Rdata/uniq_library_final.rds")
+lib <- readRDS("Rdata/library/uniq_library_final.rds")
 lib <- lib[!detail=="ecoli"]
 
 #-----------------------------------------------#
@@ -37,9 +40,9 @@ lib[all, ctss:= i.V10 , on= "ID==V4"]
 # 2- dev STARR-Seq enrichment
 #-----------------------------------------------#
 # Compute gw STARR-Seq enrichment
-STARR <- data.table(file= c("/groups/stark/vloubiere/data/gw_STARRSeq_bernardo/raw_data/input_DSCP_200bp_cut.bed",
-                            "/groups/stark/vloubiere/data/gw_STARRSeq_bernardo/raw_data/DSCP_200bp_gw_Rep1.UMI_cut.bed", 
-                            "/groups/stark/vloubiere/data/gw_STARRSeq_bernardo/raw_data/DSCP_200bp_gw_Rep2_A.UMI_cut.bed"), 
+STARR <- data.table(file= c("/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/raw_data/input_DSCP_200bp_cut.bed",
+                            "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/raw_data/DSCP_200bp_gw_Rep1.UMI_cut.bed", 
+                            "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/raw_data/DSCP_200bp_gw_Rep2_A.UMI_cut.bed"), 
                     cdition= c("input", "screen", "screen"))
 STARR <- STARR[, my_countReads(GRanges(lib$coor, name= lib$ID), file), c(colnames(STARR))]
 # Filter out low input counts
@@ -48,17 +51,17 @@ STARR <- STARR[name %in% check]
 # Compute FE
 STARR <- STARR[, .(norm_counts= (sum(counts)+1)/sum(total_reads)*1e6), c("name", "cdition")]
 STARR <- data.table::dcast(STARR, name~cdition, value.var = "norm_counts")
-STARR <- STARR[, .(name, DSCP200_log2FC= log2(screen)-log2(input))]
+STARR <- STARR[, .(name, DSCP200_log2FoldChange= log2(screen)-log2(input))]
 # Add to lib
-lib[STARR, DSCP200_log2FC:= i.DSCP200_log2FC, on= "ID==name"]
+lib[STARR, DSCP200_log2FoldChange:= i.DSCP200_log2FoldChange, on= "ID==name"]
 
 #-----------------------------------------------#
 # 3- hk STARR-Seq enrichment
 #-----------------------------------------------#
 # Compute gw STARR-Seq enrichment
-STARR <- data.table(file= c("/groups/stark/vloubiere/data/gw_STARRSeq_bernardo/raw_data/input_RPS12_200bp_cut.bed",
-                            "/groups/stark/vloubiere/data/gw_STARRSeq_bernardo/raw_data/RpS12_200bp_gw_Rep1.UMI_cut.bed", 
-                            "/groups/stark/vloubiere/data/gw_STARRSeq_bernardo/raw_data/RpS12_200bp_gw_Rep1.UMI_cut.bed"), 
+STARR <- data.table(file= c("/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/raw_data/input_RPS12_200bp_cut.bed",
+                            "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/raw_data/RpS12_200bp_gw_Rep1.UMI_cut.bed", 
+                            "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/raw_data/RpS12_200bp_gw_Rep1.UMI_cut.bed"), 
                     cdition= c("input", "screen", "screen"))
 STARR <- STARR[, my_countReads(GRanges(lib$coor, name= lib$ID), file), c(colnames(STARR))]
 # Filter out low input counts
@@ -67,17 +70,17 @@ STARR <- STARR[name %in% check]
 # Compute FE
 STARR <- STARR[, .(norm_counts= (sum(counts)+1)/sum(total_reads)*1e6), c("name", "cdition")]
 STARR <- data.table::dcast(STARR, name~cdition, value.var = "norm_counts")
-STARR <- STARR[, .(name, RPS200_log2FC= log2(screen)-log2(input))]
+STARR <- STARR[, .(name, RPS200_log2FoldChange= log2(screen)-log2(input))]
 # Add to lib
-lib[STARR, RPS200_log2FC:= i.RPS200_log2FC, on= "ID==name"]
+lib[STARR, RPS200_log2FoldChange:= i.RPS200_log2FoldChange, on= "ID==name"]
 
 #-----------------------------------------------#
 # 4- rep-STARR-Seq enrichment
 #-----------------------------------------------#
 # Compute gw sgl repSTARR-Seq enrichment
-repSTARR <- data.table(file= c("/groups/stark/vloubiere/data/rep_STARRSeq_lorena/sgl_gw_200bp/sgl_DSCP.libLOH009_enh10-2_DSCP_gw200_input.merged.uniq.bed",
-                               "/groups/stark/vloubiere/data/rep_STARRSeq_lorena/sgl_gw_200bp/sgl_DSCP.libLOH009_enh10-2_DSCP_gw200_rep_1.UMI.bed", 
-                               "/groups/stark/vloubiere/data/rep_STARRSeq_lorena/sgl_gw_200bp/sgl_DSCP.libLOH009_enh10-2_DSCP_gw200_rep_2.UMI.merged.bed"), 
+repSTARR <- data.table(file= c("/groups/stark/vloubiere/projects/rep_STARRSeq_Lorena/db/sgl_gw_200bp/sgl_DSCP.libLOH009_enh10-2_DSCP_gw200_input.merged.uniq.bed",
+                               "/groups/stark/vloubiere/projects/rep_STARRSeq_Lorena/db/sgl_gw_200bp/sgl_DSCP.libLOH009_enh10-2_DSCP_gw200_rep_1.UMI.bed", 
+                               "/groups/stark/vloubiere/projects/rep_STARRSeq_Lorena/db/sgl_gw_200bp/sgl_DSCP.libLOH009_enh10-2_DSCP_gw200_rep_2.UMI.merged.bed"), 
                        cdition= c("input", "screen", "screen"))
 repSTARR <- repSTARR[, my_countReads(GRanges(lib$coor, name= lib$ID), file), c(colnames(repSTARR))]
 # Filter out low input counts
@@ -86,16 +89,17 @@ repSTARR <- repSTARR[name %in% check]
 # Compute FE
 repSTARR <- repSTARR[, .(norm_counts= (sum(counts)+1)/sum(total_reads)*1e6), c("name", "cdition")]
 repSTARR <- data.table::dcast(repSTARR, name~cdition, value.var = "norm_counts")
-repSTARR <- repSTARR[, .(name, sgl_repSTARR_log2FC= log2(screen)-log2(input))]
+repSTARR <- repSTARR[, .(name, sgl_repSTARR_log2FoldChange= log2(screen)-log2(input))]
 # Add to lib
-lib[repSTARR, sgl_repSTARR_log2FC:= i.sgl_repSTARR_log2FC, on= "ID==name"]
+lib[repSTARR, sgl_repSTARR_log2FoldChange:= i.sgl_repSTARR_log2FoldChange, on= "ID==name"]
 
 #-----------------------------------------------#
 # 5- Available data
 #-----------------------------------------------#
 # Compute ChIP-Seq ATAC-Seq enrichment
-avail <- fread("/groups/stark/vloubiere/data/available_data/metadata/available_data_metadata.txt")
-avail <- avail[sample!="input", .(file= uniq_bed_file, cdition= sample)]
+avail <- fread("/groups/stark/vloubiere/projects/available_data/db/metadata/available_data_metadata.txt")
+avail[, file:= list.files("/groups/stark/vloubiere/projects/available_data/db/bed/", paste0(uniq_name, ".*.bed"), full.names = T), uniq_name]
+avail <- avail[sample!="input", .(file, cdition= sample)]
 avail <- avail[, my_countReads(GRanges(lib$coor, name= lib$ID), file, sorted = F), c(colnames(avail))]
 # Filter out low input counts & compute enrichment
 avail <- avail[, .(norm_counts= (sum(counts)+1)/sum(total_reads)*1e6), c("name", "cdition")]
@@ -111,7 +115,7 @@ lib <- lib[avail, , on= "ID==name"]
 #-----------------------------------------------#
 # Import som clustering and identify the most informative/representative motifs
 load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAerts/TF_clusters_PWMs.RData")
-som <- readRDS("Rdata/som_enriched_motifs.rds")
+som <- readRDS("Rdata/motifs/som_enriched_motifs.rds")
 sel <- match(som$info$best_match, name(TF_clusters_PWMs$All_pwms_log_odds))
 
 # counts
@@ -124,6 +128,6 @@ colnames(counts)[-1] <- paste0("motif__", colnames(counts)[-1])
 
 # add to lib and final
 lib <- cbind(lib, counts[, !"rn"])
-saveRDS(lib, "Rdata/lib_features.rds")
+saveRDS(lib, "Rdata/library/lib_features.rds")
 
               

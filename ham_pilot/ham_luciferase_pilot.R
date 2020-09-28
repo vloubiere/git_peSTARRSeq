@@ -1,56 +1,76 @@
-setwd("/groups/stark/vloubiere/projects/0003_luciferase_HAM1_SUP1_SCR2/")
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
 require(data.table)
 require(plater)
 
-# import plate schemes
-scheme <- data.table(scheme= list.files("data/", "scheme", full.names = T))
-scheme <- scheme[, read_plate(scheme), scheme]
-scheme[, sample:= substr(basename(scheme), 1, 13), scheme]
-scheme[, cdition:= rownames]
-scheme$rownames <- NULL
-scheme[, cdition:= gsub("_r1?|_r2?", "", cdition)]
-scheme[cdition %in% c("DSCP_ZFH1", "Ubi_GFP"), cdition := gsub("_", "", cdition)]
-scheme[, c("enh_L", "enh_R"):= tstrsplit(cdition, "_")]
-
-# Import data
-lum <- data.table(file= list.files("data/", "lum", full.names = T))
-lum <- lum[, read_plate(file), file]
-lum[, variable:= ifelse(grepl("lum1.csv?", file), "luciferase", "renilla")]
-lum[, sample:= gsub("_lum1.csv|_lum2.csv", "", basename(file)), file]
-lum <- dcast(lum, sample+Wells~variable, value.var = "values")
-
-# Create object
-dat <- scheme[lum, , on= c("sample", "Wells")]
-dat[, idx:= .SD[,.I], .(enh_L, enh_R)]
-dat[, activity:= luciferase/renilla]
-
-# Annotate
-ord <- unique(dat[, .(enh_L, enh_R)])
-ord[, order:= c(13,5,15,6,7,9,17,4,19,1,10,3,8,2,11)]
-ord[, name:= c("hamlet x 2 obs.", "control x 2 obs.", "hamlet x sup-add obs.", "hamlet", "hamlet x control", "sup-add",
-               "sup-add x hamlet obs.", "control", "sup-add x2 obs.", "ZFH1", "sup-add x control", "p002", "control x hamlet", "UbiGFP", "control x sup-add")]
-dat <- ord[dat, , on= c("enh_L", "enh_R")]
+# import plates
+dat <- data.table(scheme= list.files("db/luciferase/HAM_pilot/", "scheme", full.names = T))
+dat <- dat[, read_plate(scheme), scheme]
+dat[, date:= tstrsplit(basename(scheme), "_", keep= 1)]
+dat[, c("enh_L", "enh_R", "prep", "tech_replicate"):= tstrsplit(rownames, "_")]
+dat[, replicate:= .GRP, .(date, prep)]
+var <- data.table(file= list.files("db/luciferase/HAM_pilot/", "lum.*.csv", full.names = T))
+var <- var[, read_plate(file), file]
+var[, date:= tstrsplit(basename(file), "_", keep= 1)]
+var[, lum:= gsub(".csv", "", unlist(tstrsplit(basename(file), "_", keep= 3)))]
+var <- dcast(var, date+Wells~lum, value.var = "values")
+dat[var, c("luc", "ren"):= .(i.lum1, i.lum2), on= c("date", "Wells")]
+dat[, name:= paste0(enh_L, "_", enh_R), .(enh_L, enh_R)]
+dat <- dat[ren>5000 & name!="Ubi_GFP", .(enh_L, enh_R, name, replicate, value= luc/ren)]
+dat <- dat[, .(value= mean(value)), .(enh_L, enh_R, name, replicate)]
 
 # Add additive scores
-exp_L <- na.omit(dat[, .SD[enh_R=="SCR2", .(exp_L= activity)], .(enh_L, sample, idx)])
-exp_R <- na.omit(dat[, .SD[enh_L=="SCR2", .(exp_R= activity)], .(enh_R, sample, idx)])
-exp <- merge(exp_L, exp_R, by= c("sample", "idx"), allow.cartesian = T)
-exp <- exp[enh_L != "SCR2" & enh_R != "SCR2"]
+dat[, mean_L:= .(mean(.SD[enh_R=="SCR2", value])), .(replicate, enh_L)]
+dat[, mean_R:= .(mean(.SD[enh_L=="SCR2", value])), .(replicate, enh_R)]
+dat[, add:= mean_L+mean_R]
+dat[!(enh_L %in% c("HAM1", "SUP1") | enh_R %in% c("HAM1", "SUP1")), c("add", "mean_L", "mean_R") := .(NA, NA, NA)]
+setkeyv(dat, "name")
 
-ord <- unique(exp[, .(enh_L, enh_R)])
-ord[, order:= c(12, 14, 16, 18)]
-ord[, name := c("hamlet x 2 exp.", "hamlet x sup-add. exp.", "sup-add. x hamlet exp.", "sup-add x 2 exp.")]
-exp <- ord[exp, , on= c("enh_L", "enh_R")]
-exp[, activity := exp_L+exp_R]
 
-dat <- rbind(dat, exp, fill= T)
-setkeyv(dat, "order")
+# PLOT
+ord <- c("DSCP_ZFH1", "p002_empty", "SCR2_SCR2", "HAM1_HAM1", "HAM1_SUP1", "SUP1_HAM1", "SUP1_SUP1")
+pl <- dat[ord, .(mean= mean(value),
+                 mean_all= list(value),
+                 sd= sd(value),
+                 max= max(value),
+                 add= mean(add),
+                 add_all= list(add),
+                 add_sd= sd(add),
+                 left= mean(mean_L),
+                 pval= ifelse(length(which(!is.na(add)))>1, t.test(value, add, paired = T)$p.value, as.numeric(NA)),
+                 FC= round(mean(value)/mean(add), 1)), name]
+yl <- "Activity (luciferase/renilla)"
+Cc <- c(rep("grey", 3), "mediumturquoise", "gold", "limegreen", "tomato")
+spa1 <- c(0.5,0.5,0.5,2,2,2,2)
+spa2 <- c(0.5,0.5,0.5,1,2,2,2)
 
-# Compute informative values and save
-dat[, mean_activity:= mean(activity), order]
-dat[, sd_activity:= sd(activity), order]
+pdf("pdf/ham_pilot/barplot_luciferase.pdf", height = 5)
+par(las= 1)
+bar1 <- barplot(pl[, mean], space = spa1, col= Cc, ylab= yl, ylim= c(0, 14))
 
-saveRDS(dat, "Rdata/luciferase_validation.rds")
+pl[, b1:= bar1[,1]]
+pl[, points(jitter(rep(b1, length(unlist(mean_all)))), unlist(mean_all), pch= 16, cex= 0.6), b1]
+arrows(pl$b1, pl$mean, pl$b1, pl[, mean+sd], length = 0.075, angle = 90)
+arrows(pl$b1, pl$mean, pl$b1, pl[, mean-sd], length = 0.075, angle = 90)
+
+text(pl$b1, pl$max, my_pval_format(pl$pval)$p.value, offset = 1, pos = 3)
+text(pl$b1, pl$max, ifelse(is.na(pl$FC), NA, paste0("x", pl$FC)), offset = 0.7, pos = 3, cex= 0.8)
+
+bar2 <- barplot(pl[, add], space = spa2, col= Cc, ylim= c(0, 14), add= T)
+pl[, b2:= bar2[,1]]
+pl[, points(jitter(rep(b2, length(unlist(add_all)))), unlist(add_all), pch= 16, cex= 0.6), b2]
+arrows(pl$b2, pl$add, pl$b2, pl[, add+add_sd], length = 0.075, angle = 90)
+arrows(pl$b2, pl$add, pl$b2, pl[, add-add_sd], length = 0.075, angle = 90)
+
+barplot(pl[, left], space = spa2, col= "black", ylim= c(0, 14), add= T, density = 10, angle = 45)
+
+at <- rowMeans(cbind(bar1, bar2))
+text(at, -0.2, pl$name, srt= 45, pos= 2, xpd= T, offset = -0.25)
+dev.off()
+
+
+
+
 
 
 
