@@ -2,7 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 sapply(list.files("/groups/stark/vloubiere/functions", ".R$", full.names = T), source)
 require(data.table)
 
-dat <- readRDS("Rdata/processed_peSTARRSeq_data/expected_score.rds")
+dat <- readRDS("Rdata/processed_peSTARRSeq_data/all_expected_score.rds")
 feat <- readRDS("Rdata/library/lib_features.rds")
 
 #----------------------------------------------------------------#

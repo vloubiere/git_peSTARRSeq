@@ -126,8 +126,13 @@ rownames(counts) <- lib$ID
 counts <- as.data.table(counts, keep.rownames = T)
 colnames(counts)[-1] <- paste0("motif__", colnames(counts)[-1])
 
-# add to lib and final
+# add to lib and add ecoli sequences
 lib <- cbind(lib, counts[, !"rn"])
+lib <- rbind(lib, 
+             data.table(ID= grep("Ecoli", readRDS("Rdata/library/vl_library_112019.rds")$ID_vl, value= T), group= "control", detail= "ecoli"),
+             fill= T)
+
+# SAVE
 saveRDS(lib, "Rdata/library/lib_features.rds")
 
               

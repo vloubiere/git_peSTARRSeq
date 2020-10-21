@@ -25,8 +25,8 @@ dat[, bwt_idx:= "/groups/stark/vloubiere/genomes/Custom_peSTARRSeq_1/index_bowti
 dat[!file.exists(sam_file), align_cmd:= bowtie1_align(fq1= paste0(trimmed_fq1_file[1], ",", fq_file[2]), index_prefix= bwt_idx, sam_output= sam_file, cores= 12), Sample_ID]
 dat[!file.exists(sam_file), align_cmd:= paste0(align_cmd, " --sam-nohead")]
 # Process sam files using custom functions
-dat[, rdsall_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/", condition, ".all.rds"), condition]
-dat[, rdsuniq_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/", condition, ".uniq.UMI.rds"), condition]
+dat[, rdsall_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/read_counts/", condition, ".all.rds"), condition]
+dat[, rdsuniq_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/read_counts/", condition, ".uniq.UMI.rds"), condition]
 dat[!file.exists(rdsall_file) | !file.exists(rdsuniq_file), 
     UMI_collapsing_cmd:= Rsub("/groups/stark/vloubiere/pipelines/peSTARRSeq_sam_counts_UMI_collapsing.R", c(unique(sam_file), rdsall_file, rdsuniq_file)), 
     .(condition, rdsall_file, rdsuniq_file)]

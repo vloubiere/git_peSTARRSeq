@@ -24,10 +24,12 @@ if(!file.exists("Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2.rd
   dat <- dat[, .(counts= sum(counts)), .(sample, enh_L, enh_R)]
   mat <- dcast(dat, enh_L+enh_R~sample, value.var = "counts", fill = 0)
   # low counts cutoff
-  check <- mat[, apply(.SD, 1, function(x) all(x>0) & sum(x)>10), .SDcols= patterns("input")]
+  check <- mat[, apply(.SD, 1, function(x) all(x>0) & sum(x)>100), .SDcols= patterns("input")]
+  mat <- mat[(check)]
+  check <- mat[, apply(.SD, 1, function(x) all(x>0)), .SDcols= patterns("DSCP")]
   mat <- mat[(check)]
   mat[, rn:= paste0(enh_L, "_vs_", enh_R), .(enh_L, enh_R)]
-  saveRDS(mat, "Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2.rds")
+  saveRDS(mat, "Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2_high_cutoff.rds")
 }
 
 
@@ -35,21 +37,21 @@ if(!file.exists("Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2.rd
 # 2- DESeq 2
 #----------------------------------------------#
 # Format tables
-if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/dds_result_object.rds"))
+if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/dds_result_object_high_cutoff.rds"))
 {
-  mat <- readRDS("Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2.rds")
+  mat <- readRDS("Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2_high_cutoff.rds")
   sampleTable <- grep("rep", colnames(mat), value = T)
   sampleTable <- data.frame(condition= sapply(sampleTable, function(x) strsplit(x, "_")[[1]][1]),
                             replicate= sapply(sampleTable, function(x) strsplit(x, "_")[[1]][2]),
                             row.names= sampleTable)
-  DF <- data.frame(mat[, DSCP_rep1:input_rep5], row.names = mat$rn)+1
+  DF <- data.frame(mat[, DSCP_rep1:input_rep5], row.names = mat$rn)
   # DESeq2
   dds <- DESeqDataSetFromMatrix(countData= DF, colData= sampleTable, design= ~replicate+condition)
   # SizeFactors
   sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[grep("control.*vs.*control", rownames(DF)),]))
   # Result
   res <- DESeq(dds)
-  saveRDS(res, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/dds_result_object.rds")
+  saveRDS(res, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/dds_result_object_high_cutoff.rds")
   
   # Differential expression
   diff <- as.data.table(as.data.frame(results(res, contrast= c("condition", "DSCP", "input"))), keep.rownames= T)
@@ -58,14 +60,14 @@ if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_pe
   
   boxplot(diff[grepl("control", enh_L) & grepl("control", enh_R), log2FoldChange], notch= T)
   abline(h= 0, lty= 2)
-  saveRDS(diff, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/DESeq2_FC_table.rds")
+  saveRDS(diff, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/DESeq2_FC_table_high_cutoff.rds")
 }
 
 #----------------------------------------------#
 # 3- Robust controls
 #----------------------------------------------#
 # Identify robust controls with high ctl~X / X~ctl PCCs
-diff <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/DESeq2_FC_table.rds")
+diff <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/DESeq2_FC_table_high_cutoff.rds")
 PCC <- data.table(ctl= unique(grep("^control", c(diff$enh_L, diff$enh_R), value = T)))
 PCC[, PCC:=
     {
@@ -94,7 +96,7 @@ b2 <- my_boxplot(zscore_R~enh_R, ctls[enh_R %in% PCC$ctl], plot= F)
 Cc2 <- as.character(cut(b2$DT_plot$lim3, c(-Inf, lim, Inf), labels = c("cornflowerblue", "white", "red")))
 Ccgood <- ifelse(between(b1$DT_plot$lim3, lim[1], lim[2]) & between(b2$DT_plot$lim3, lim[1], lim[2]) & PCC$PCC>0.7, "black", "red")
 
-pdf("pdf/peSTARRSeq/diag_plots_selection_negative_controls.pdf", 10, 17)
+pdf("pdf/peSTARRSeq/diag_plots_selection_negative_controls_high_cutoff.pdf", 10, 17)
 layout(matrix(1:3, ncol = 3), widths = c(0.75,0.5,0.5))
 par(las= 1, mar= c(5,17,1,1), xaxs= "i", yaxs= "i")
 
@@ -130,7 +132,7 @@ exp <- copy(diff)
 # Individual activity
 exp[, c("all_L", "median_L", "sd_L", "N_L"):= .SD[enh_R %in% ctls, .(list(log2FoldChange), median(log2FoldChange), sd(log2FoldChange), .N)], enh_L]
 exp[, c("all_R", "median_R", "sd_R", "N_R"):= .SD[enh_L %in% ctls, .(list(log2FoldChange), median(log2FoldChange), sd(log2FoldChange), .N)], enh_R]
-saveRDS(exp, "Rdata/processed_peSTARRSeq_data/all_expected_score.rds")
+saveRDS(exp, "Rdata/processed_peSTARRSeq_data/all_expected_score_high_cutoff.rds")
 exp <- na.omit(exp[!grepl("control", enh_L) & !grepl("control", enh_R) & N_L>4 & N_R>4, !c("N_L", "N_R")])
 # Method 1
 # exp[, c("log2FCs_add_ls", "log2FCs_add_box"):= 
@@ -153,5 +155,5 @@ clean <- exp[diff, , on=c("enh_L", "enh_R")]
 clean <- unique(clean[, .(ID= paste0(enh_L, "_vs_", enh_R), enh_L, enh_R, baseMean= i.baseMean, log2FoldChange= i.log2FoldChange, padj= i.padj, log2FoldChange_rev,
                           median_L, sd_L, median_R, sd_R, log2FC_add, log2FC_mult= median_L+median_R, diff)])
 clean <- clean[!is.na(median_L) & !is.na(median_R) & !is.na(log2FC_add) & !is.na(log2FoldChange)]
-saveRDS(clean, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table.rds")
+saveRDS(clean, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table_high_cutoff.rds")
 

@@ -2,15 +2,15 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
 require(data.table)
 
-dat <- readRDS("Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table.rds")
+dat <- readRDS("Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table_high_cutoff.rds")
 feat <- readRDS("Rdata/library/lib_features.rds")
 
 #----------------------------------------------------------------#
 # 1- format data
 #----------------------------------------------------------------#
 pl <- dat[!is.na(diff) & !is.na(median_L) & !is.na(median_R)]
-pl[, check1:= median_L>1 & .N>500, enh_L]
-pl[, check2:= median_R>1 & .N>500, enh_R]
+pl[, check1:= median_L>1, enh_L]
+pl[, check2:= median_R>1, enh_R]
 pl <- pl[(check1) & (check2)] 
 
 # Add group
@@ -38,7 +38,7 @@ pl$Rvar <- NULL
 #----------------------------------------------------------------#
 
 # pdf
-pdf("pdf/peSTARRSeq/Heatmap_residuals_with_annotation.pdf", 13, 11.5)
+pdf("pdf/peSTARRSeq/Heatmap_residuals_with_annotation_high_counts_cutoff.pdf", 13, 11.5)
 layout(matrix(1:16, ncol=4), widths= c(0.1,0.03,0.15,1), heights= c(0.1,0.03,0.15,1))
 par(mar=c(0.25,0.5,0.5,0.25), xaxs="i", yaxs="i")
 

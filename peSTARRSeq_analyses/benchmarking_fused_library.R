@@ -8,7 +8,7 @@ require(data.table)
 lib <- as.data.table(readRDS("Rdata/library/vl_library_112019.rds"))
 if(!exists(".c"))
 {
-  all_counts <- readRDS("db/Rdata/all_uniq_counts.rds")
+  all_counts <- readRDS("db/read_counts/all_uniq_counts.rds")
   all_counts[, simp_sample:= ifelse(grepl("^input", sample), "input", "DSCP")]
 
   .c <- all_counts[grepl("input", sample)]
@@ -65,8 +65,8 @@ dN <- dcast(.N, group_L~group_R, value.var = "N")
 #----------------------------------------------------------------#
 # 3- PLOT
 #----------------------------------------------------------------#
-pdf("pdf/peSTARRSeq/fused_library_biases.pdf", 10.1, 9)
-par(mar= c(5,5,3,7), mfrow= c(2,2))
+pdf("pdf/peSTARRSeq/fused_library_biases.pdf", 9, 12)
+par(mar= c(5,5,3,7), mfrow= c(3,2))
 
 # sub libraries
 my_pheatmap(as.matrix(sub, 1), cluster_rows = F, cluster_cols = F, display_numbers = T, 
@@ -95,5 +95,13 @@ my_pheatmap(as.matrix(dN, 1), cluster_rows = F, cluster_cols = F, display_number
             legend_cex = 0.8)
 mtext("candidate type combinations", line = 1)
 my_fig_label("D", cex= 2)
+
+# Saturation
+plot(NA, pch= NA, xlim = c(-0.5, 12), ylim = c(0,0.6), las=1, xlab= "log2(counts+1)", ylab= "density")
+lines(density(log2(saturation$input+1)), lwd=3, col= adjustcolor("cornflowerblue", 0.6))
+lines(density(log2(saturation$DSCP+1)), lwd=3, col= adjustcolor("tomato", 0.6))
+legend("topright", lwd= c(3,3), col = adjustcolor(c("cornflowerblue", "tomato"), 0.6), 
+       legend= c("input", "DSCP"), bty= "n")
+my_fig_label("E", cex= 2)
 
 dev.off()

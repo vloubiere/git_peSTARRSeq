@@ -26,7 +26,6 @@ dat[, add:= mean_L+mean_R]
 dat[!(enh_L %in% c("HAM1", "SUP1") | enh_R %in% c("HAM1", "SUP1")), c("add", "mean_L", "mean_R") := .(NA, NA, NA)]
 setkeyv(dat, "name")
 
-
 # PLOT
 ord <- c("DSCP_ZFH1", "p002_empty", "SCR2_SCR2", "HAM1_HAM1", "HAM1_SUP1", "SUP1_HAM1", "SUP1_SUP1")
 pl <- dat[ord, .(mean= mean(value),
@@ -68,10 +67,16 @@ at <- rowMeans(cbind(bar1, bar2))
 text(at, -0.2, pl$name, srt= 45, pos= 2, xpd= T, offset = -0.25)
 dev.off()
 
+pdf("pdf/ham_pilot/barplot_left_right_activity.pdf", height = 4, width = 5)
 
+sel <- copy(dat)
+setkeyv(sel, "name")
+sel <- sel[c("DSCP_ZFH1", "p002_empty", "SCR2_alone", "SCR2_SCR2", "HAM1_alone", "HAM1_SCR2", "SCR2_HAM1", "SUP1_alone", "SUP1_SCR2", "SCR2_SUP1")]
+Cc <- c("limegreen", "black", "lightgrey", "lightgrey", rep("gold", 3), rep("tomato", 3))
+bar <- barplot(sel[, mean(value), name][, V1], ylim= c(0,12), ylab = yl, col= Cc, las=1)
+text(bar, -0.5, unique(sel$name), srt= 45, xpd= T, offset = -0.5, pos= 2)
 
-
-
+dev.off()
 
 
 

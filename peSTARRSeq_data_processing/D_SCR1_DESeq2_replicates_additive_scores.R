@@ -5,15 +5,15 @@ require(DESeq2)
 #----------------------------------------------#
 # 1- Load counts
 #----------------------------------------------#
-if(!file.exists("db/Rdata/all_uniq_counts.rds"))
+if(!file.exists("db/read_counts/all_uniq_counts.rds"))
 {
   dat <- data.table(file= list.files("Rdata", "SCR1.*uniq.UMI.rds", full.names= T))
   dat[, sample:= gsub("libvl002_SCR1_|.uniq.UMI.rds", "", basename(file))]
   dat <- dat[, readRDS(file), .(file, sample)]
   dat <- dat[, .(counts= .N), c(colnames(dat))]
-  saveRDS(dat, "db/Rdata/all_uniq_counts.rds")
+  saveRDS(dat, "db/read_counts/all_uniq_counts.rds")
 }
-dat <- readRDS("db/Rdata/all_uniq_counts.rds")
+dat <- readRDS("db/read_counts/all_uniq_counts.rds")
 # Merge rep 1 and 2
 mer <- data.table(old= paste0("input_rep", 1:6), new= paste0("input_rep", c(1,1,2,3,4,5)))
 dat[mer, sample:= i.new, on= "sample==old"]

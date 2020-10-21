@@ -3,9 +3,9 @@ sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), 
 require(data.table)
 require(gridExtra)
 
-dat <- readRDS("db/Rdata/all_uniq_counts.rds")
+dat <- readRDS("db/read_counts/all_uniq_counts.rds")
 dat <- dat[, .(UMI_collapsed_reads= sum(counts)), sample]
-dat[, all_counts:= list.files("db/Rdata/", paste0(sample, ".*all.rds"), full.names = T), sample]
+dat[, all_counts:= list.files("db/read_counts/", paste0(sample, ".*all.rds"), full.names = T), sample]
 dat[, uniquely_aligned_reads:= nrow(readRDS(all_counts)), all_counts]
 
 res <- melt(dat, id.vars= "sample", measure.vars = c("uniquely_aligned_reads", "UMI_collapsed_reads"))

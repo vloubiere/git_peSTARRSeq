@@ -5,7 +5,7 @@ require(yarrr)
 require(ggplot2)
 require(patchwork)
 
-dat <- readRDS("Rdata/processed_peSTARRSeq_data/expected_score.rds")
+dat <- readRDS("Rdata/processed_peSTARRSeq_data/all_expected_score.rds")
 feat <- readRDS("Rdata/library/lib_features.rds")
 
 #----------------------------------------------------------------#
@@ -41,18 +41,18 @@ at <- c(3, 5, 4, 2, 1)
 plot.new()
 
 par(mar= c(4.5,5,1,1))
-box <- my_boxplot(-median_L~group_L, pl[, .(group_L, median_L), .(enh_L, group_L, median_L)], 
+box <- my_boxplot(formula = -median_L~group_L, data= pl[, .(group_L, median_L), .(enh_L, group_L, median_L)], 
                   outline= T, col_box = Cc, horizontal= T, at= at, xaxt="n",
                   xlab= "left candidate\nindividual activity", xlim=c(0.7,5.3))
 axis(1, at = seq(2, -6, -2), labels = seq(-2, 6, 2))
-abline(v= box$stats[3,3], lty= 2)
+abline(v= box$DT_plot[.id=="control", lim3], lty= 2)
 
 par(mar= c(1,1,4.5,5))
 box <- my_boxplot(median_R~group_R, pl[, .(group_R, median_R), .(enh_R, group_R, median_R)], 
                   outline= T, col_box = Cc, at= at, xaxt= "n", xlim=c(0.7,5.3))
 axis(3, at = c(3, 5, 4, 2, 1), labels = box$names)
 mtext("right candidate\nindividual activity", side= 2, line = 2, cex= .8)
-abline(h= box$stats[3,3], lty= 2)
+abline(h= box$DT_plot[.id=="control", lim3], lty= 2)
 
 par(mar= c(4.5,1,1,5))
 my_pheatmap(as.matrix(dmat, 1), cluster_rows = F, cluster_cols = F, row_labels = F, plot_grid = T, 
@@ -63,22 +63,18 @@ dev.off()
 #-----------------------------------------------------#
 # Violin plot categories
 #-----------------------------------------------------#
+sub <- pl[(group_L=="control" & group_R=="control") | group_L=="dev" | group_R=="dev"]
+sub <- sub[enh_L!=enh_R & grepl("_C_", enh_L) & grepl("_C_", enh_R)]
+# sub <- sub[grepl("_C_", enh_L) & grepl("_C_", enh_R)]
 
-pdf("pdf/peSTARRSeq/Vioplot_activity_type_pairs_aggregate.pdf", width = 10)
-par(mar= c(10,4,2,2))
-at <- c(1,5,4,3,2,25,29,28,26,27,19,23,22,20,21,13,17,16,14,15,7,11,10,8,9)
-Cc1 <- c("lightgrey", "royalblue2", "gold", "tomato", "#74C27A")
-Cc2 <- c(sapply(Cc1, function(x) c(x, rep("black", 4))))
-Cc2[1:5] <- Cc1
-my_boxplot(formula = log2FoldChange~group_L+group_R, data = pl, las= 2, 
-           at= at, ylim= c(-4, 11), col_box = Cc2,
-           pval_list = list(c(1,2), c(1,3), c(1,4), c(1,5),
-                            c(6,7), c(6,8), c(6,9), c(6,10),
-                            c(11,12), c(11,13), c(11,14), c(11,15),
-                            c(16,17), c(16,18), c(16,19), c(16,20),
-                            c(21,22), c(21,23), c(21,24), c(21,25)))
+pdf("pdf/peSTARRSeq/Vioplot_activity_type_pairs_aggregate.pdf", height = 6)
+par(mar= c(8,4,2,2))
+pval <- list(c(1,2), c(2,3), c(2,4), c(2,5), c(6,7), c(6,8), c(6,9), c(6,10), c(2,6), c(2,10))
+my_boxplot(formula = log2FoldChange~group_L+group_R, data = sub, las= 2, remove_empty = T, 
+           main= "developmental enhancer containing pairs", 
+           col_box = c("lightgrey", "#74C27A", rep("black", 3), "#74C27A",  rep("black", 3), "#74C27A"),
+           at= c(1,2,6,10,9,8,7,5,4,3), pval_list = pval, ylim= c(-4, 10.5))
 abline(h=0, lty=2)
-legend("topleft", fill= Cc1, legend= c("control", "OSC", "inducible", "hk", "dev"), bty= "n")
 dev.off()
 
 
