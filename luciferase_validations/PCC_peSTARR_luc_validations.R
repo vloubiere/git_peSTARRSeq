@@ -1,5 +1,7 @@
-setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
+# setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+setwd("/Users/vincent.loubiere/Dropbox (VBC)/untitled folder/")
+# sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
+sapply(list.files("functions/", ".R$", full.names = T), source)
 require(data.table)
 
 dat <- readRDS("Rdata/luciferase_validations/C_luc_validations_final_table.rds")
@@ -29,16 +31,9 @@ plot(pl$V1, pl$V2, col= pl$col, pch= 19, xlab= "pe-STARR-seq activity (log2)", y
 segments(pl$V1, pl$V3, pl$V1, pl$V4, col= pl$col)
 .lm <- lm(V2~V1, pl)
 abline(.lm, lty=2)
+.lo <- lm(V2~V1, pl)
+lines(seq(-5, 15, 0.1), predict(.lo, newdata = seq(-5, 15, 0.1)), lty=2, lwd=2)
 leg <- unique(dat[, .(group, col)])
 legend("bottomright", legend = leg$group, col= leg$col, bty= "n", pch= 19)
 legend("topleft", legend = paste("R²=", round(summary(.lm)$r.squared, 2)), lty= 2, bty= "n")
 dev.off()
-
-
-
-
-
-
-
-
-
