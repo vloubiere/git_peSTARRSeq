@@ -1,5 +1,7 @@
-setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
+# setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+setwd("/home/vloubiere/projects/pe_STARRSeq/")
+# sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
+sapply(list.files("/home/vloubiere/functions/", ".R$", full.names = T), source)
 options(datatable.print.topn= 3)
 require(data.table)
 require(rtracklayer)
@@ -62,39 +64,14 @@ peaks <- readRDS("Rdata/intron_STARRSeq/regulatory_elements_S2.rds")
 
 # Measure distance to closest
 peaks$c_tss <- peaks[type=="tss"][peaks, min(abs(i.start-start[!(type==i.type & start==i.start)])), .EACHI, on= "seqnames"]$V1
-peaks$c_dCP <- peaks[grepl("^DSCP_", type)][peaks, min(abs(i.start-start[!(type==i.type & start==i.start)])), .EACHI, on= "seqnames"]$V1
-peaks$c_hkCP <- peaks[grepl("^RPS12_", type)][peaks, min(abs(i.start-start[!(type==i.type & start==i.start)])), .EACHI, on= "seqnames"]$V1
-peaks$c_atac <- peaks[type=="ATAC"][peaks, min(abs(i.start-start[!(type==i.type & start==i.start)])), .EACHI, on= "seqnames"]$V1
 
-plot(NA, xlim= c(1, 20), ylim= c(0, 0.0007), xlab= 'distance to closest TSS (log10)', ylab= "Fn(x)", las= 1)
-plot(NA, xlim= c(0, 20), ylim= c(0, 1), xlab= 'distance to closest TSS (log10)', ylab= "Fn(x)", las= 1)
-peaks[, {lines(density(.SD$c_tss/1000, na.rm= T, bw= 0.5))}, type]
+pdf("pdf/intron_STARRSeq/enh_promoter_distance.pdf", width = 8)
+par(mar= c(5,8,2,2))
+my_boxplot(c_tss~type, peaks, bw= 1000, horizontal = T, ylim= c(0, 25e3), las= 1, outline= T, xaxt= "n", xlab= "closest active TSS")
+axis(1, c(0, 2e3, 5e3, 10e3, 25e3))
+abline(v=2e3, col= "red")
+dev.off()
 
-
-peaks[, 
-      {
-        lines(log10(sort(.SD$c_tss+1)), seq(0, 1, length.out = length(sort(.SD$c_tss))))
-      }, type]
-lines(log10(sort(peaks[type=="ATAC", c_tss])+1), seq(0, 1, length.out = length(sort(peaks[type=="ATAC", c_tss]))))
-lines(log10(sort(peaks[type=="ATAC", c_tss])+1), seq(0, 1, length.out = length(sort(peaks[type=="ATAC", c_tss]))))
-lines(density(na.omit(peaks[type=="DSCP_600", c_tss]), bw= 100))
-lines(density(na.omit(peaks[type=="DSCP_200", c_tss]), bw= 100))
-lines(density(na.omit(peaks[type=="RPS12_200", c_tss]), bw= 100))
-lines(density(na.omit(peaks[type=="RPS12_600", c_tss]), bw= 100))
-
-
-peaks[peaks, call:= {res <- abs(i.start-.SD$start); min(res[res>0])}, by= .EACHI, on= "seqnames"]
-
-
-
-setkeyv(peaks, c("seqnames", "start", "end"))
-peaks[peaks, .SD$start, by= .EACHI]
-# peaks[, call:= min(abs(start-peaks[seqnames==.BY[[1]] & idx!=.BY[[2]], start])), by= .(seqnames, idx)]
-peaks[peaks, call:= .(list(abs(i.start-.SD$start))), by= .EACHI]
-
-test2 <- peaks[peaks, .(i.seqnames, i.start, i.end, call= min(abs(i.start-.SD[idx!=i.idx, start]))), by= .EACHI, on= "seqnames"]
-
-peaks[peaks, call:= min(abs(i.start-.SD[idx!=i.idx, start])), by= .EACHI, on= "seqnames"]
 
 
 
