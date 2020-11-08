@@ -13,18 +13,9 @@ pl[, check1:= .N>0, enh_L]
 pl[, check2:= .N>0, enh_R]
 pl <- pl[(check1) & (check2)]
 
-# Add group
-pl[feat, group_L:= i.group, on= "enh_L==ID"]
-pl[feat, group_R:= i.group, on= "enh_R==ID"]
-# Handle E coli cases
-pl[is.na(group_L), group_L:="control"]
-pl[is.na(group_R), group_R:="control"]
-
-# Add group color
-class_Cc <- data.table(class= c("hk", "dev", "OSC", "inducible", "control"),
-                       col= c("tomato", "#74C27A", "royalblue2", "gold", "#D3D3D3"))
-pl[class_Cc, col_L:= i.col, on= "group_L==class"]
-pl[class_Cc, col_R:= i.col, on= "group_R==class"]
+# Add group and colors
+pl[feat, c("group_L", "col_L"):= .(i.group, i.col), on= "enh_L==ID"]
+pl[feat, c("group_R", "col_R"):= .(i.group, i.col), on= "enh_R==ID"]
 
 # dcast/melt
 pl[, Rvar:= paste0("_", paste(c(enh_R, group_R, col_R), collapse = "__")), .(enh_R, group_R, col_R)]
@@ -101,8 +92,10 @@ my_pheatmap(mat, cluster_rows = F, cluster_cols = F, breaks= c(-2,0,9),
 ####-------LEGEND-------####
 points(1.055, 0.675, pch=15, xpd= T, cex= 3, col= "black")
 text(1.055, 0.675, pos= 4, "NA", xpd= T, offset = 1, cex= 1.5)
-points(rep(1.05, 5), seq(0.425, 0.55, length.out = 5), pch=15, xpd= T, cex= 3, col= class_Cc$col)
-text(rep(1.05, 5), seq(0.425, 0.55, length.out = 5), pos= 4, class_Cc$class, xpd= T, offset = 1, cex= 1.5)
+points(rep(1.05, length(unique(pl$group_L))), seq(0.425, 0.55, length.out = length(unique(pl$group_L))),
+       pch=15, xpd= T, cex= 3, col= unique(pl$col_L))
+text(rep(1.05, length(unique(pl$group_L))), seq(0.425, 0.55, length.out = length(unique(pl$group_L))),
+     pos= 4, unique(pl$group_L), xpd= T, offset = 1, cex= 1.5)
 text(1.033, 0.6, "Enhancer\ntype", xpd= T, cex= 1.8, pos= 4)
 
 dev.off()

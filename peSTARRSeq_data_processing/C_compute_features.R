@@ -12,18 +12,18 @@ require(TFBSTools)
 require(seqLogo)
 
 lib <- readRDS("Rdata/library/uniq_library_final.rds")
-lib <- lib[!detail=="ecoli"]
+lib <- lib[detail!="ecoli"]
 
 #-----------------------------------------------#
 # 1- Gene assignment
 #-----------------------------------------------#
 # dm3 intervals lib file
 enh <- GRanges(lib$coor, name= lib$ID)
-enh <- enh[order(seqnames(enh), start(enh))]
+enh <- enh[order(as.character(seqnames(enh)), start(enh))]
 # dm3 TSSs
 tss <- resize(genes(TxDb.Dmelanogaster.UCSC.dm3.ensGene), 1, fix = "start")
 tss$symbol <- mapIds(org.Dm.eg.db, key= tss$gene_id, column="SYMBOL", keytype="FLYBASE", multiVals="first")
-tss <- tss[order(seqnames(tss), start(tss))]
+tss <- tss[order(as.character(seqnames(tss)), start(tss))]
 seqlevels(tss, pruning.mode= "coarse") <- seqlevels(enh)
 # Temp files
 tmp1 <- tempfile(fileext = ".bed")
@@ -129,8 +129,8 @@ colnames(counts)[-1] <- paste0("motif__", colnames(counts)[-1])
 # add to lib and add ecoli sequences
 lib <- cbind(lib, counts[, !"rn"])
 lib <- rbind(lib, 
-             data.table(ID= grep("Ecoli", readRDS("Rdata/library/vl_library_112019.rds")$ID_vl, value= T), group= "control", detail= "ecoli"),
-             fill= T)
+             data.table(ID= grep("Ecoli", readRDS("Rdata/library/vl_library_112019.rds")$ID_vl, value= T), 
+                        group= "control", detail= "ecoli", col= "lightgrey"), fill= T)
 
 # SAVE
 saveRDS(lib, "Rdata/library/lib_features.rds")

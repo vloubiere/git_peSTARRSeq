@@ -59,7 +59,11 @@ dat[, group_R:= tstrsplit(enh_R, "_", keep=1)]
 #------------------------------------------------------------------#
 # 3- Plots
 #------------------------------------------------------------------#
-mod <- readRDS("Rdata/modeling_peSTARRSeq/linear_models.rds")
+if(!exists("mod"))
+{
+  mod <- readRDS("Rdata/modeling_peSTARRSeq/linear_models.rds")
+}
+
 
 pdf("pdf/peSTARRSeq/log2FC_lm_w_wo_interctions.pdf", 9, 10)
 par(mfrow= c(3,3), las= 1)
@@ -71,12 +75,14 @@ for(i in seq(mod))
   rsq <- paste("R²=", round(summary(mod[[i]])$r.squared, 2))
   PCC <- paste("PCC=", round(cor.test(predict(mod[[i]]), dat$log2FoldChange)$estimate, 2))
   legend("topleft", legend= c(rsq, PCC), bty= "n")
+  my_fig_label(c("A", "B", "C", "D", "E", "F", "G", "H")[i], cex=2)
 }
 
 smoothScatter(dat$rep1, dat$rep2, xlab= "act. replicates 1-2", ylab= "act. replicates 3-4")
 abline(0, 1)
 PCC <- paste("PCC=", round(cor.test(dat$rep1, dat$rep2)$estimate, 2))
 legend("topleft", legend= PCC, bty= "n")
+my_fig_label("I", cex=2)
 dev.off()
 
 

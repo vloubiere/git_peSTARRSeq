@@ -5,6 +5,7 @@ options(datatable.print.topn=1)
 require(yarrr)
 
 feat <- readRDS("Rdata/library/lib_features.rds")
+setkeyv(feat, "group")
 .c <- readRDS("Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2.rds")
 dat <- readRDS("Rdata/processed_peSTARRSeq_data/DESeq2_FC_table.rds")
 # dat <- dat[grepl("_C_", enh_L) & grepl("_C_", enh_R)]
@@ -43,23 +44,23 @@ plc <- melt(plc, id.vars = "group", measure.vars = list("homotypic", "input", "D
 # PLOT
 #-----------------------------------------------------#
 pdf("pdf/peSTARRSeq/homotypic_pairs_checks.pdf", width = 5, height = 10)
+Cc <- feat[c("control", "OSC", "inducible", "hk", "dev", "shared"), unique(col)]
+at <- c(1,2,9,10,7,8,5,6,3,4,11,12)
+p.l <- list(c(1,2),c(3,4),c(5,6),c(7,8),c(9,10),c(11,12))
+
 par(mfrow=c(3,1), mar= c(10,5,2,2))
-my_boxplot(value2~value1+group, plc, las= 2, at= c(1,2,9,10,7,8,5,6,3,4), ylab= "log2(counts+1)",
-           col_box= rep(c("lightgrey", "royalblue2", "gold", "tomato", "#74C27A"), each= 2),
-           pval_list = list(c(1,2),c(3,4),c(5,6),c(7,8),c(9,10)), ylim= c(3.5, 10), main= "input counts")
+my_boxplot(value2~value1+group, plc, las= 2, at= at, ylab= "log2(counts+1)", col_box= rep(Cc, each= 2),
+           pval_list = p.l, ylim= c(3.5, 10), main= "input counts")
 my_fig_label("A", cex= 2)
 
-my_boxplot(value3~value1+group, plc, las= 2, at= c(1,2,9,10,7,8,5,6,3,4), ylab= "log2(counts+1)",
-           col_box= rep(c("lightgrey", "royalblue2", "gold", "tomato", "#74C27A"), each= 2),
-           pval_list = list(c(1,2),c(3,4),c(5,6),c(7,8),c(9,10)), ylim= c(0, 13), main= "DSCP counts")
+my_boxplot(value3~value1+group, plc, las= 2, at= at, ylab= "log2(counts+1)",col_box= rep(Cc, each= 2),
+           pval_list = p.l, ylim= c(0, 13), main= "DSCP counts")
 my_fig_label("B", cex= 2)
 
-my_boxplot(value2~value1+group, pld, las= 2, at= c(1,2,9,10,7,8,5,6,3,4), ylab= "activity (log2)",
-           col_box= rep(c("lightgrey", "royalblue2", "gold", "tomato", "#74C27A"), each= 2),
-           pval_list = list(c(1,2),c(3,4),c(5,6),c(7,8),c(9,10)), ylim= c(-4,9.5), main= "activity")
+my_boxplot(value2~value1+group, pld, las= 2, at= at, ylab= "activity (log2)", col_box= rep(Cc, each= 2),
+           pval_list = p.l, ylim= c(-4,9.5), main= "activity")
 abline(h= 0, lty= 2)
 my_fig_label("C", cex= 2)
-# legend("topleft", fill= Cc1, legend= c("control", "OSC", "inducible", "hk", "dev"), bty= "n")
 dev.off()
 
 

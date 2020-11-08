@@ -1,10 +1,10 @@
-# setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-setwd("/Users/vincent.loubiere/Dropbox (VBC)/untitled folder/")
-# sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
-sapply(list.files("functions/", ".R$", full.names = T), source)
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
 require(data.table)
 
+lib <- readRDS("Rdata/library/uniq_library_final.rds")
 dat <- readRDS("Rdata/luciferase_validations/C_luc_validations_final_table.rds")
+dat <- dat[!grepl("^control", enh_L) & !grepl("^control", enh_R)]
 dat[, obs_exp:= luc_norm/luc_add]
 
 cols <- c("luc_norm", "luc_mean_L",  "luc_mean_R",  "luc_add", "obs_exp")
@@ -12,10 +12,8 @@ pl <- dat[, lapply(.SD, mean, na.rm= T), .(Sample_ID, enh_L, enh_R), .SDcols= co
 pl[, luc_mean_L:= mean(luc_mean_L), enh_L]
 pl[, luc_mean_R:= mean(luc_mean_R), enh_R]
 pl <- na.omit(pl)
-pl[grepl("^dev", enh_L), col_L:= "#74C27A"]
-pl[grepl("^hk", enh_L), col_L:= "tomato"]
-pl[grepl("^dev", enh_R), col_R:= "#74C27A"]
-pl[grepl("^hk", enh_R), col_R:= "tomato"]
+pl[lib, col_L:= i.col, on= "enh_L==ID"]
+pl[lib, col_R:= i.col, on= "enh_R==ID"]
 
 dmat <- dcast(pl, -luc_mean_L+enh_L~luc_mean_R+enh_R, value.var = "obs_exp", fun.aggregate = function(x) mean(log2(x)), fill = NA)
 mat <- as.matrix(dmat[, -1], 1)
@@ -67,8 +65,8 @@ my_pheatmap(mat, cluster_rows = F, cluster_cols = F, breaks= c(-1,0,1), legend_c
             legend_adj_top = -0.04, legend_adj_left = -0.04, display_numbers = T, row_labels = F, col_labels = F)
 
 ####-------LEGEND-------####
-points(rep(1.11, 2), seq(0.47, 0.52, length.out = 2), pch=15, xpd= T, cex= 3, col= c("tomato", "#74C27A"))
-text(rep(1.11, 2), seq(0.47, 0.52, length.out = 2), pos= 4, c("hk", "dev"), xpd= T, offset = 1.5, cex= 1.5)
+points(rep(1.11, 3), seq(0.445, 0.52, length.out = 3), pch=15, xpd= T, cex= 3, col= unique(c(pl$col_L, pl$col_R)))
+text(rep(1.11, 3), seq(0.445, 0.52, length.out = 3), pos= 4, c("hk", "shared", "dev"), xpd= T, offset = 1.5, cex= 1.5)
 text(1.0775, 0.6, "Enhancer\ntype", xpd= T, cex= 1.5, pos= 4)
 
 dev.off()

@@ -46,7 +46,6 @@ dat_all[, luc_norm:= luc_norm/mean(dat_all[grepl("^control", enh_L) & grepl("^co
 dat_all[, luc_mean_L:= mean(.SD[grepl("^control", enh_R), luc_norm], na.rm= T), .(replicate, enh_L)]
 dat_all[, luc_mean_R:= mean(.SD[grepl("^control", enh_L), luc_norm], na.rm= T), .(replicate, enh_R)]
 dat_all[, luc_add:= luc_mean_L+luc_mean_R]
-dat_all[grepl("^control", enh_L)|grepl("^control", enh_R), luc_add:= NA]
 
 saveRDS(dat_all, "Rdata/luciferase_validations/C_luc_validations_final_table.rds")
 

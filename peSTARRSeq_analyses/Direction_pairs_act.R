@@ -4,12 +4,12 @@ require(data.table)
 options(datatable.print.topn=1)
 require(yarrr)
 
-feat <- as.data.table(readRDS("Rdata/library/vl_library_112019.rds"))
-feat[group %in% c("heatshock", "ecdysone"), group:= "inducible"]
+feat <- as.data.table(readRDS("Rdata/library/uniq_library_final.rds"))
+setkeyv(feat, "group")
 dat <- readRDS("Rdata/processed_peSTARRSeq_data/DESeq2_FC_table.rds")
 dat <- dat[enh_L!=enh_R]
-dat[feat, group_L:= i.group, on= "enh_L==ID_vl"]
-dat[feat, group_R:= i.group, on= "enh_R==ID_vl"]
+dat[feat, group_L:= i.group, on= "enh_L==ID"]
+dat[feat, group_R:= i.group, on= "enh_R==ID"]
 
 #------------------------------------------------------------#
 # 1- All pairs
@@ -37,7 +37,7 @@ ctl <- CJ(control= grep("^control", unique(c(dat$enh_L, dat$enh_R)), value = T),
           enh= unique(c(dat$enh_L, dat$enh_R), invert = T, value = T))
 ctl[dat, right:= i.log2FoldChange, on= c("control==enh_L", "enh==enh_R")]
 ctl[dat, left:= i.log2FoldChange, on= c("control==enh_R", "enh==enh_L")]
-ctl[feat, group:= i.group, on= "enh==ID_vl"]
+ctl[feat, group:= i.group, on= "enh==ID"]
 ctl <- na.omit(ctl[enh!=control])
 .lm.ctl <- lm(ctl$right~ctl$left, ctl)
 
@@ -62,7 +62,7 @@ rsq <- paste("R²=", round(summary(.lm.pa)$r.squared, 2))
 legend("topleft", c(PCC, rsq), bty= "n")
 my_fig_label("A", cex= 2)
 my_boxplot(formula= value~cdition, data= pa.m, remove_empty = T, las= 2, at= at.all,
-           pval_list = lapply(seq(1, length(at.all), 2), function(x) c(x, x+1)), ylim= c(-3, 9), ylab = "activity (log2)")
+           pval_list = lapply(seq(1, length(at.all), 2), function(x) c(x, x+1)), ylim= c(-3, 10), ylab = "activity (log2)")
 my_fig_label("B", cex= 2)
 
 smoothScatter(ctl[, .(left, right)], las= 1, xlab= "candidate~control activity (log2)", ylab= "control~candidate activity (log2)", bandwidth = 0.1)
@@ -71,11 +71,15 @@ PCC <- paste("PCC=", round(cor.test(ctl$right, ctl$left)$estimate, 2))
 rsq <- paste("R²=", round(summary(.lm.ctl)$r.squared, 2))
 legend("topleft", c(PCC, rsq), bty= "n")
 my_fig_label("C", cex= 2)
-Cc <- c("#74C27A", "tomato", "royalblue2", "gold", "lightgrey")
+
+Cc <- feat[c("shared", "dev", "hk", "control", "inducible", "OSC"), unique(col)]
 my_boxplot(formula= value~cdition, data= ctl.m, remove_empty = T, las= 2, at= at.ctl, col_box = rep(Cc, each=2),
            pval_list = lapply(seq(1, length(at.ctl), 2), function(x) c(x, x+1)), ylim= c(-3, 8), ylab = "activity (log2)")
 my_fig_label("D", cex= 2)
-my_boxplot(formula= right-left~group, data= ctl, remove_empty = T, las= 2, col_box = Cc, yalb= "right-left activity (log2)")
+
+Cc <- feat[c("control", "OSC", "inducible", "hk", "shared", "dev"), unique(col)]
+my_boxplot(formula= right-left~group, data= ctl, remove_empty = T, las= 2, at= c(1,6,4,3,2,5), col_box = Cc, 
+           ylab= "right-left activity (log2)")
 abline(h= 0, lty= 2)
 my_fig_label("E", cex= 2)
 dev.off()

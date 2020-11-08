@@ -5,20 +5,21 @@ require(data.table)
 #----------------------------------------------------------------#
 # 1- Import data 
 #----------------------------------------------------------------#
-lib <- as.data.table(readRDS("Rdata/library/vl_library_112019.rds"))
+lib <- as.data.table(readRDS("Rdata/library/uniq_library_final.rds"))
+lib <- lib[(vl)]
 if(!exists(".c"))
 {
   all_counts <- readRDS("db/read_counts/all_uniq_counts.rds")
   all_counts[, simp_sample:= ifelse(grepl("^input", sample), "input", "DSCP")]
 
   .c <- all_counts[grepl("input", sample)]
-  .c[lib, group_L:= i.group, on= "enh_L==ID_vl"]
-  .c[lib, group_R:= i.group, on= "enh_R==ID_vl"]
-  .c[lib, sub_L:= i.linker_ID, on= "enh_L==ID_vl"]
-  .c[lib, sub_R:= i.linker_ID, on= "enh_R==ID_vl"]
+  .c[lib, group_L:= i.group, on= "enh_L==ID"]
+  .c[lib, group_R:= i.group, on= "enh_R==ID"]
+  .c[lib, sub_L:= i.linker_ID, on= "enh_L==ID"]
+  .c[lib, sub_R:= i.linker_ID, on= "enh_R==ID"]
 }
 
-saturation <- CJ(enh_L= lib$ID_vl, enh_R= lib$ID_vl)
+saturation <- CJ(enh_L= lib$ID, enh_R= lib$ID)
 .m <- all_counts[simp_sample=="input", sum(counts), .(enh_L, enh_R)]
 saturation[.m, input:= i.V1, on= c("enh_L", "enh_R")]
 .m <- all_counts[simp_sample=="DSCP", sum(counts), .(enh_L, enh_R)]
@@ -27,16 +28,16 @@ saturation[is.na(input), input:= 0]
 saturation[is.na(DSCP), DSCP:= 0]
 
 dat <- readRDS("Rdata/processed_peSTARRSeq_data/filtered_counts_prior_DESeq2.rds")
-dat[lib, group_L:= i.group, on= "enh_L==ID_vl"]
-dat[lib, group_R:= i.group, on= "enh_R==ID_vl"]
+dat[lib, group_L:= i.group, on= "enh_L==ID"]
+dat[lib, group_R:= i.group, on= "enh_R==ID"]
 
 #----------------------------------------------------------------#
 # 2- Fusion bias?
 #----------------------------------------------------------------#
 # sub-library
-rdm_sub <- CJ(enh_L= lib$ID_vl, enh_R= lib$ID_vl)
-rdm_sub[lib, sub_L:= i.linker_ID, on= "enh_L==ID_vl"]
-rdm_sub[lib, sub_R:= i.linker_ID, on= "enh_R==ID_vl"]
+rdm_sub <- CJ(enh_L= lib$ID, enh_R= lib$ID)
+rdm_sub[lib, sub_L:= i.linker_ID, on= "enh_L==ID"]
+rdm_sub[lib, sub_R:= i.linker_ID, on= "enh_R==ID"]
 rdm_sub <- rdm_sub[, .(random_frac= .N/nrow(rdm_sub)), .(sub_L, sub_R)]
 
 sub <- na.omit(.c)
@@ -46,9 +47,9 @@ sub[, ratio := log2(frac)-log2(random_frac)]
 sub <- dcast(sub, sub_L~sub_R, value.var = "ratio")
 
 # Activity/enhancer type
-rdm_act <- CJ(enh_L= lib$ID_vl, enh_R= lib$ID_vl)
-rdm_act[lib, group_L:= i.group, on= "enh_L==ID_vl"]
-rdm_act[lib, group_R:= i.group, on= "enh_R==ID_vl"]
+rdm_act <- CJ(enh_L= lib$ID, enh_R= lib$ID)
+rdm_act[lib, group_L:= i.group, on= "enh_L==ID"]
+rdm_act[lib, group_R:= i.group, on= "enh_R==ID"]
 rdm_act <- rdm_act[, .(random_frac= .N/nrow(rdm_act)), .(group_L, group_R)]
 
 act <- na.omit(.c)

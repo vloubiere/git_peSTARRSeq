@@ -98,12 +98,14 @@ load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAer
 cl <- data.table(cl= som.model$unit.classif, 
                  dist= som.model$distances, 
                  motif= rownames(som.model$data[[1]]))
-cl[, Dmel:= TF_clusters_PWMs$metadata$Dmel[match(motif, TF_clusters_PWMs$metadata$motif_name)]]
+cl[, name:= TF_clusters_PWMs$metadata$Dmel[match(motif, TF_clusters_PWMs$metadata$motif_name)]]
 cl[, best_match:= motif[which.min(dist)], cl]
-cl[, Dmel:= paste0(unique(na.omit(Dmel)), collapse= "__"), cl]
-cl <- unique(cl[, .(cl, best_match, Dmel)])
+cl[, Dmel:= paste0(unique(na.omit(name)), collapse= "__"), cl]
+cl[, check:= gsub("A|C|G|T|R|Y|S|W|K|M|B|D|H|V|N", "", name)=="", name]
+cl[, Dmel_s:= paste0(unique(na.omit(.SD[!(check), name])), collapse= "_"), keyby= cl]
+cl[, Dmel_s:= paste0(.GRP, ".", Dmel_s), keyby= .(cl, Dmel_s)]
 
-som.model <- readRDS("Rdata/motifs/som_enriched_motifs.rds")
+# SAVE
 som.model$info <- cl
 saveRDS(som.model, "Rdata/motifs/som_enriched_motifs.rds")
 
