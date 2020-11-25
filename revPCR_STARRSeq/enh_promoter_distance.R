@@ -1,7 +1,7 @@
-# setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-setwd("/home/vloubiere/projects/pe_STARRSeq/")
-# sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
-sapply(list.files("/home/vloubiere/functions/", ".R$", full.names = T), source)
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+# setwd("/home/vloubiere/projects/pe_STARRSeq/")
+sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
+# sapply(list.files("/home/vloubiere/functions/", ".R$", full.names = T), source)
 options(datatable.print.topn= 3)
 require(data.table)
 require(rtracklayer)
@@ -61,18 +61,20 @@ if(!file.exists("Rdata/intron_STARRSeq/regulatory_elements_S2.rds"))
   saveRDS(peaks, "Rdata/intron_STARRSeq/regulatory_elements_S2.rds")
 }
 peaks <- readRDS("Rdata/intron_STARRSeq/regulatory_elements_S2.rds")
+peaks[, uniq_ID:= seq(nrow(peaks))]
 
-# Measure distance to closest
-peaks$c_tss <- peaks[type=="tss"][peaks, min(abs(i.start-start[!(type==i.type & start==i.start)])), .EACHI, on= "seqnames"]$V1
-
-pdf("pdf/intron_STARRSeq/enh_promoter_distance.pdf", width = 8)
-par(mar= c(5,8,2,2))
-my_boxplot(c_tss~type, peaks, bw= 1000, horizontal = T, ylim= c(0, 25e3), las= 1, outline= T, xaxt= "n", xlab= "closest active TSS")
-axis(1, c(0, 2e3, 5e3, 10e3, 25e3))
-abline(v=2e3, col= "red")
+# Measure distance to closest promoter
+pdf("pdf/revPCR_STARRSeq/enh_promoter_distance.pdf", height = 8)
+par(mar= c(12,8,2,2))
+pl <- list(enh_prom_dist_DSCP200= peaks[type=="DSCP_200"][peaks[type=="tss"], min(abs(i.start-start[start!=i.start])), .EACHI, on= "seqnames"],
+           enh_prom_dist_DSCP600= peaks[type=="DSCP_600"][peaks[type=="tss"], min(abs(i.start-start[start!=i.start])), .EACHI, on= "seqnames"],
+           enh_enh_dist_DSCP200= peaks[type=="DSCP_200"][peaks[type=="DSCP_200"], min(abs(i.start-start[start!=i.start])), .EACHI, on= "seqnames"],
+           enh_enh_dist_DSCP600= peaks[type=="DSCP_600"][peaks[type=="DSCP_600"], min(abs(i.start-start[start!=i.start])), .EACHI, on= "seqnames"])
+pl <- rbindlist(pl, idcol = T)
+pl$.id <- factor(pl$.id, levels = c("enh_prom_dist_DSCP200", "enh_prom_dist_DSCP600", "enh_enh_dist_DSCP200", "enh_enh_dist_DSCP600"))
+my_boxplot(V1/1000~.id, pl, las= 2, ylab = "distance to closest (kb)")
+grid <- data.table(x0= c(0.75, rep(2.75, 3)), y0= c(833, 300,2000,5000), x1= c(2.25, rep(4.25, 3)), y1= c(833, 300,2000,5000))
+grid[, segments(x0[1], y0[1]/1000, x1[1], y1[1]/1000, col= "red"), x0:y1]
+grid[, text(mean(c(x0[1], x1[1])), y0[1]/1000, y0[1], col= "red", pos= 3, offset= 0.25), x0:y1]
+legend("topleft", legend = "STARR-Seq distances", text.col = "red", bty= "n")
 dev.off()
-
-
-
-
-

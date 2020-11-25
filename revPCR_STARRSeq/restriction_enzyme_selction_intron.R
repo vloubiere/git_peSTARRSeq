@@ -25,7 +25,10 @@ adapter <- data.table(name= c("left_arm", "right1_arm", "right2_arm", "right3_ar
                              constructs[c("linker_R3_TWIST", "illumina_R", "DSCP_downstream_from_GIBSONov_to_CASeq003"), 
                                         paste0(sequence, collapse = "")]))
 # Spacers
-spacer <- data.table(name= "SCR1_spacer", seq= constructs["SCR1_CGCov", sequence])
+spacer <- data.table(name= paste0("SCR1_spacer_", 1:3), 
+                     seq= c(constructs[c("linker_R1_TWIST", "SCR1_CGCov", "linker_F_TWIST"), paste0(sequence, collapse="")],
+                            constructs[c("linker_R2_TWIST", "SCR1_CGCov", "linker_F_TWIST"), paste0(sequence, collapse="")],
+                            constructs[c("linker_R3_TWIST", "SCR1_CGCov", "linker_F_TWIST"), paste0(sequence, collapse="")]))
 dat <- rbindlist(list(candidate= candidate, temp_switch= temp_switch, adapter= adapter, spacer= spacer), idcol= T)
 dat[, seq:= toupper(seq)]
 
