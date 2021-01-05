@@ -2,7 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 sapply(list.files("/groups/stark/vloubiere/functions/", ".R$", full.names = T), source)
 require(data.table)
 
-seq <- fread("Rdata/constructs_sequences/constructs_sequences.txt")
+seq <- fread("/groups/stark/vloubiere/exp_data/constructs_sequences.txt")
 setkeyv(seq, "name")
 
 dat <- data.table(file= list.files("db/sanger_sequencing/libvl002_singcol_bulk_tempswitch", "bulk|singcol", full.names = T))
