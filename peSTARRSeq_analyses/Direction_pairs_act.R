@@ -51,7 +51,7 @@ at.ctl <- order(order(at.ctl$V1, decreasing = T))
 #------------------------------------------------------------#
 # 3- PLOT
 #------------------------------------------------------------#
-pdf("pdf/peSTARRSeq/Direction_impact.pdf", width = 11, height = 9)
+pdf("pdf/peSTARRSeq/Direction_impact.pdf", width = 11, height = 8.5)
 layout(matrix(c(1,2,2,3,4,5), ncol = 3, byrow = T))
 par(mar= c(10,5,2,2))
 
