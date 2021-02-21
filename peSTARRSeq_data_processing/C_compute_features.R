@@ -132,6 +132,12 @@ lib <- rbind(lib,
              data.table(ID= grep("Ecoli", readRDS("Rdata/library/vl_library_112019.rds")$ID_vl, value= T), 
                         group= "control", detail= "ecoli", col= "lightgrey"), fill= T)
 
+#-------------------------------------------#
+# 7- Add Bernardo's clusters
+#-------------------------------------------#
+source("git_peSTARRSeq/peSTARRSeq_data_processing/_som_motifs_clustering_enhancer_groups.R")
+lib <- addClustersToLib(lib)
+
 # SAVE
 saveRDS(lib, "Rdata/library/lib_features.rds")
 

@@ -128,30 +128,18 @@ ctls <- ctls[ctls %in% PCC[PCC>0.7, ctl]]
 # Compute expected scores
 exp <- copy(diff)
 # Individual activity
-exp[, c("all_L", "median_L", "sd_L", "N_L"):= .SD[enh_R %in% ctls, .(list(log2FoldChange), median(log2FoldChange), sd(log2FoldChange), .N)], enh_L]
-exp[, c("all_R", "median_R", "sd_R", "N_R"):= .SD[enh_L %in% ctls, .(list(log2FoldChange), median(log2FoldChange), sd(log2FoldChange), .N)], enh_R]
-saveRDS(exp, "Rdata/processed_peSTARRSeq_data/all_expected_score.rds")
-exp <- na.omit(exp[!grepl("control", enh_L) & !grepl("control", enh_R) & N_L>4 & N_R>4, !c("N_L", "N_R")])
-# Method 1
-# exp[, c("log2FCs_add_ls", "log2FCs_add_box"):= 
-#       {
-#         current <- log2(rowSums(CJ(2^unlist(all_L), (2^unlist(all_R)))))
-#         list(.(quantile(current, seq(0, 1, length.out = 101))), .(boxplot(current, plot = F)$stats[, 1]))
-#       }, .(enh_L, enh_R)]
-# exp[, log2FC_add:= sapply(log2FCs_add_ls, median)]
-# exp[, log2FC_add_perc:= mapply(function(x, y){length(which(x>y))/length(y)}, x= log2FoldChange, y= log2FCs_add_ls, SIMPLIFY = T)]
-# exp[, diff:= log2FoldChange-log2FC_add]
-# Method 2
-# bg_act <- median(diff[enh_L %in% ctls & enh_R %in% ctls, log2FoldChange])
-# exp[, log2FC_add:= log2((2^median_L)+(2^median_R)-2^bg_act), .(enh_L, enh_R)]
-exp[, log2FC_add:= log2((2^median_L)+(2^median_R)), .(enh_L, enh_R)]
+exp[exp[grepl("control", enh_R), ifelse(.N>4, median(log2FoldChange), as.numeric(NA)), enh_L], median_L:= V1, on= "enh_L"]
+exp[exp[grepl("control", enh_L), ifelse(.N>4, median(log2FoldChange), as.numeric(NA)), enh_R], median_R:= V1, on= "enh_R"]
+exp[exp[grepl("control", enh_R), ifelse(.N>4, sd(log2FoldChange), as.numeric(NA)), enh_L], sd_L:= V1, on= "enh_L"]
+exp[exp[grepl("control", enh_L), ifelse(.N>4, sd(log2FoldChange), as.numeric(NA)), enh_R], sd_R:= V1, on= "enh_R"]
+exp <- na.omit(exp)
+exp[, log2FC_add:= log2((2^median_L)+(2^median_R))]
+exp[, log2FC_mult:= median_L+median_R]
 exp[, diff:= log2FoldChange-log2FC_add]
-# Add extra stats
 exp[exp, log2FoldChange_rev:= i.log2FoldChange, on= c("enh_L==enh_R", "enh_R==enh_L")]
-# SAVE short table
-clean <- exp[diff, , on=c("enh_L", "enh_R")]
-clean <- unique(clean[, .(ID= paste0(enh_L, "_vs_", enh_R), enh_L, enh_R, baseMean= i.baseMean, log2FoldChange= i.log2FoldChange, padj= i.padj, log2FoldChange_rev,
-                          median_L, sd_L, median_R, sd_R, log2FC_add, log2FC_mult= median_L+median_R, diff)])
-clean <- clean[!is.na(median_L) & !is.na(median_R) & !is.na(log2FC_add) & !is.na(log2FoldChange)]
-saveRDS(clean, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table.rds")
+exp[, ID:= paste0(enh_L, "_vs_", enh_R)]
+# Save long form
+saveRDS(exp, "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table_with_control_pairs.rds")
+# Save short form
+saveRDS(exp[!grepl("^control", enh_L) & !grepl("^control", enh_R)], "/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/processed_peSTARRSeq_data/SCR1_peSTARRSeq_final_table.rds")
 
