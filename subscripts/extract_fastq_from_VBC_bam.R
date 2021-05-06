@@ -1,3 +1,6 @@
+setwd("/groups/stark/vloubiere/exp_data/")
+system("sh update_files.sh")
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq_2/")
 fq <- fread("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.txt")
 fq <- fq[grepl("002|012|013|014", Sample_ID)]
 fq[, fq_prefix:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq_2/db/fastq/", `Flowcell ID`, "_", Sample_ID)]

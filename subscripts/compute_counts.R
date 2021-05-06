@@ -64,8 +64,9 @@ pa[, {
   }
   .pair <- merge(.L, .R, by.x= "V1", by.y= "V1", suffixes= c("_L", "_R"))
   .pair[, UMI:= gsub("^[^_]*_(.*)", "\\1", V1)]
-  .pair <- unique(.pair[, .(L= V3_L, R= V3_R, UMI)])
-  .pair <- .pair[, .(count= .N), .(L, R)]
+  .pair[, all_count:= .N, .(V3_L, V3_R)]
+  .pair <- unique(.pair[, .(L= V3_L, R= V3_R, all_count, UMI)])
+  .pair <- .pair[, .(umi_count= .N), .(L, R, all_count)]
   # Check if pair suppositely exists and if spike-in / switching
   if(lib=="vllib002")
   {
