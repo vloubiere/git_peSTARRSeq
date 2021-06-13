@@ -17,6 +17,7 @@ heat <- heat[, !"class"]
 mat <- as.matrix(heat, 1)
 pheatmap(log2(mat+1), filename = "pdf/sub_libraries_fine_alignment.pdf",
          cluster_rows = F, cluster_cols = F, width = 20, height = 3, gaps_row = gaps)
+
 # read 1 libvl002= 17
 # read 2 HAM1 libvl002= 303
 # read 2 SCR2 libvl002= 257

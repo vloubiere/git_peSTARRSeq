@@ -7,7 +7,7 @@ raw[, cdition:= ifelse(grepl("input", file), "input", "DSCP")]
 raw[, rep:= tstrsplit(basename(file), "DSCP_|input_|_umi", keep = 2)]
 raw <- raw[, fread(file), raw]
 raw <- raw[(exist)] # Only retain correct pairs
-raw <- dcast(raw, L+R~lib+cdition+rep, value.var = "count")
+raw <- dcast(raw, L+R~lib+cdition+rep, value.var = "umi_count")
 
 # Clean counts table
 counts <- data.table(raw[, .(L, R)],
