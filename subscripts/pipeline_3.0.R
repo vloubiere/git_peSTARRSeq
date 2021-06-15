@@ -11,7 +11,7 @@ dir_sam <- normalizePath("db/sam/")
 dir_count <- normalizePath("db/counts/")
 dir_dds <- normalizePath("db/dds/")
 dir_FC <- normalizePath("db/FC_tables/")
-dir_allCounts <- normalizePath("db/all_counts/")
+dir_allCounts <- normalizePath("db/umi_counts/")
 subread_index <- paste0(normalizePath("db/subread_index"), "/vllib001-014")
 
 #-------------------------------#
@@ -116,10 +116,12 @@ meta[, {
       .c <- .c[(V4-V8)>230]
     # Extract UMI
     .c <- .c[, .(L= V3, R= V7, UMI= gsub(".*_([A-Z]{10}).*", "\\1", V1))]
+    # ompute statistics and collapse
+    stat <- data.table(total_reads= nrow(.c))
+    .c <- unique(.c)
+    stat[, umi_collapsed_reads:= nrow(.c)]
+    # SAVE
     fwrite(.c, counts)
-    # Compute statistics
-    stat <- data.table(total_reads= nrow(.c),
-                       umi_collapsed= nrow(unique(.c)))
     fwrite(stat, gsub(".txt$", "_summary.txt", counts))
   }
   print(paste0(counts, " -->>DONE"))
