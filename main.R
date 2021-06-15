@@ -29,11 +29,12 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
   file.edit("git_peSTARRSeq/subscripts/design_introns_primers.R")
   
-  file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R")
+  file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R") # NotI cuts the peSTARRSeq vector but is not detected!
   
   
   #-------------------------#
   # peSTARR-Seq pipeline
   #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
 
 }
