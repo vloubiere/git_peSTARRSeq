@@ -23,10 +23,17 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/HAM_luciferase_assays.R")
   
   #-------------------------#
+  # rev/intron STARRSeq design
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/enh_promoter_distance.R")
+  file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
+  file.edit("git_peSTARRSeq/subscripts/design_introns_primers.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R")
+  
+  
+  #-------------------------#
   # peSTARR-Seq pipeline
   #-------------------------#
-    
-  
-  
-    
+
 }
