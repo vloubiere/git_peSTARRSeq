@@ -11,6 +11,7 @@ dir_sam <- normalizePath("db/sam/")
 dir_count <- normalizePath("db/counts/")
 dir_dds <- normalizePath("db/dds/")
 dir_FC <- normalizePath("db/FC_tables/")
+dir_allCounts <- normalizePath("db/all_counts/")
 subread_index <- paste0(normalizePath("db/subread_index"), "/vllib001-014")
 
 #-------------------------------#
@@ -90,6 +91,39 @@ meta[, {
   }
   print(paste0(sam, " -->>DONE"))
 }, output_prefix]
+
+#-------------------------------#
+# Primary counts
+#-------------------------------#
+dir.create(dir_allCounts, showWarnings = F)
+meta[, {
+  counts <- paste0(dir_allCounts, output_prefix, ".txt")
+  if(!file.exists(counts))
+  {
+    .c <- fread(paste0(dir_sam, meta$output_prefix[1], ".sam"), 
+                skip = 1006,
+                header= F, 
+                fill= T, 
+                select = c(1,3,4,7,8))
+    # Keep pairs with two mates are aligned
+    .c <- .c[V3!="*" & V7!="*"]
+    # Select firt read
+    .c <- .c[, .SD[1], V1]
+    # Keep pairs with reads on opposite enh ends
+    if(type=="peSTARRSeq")
+      .c <- .c[(V8-V4)>230]
+    if(type=="revpeSTARRSeq")
+      .c <- .c[(V4-V8)>230]
+    # Extract UMI
+    .c <- .c[, .(L= V3, R= V7, UMI= gsub(".*_([A-Z]{10}).*", "\\1", V1))]
+    fwrite(.c, counts)
+    # Compute statistics
+    stat <- data.table(total_reads= nrow(.c),
+                       umi_collapsed= nrow(unique(.c)))
+    fwrite(stat, gsub(".txt$", "_summary.txt", counts))
+  }
+  print(paste0(counts, " -->>DONE"))
+}, .(output_prefix, type)]
 
 
 
