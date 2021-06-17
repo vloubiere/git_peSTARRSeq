@@ -4,17 +4,16 @@ require(parallel)
 require(Biostrings)
 require(seqinr)
 require(Rsubread)
+require(DESeq2)
 exp_data_dropbox <- "https://www.dropbox.com/sh/rp60dty3vpudmci/AADU9O_QpnJ-smjB46RW7tfxa?dl=0"
 dir_exp_data <- "/groups/stark/vloubiere/exp_data/"
+subread_index <- paste0(normalizePath("db/subread_index"), "/vllib001-014")
 dir_fq <- normalizePath("db/fastq/")
 dir_sam <- normalizePath("db/sam/")
-dir_count <- normalizePath("db/counts/")
 dir_dds <- normalizePath("db/dds/")
 dir_FC <- normalizePath("db/FC_tables/")
 dir_allCounts <- normalizePath("db/umi_counts/")
 dir_mergedCounts <- normalizePath("db/merged_counts/")
-dir_annotatedCounts <- normalizePath("db/annotated_counts/")
-subread_index <- paste0(normalizePath("db/subread_index"), "/vllib001-014")
 
 #--------------------------------------------------------------#
 # Update exp data
@@ -31,6 +30,9 @@ libs <- fread(paste0(dir_exp_data, "vl_libraries.txt"))
 twist8 <- as.data.table(readRDS(paste0("Rdata/vl_library_twist008_112019.rds")))
 meta <- fread(paste0(dir_exp_data, "vl_sequencing_metadata.txt"))
 meta[, output_prefix:= paste0("/", my_ID, "__", gsub(".bam$", "", basename(BAM_path)))]
+# IMPORTANT!!
+if(any(meta[, .N, output_prefix]$N>1))
+  stop(paste0("Some output prefixes are not unique and cannot be used. Check metadata table (replicates?)!\n"))
 
 #--------------------------------------------------------------#
 # Extract from VBC bam file
@@ -41,7 +43,8 @@ mcmapply(function(b, o, i){
   fq_files <- paste0(o, c("_1.fq.gz", "_2.fq.gz"))
   if(any(!file.exists(fq_files)))
   {
-    cmd <- vlfunctions::vl_extract_reads_VBC(bam= b, 
+    cmd <- vlfunctions::vl_extract_reads_VBC(bam= b,
+                                             output_prefix = o,
                                              rev_comp_i5 = i)
     system(cmd)
   }
@@ -123,9 +126,13 @@ meta[, {
       .c <- .c[(V4-V8)>230]
     # Extract UMI
     .c <- .c[, .(L= V3, R= V7, UMI= gsub(".*_([A-Z]{10}).*", "\\1", V1))]
-    # ompute statistics and collapse
+    # Compute total reads
     stat <- data.table(total_reads= nrow(.c))
+    # UMI collapsing
     .c <- unique(.c)
+    # When red 1 and 2 are frome the same enhancer, read 2 seqnems is "="
+    .c[R=="=", R:= L]
+    # Compute collapsed reads
     stat[, umi_collapsed_reads:= nrow(.c)]
     # SAVE
     fwrite(.c, counts)
@@ -140,18 +147,21 @@ meta[, {
 #--------------------------------------------------------------#
 stats <- data.table(file= list.files("db/umi_counts/", "summary.txt$", full.names = T))
 stats <- stats[, fread(file), file]
-stats[, output_prefix:= paste0("/", gsub("_summary.txt", "", basename(file)))]
-stats[, output_prefix:= paste0(output_prefix, "_", meta[.BY, used, on= "output_prefix"]), output_prefix]
-stats[, total_reads:= total_reads-umi_collapsed_reads]
+stats[, name:= gsub("_summary.txt", "", basename(file))]
+stats[, Cc:= ifelse(is.na(meta[grep(name, output_prefix), DESeq2_group]), "red", "green"), name]
+
 pdf("pdf/alignment_statistics.pdf", 
     height = nrow(stats)/5, 
     width = 10)
 par(mar= c(7,30,2,2))
 barplot(t(stats[, .(umi_collapsed_reads, total_reads)]), 
-        col= c("black", "white"), 
-        names.arg = basename(stats$output_prefix),
+        beside = T,
+        col= unlist(lapply(stats$Cc, function(x) c(x, "white"))), 
+        names.arg = basename(stats$name),
         cex.names= 0.5, 
-        horiz = T)
+        # col.names= stats$Cc,
+        horiz = T, 
+        las= 1)
 abline(v= 1e6, 
        lty= 2)
 mtext(text = "N reads", 
@@ -167,10 +177,11 @@ dev.off()
 # Merged counts
 # Takes counts from separated runs and merge them per condition
 # +UMI collapsing with 1nt difference
+# +annotation based on library
 #--------------------------------------------------------------#
 dir.create(dir_mergedCounts, showWarnings = F)
-meta[(used), {
-  counts <- paste0(dir_mergedCounts, "/", my_ID, "_merged.txt")
+meta[!is.na(DESeq2_group), {
+  counts <- paste0(dir_mergedCounts, "/", DESeq2_group, "_rep", DESeq2_pseudo_rep, "_merged.txt")
   if(!file.exists(counts))
   {
     files <- paste0(dir_allCounts, output_prefix, ".txt")
@@ -179,29 +190,11 @@ meta[(used), {
     # Remove problematic UMIs
     .c <- .c[!grepl("GGGGGGGGG", UMI)]
     # Advanced UMI collapsing
-    for(i in 0:9)
-    {
+    for(i in 0:9) 
       .c <- .c[, .(UMI= UMI[1]), .(L, R, sub(paste0("(.{", i, "})."), "\\1", UMI))]
-    }
+    # UMI collapsing
     .c <- .c[, .(umi_counts= .N), .(L, R)]
-    fwrite(.c, counts)
-  }
-  print(paste0(counts, " -->>DONE"))
-}, my_ID]
-
-#-------------------------------#
-# Annotated merged counts 
-# identify spikein, pairs, artifacts based on library design
-#-------------------------------#
-dir.create(dir_annotatedCounts, showWarnings = F)
-meta[(used), {
-  counts <- paste0(dir_annotatedCounts, "/", my_ID, "_annotated.txt")
-  if(!file.exists(counts))
-  {
-    .c <- fread("db/merged_counts/vllib002_DSCP_vllib002_spike_NA_peSTARRSeq_rep1_merged.txt")
-    # When red 1 and 2 are frome the same enhancer, read 2 seqnems is "="
-    .c[R=="=", R:= L]
-    # Check if exists and is spike in
+    # Compute patterns to identify library pairs
     .ex <- libs[lib_ID %in% c(vllib, Spike_in)]
     .ex <- .ex[, .(L_pattern= strsplit(sub_lib_L, ";")[[1]], 
                    R_pattern= strsplit(sub_lib_R, ";")[[1]]),(.ex)]
@@ -212,13 +205,13 @@ meta[(used), {
     .ex$L <- NULL
     .ex$R <- NULL
     .ex[, Spike:= ifelse(lib_ID==Spike_in, T, F)]
+    # Check if pair exists and is spike in
     .ex[, {
       .c[grepl(L_pattern, L) & grepl(R_pattern, R), type:= ifelse(Spike, "spike-in", "pair")]
     }, .(L_pattern, R_pattern, Spike)]
     .c[is.na(type), type:= "switched"]
+    # SAVE
     fwrite(.c, counts)
   }
   print(paste0(counts, " -->>DONE"))
-}, .(my_ID, vllib, Spike_in)]
-
-
+}, .(DESeq2_group, DESeq2_pseudo_rep, vllib, Spike_in)]
