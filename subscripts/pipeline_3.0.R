@@ -7,13 +7,14 @@ require(Rsubread)
 require(DESeq2)
 exp_data_dropbox <- "https://www.dropbox.com/sh/rp60dty3vpudmci/AADU9O_QpnJ-smjB46RW7tfxa?dl=0"
 dir_exp_data <- "/groups/stark/vloubiere/exp_data/"
-subread_index <- paste0(normalizePath("db/subread_index"), "/vllib001-014")
-dir_fq <- normalizePath("db/fastq/")
-dir_sam <- normalizePath("db/sam/")
-dir_dds <- normalizePath("db/dds/")
-dir_FC <- normalizePath("db/FC_tables/")
-dir_allCounts <- normalizePath("db/umi_counts/")
-dir_mergedCounts <- normalizePath("db/merged_counts/")
+subread_index <- paste0(normalizePath("db/subread_index", mustWork = F), "/vllib001-014")
+dir_fq <- normalizePath("db/fastq/", mustWork = F)
+dir_sam <- normalizePath("db/sam/", mustWork = F)
+dir_allCounts <- normalizePath("db/umi_counts/", mustWork = F)
+dir_mergedCounts <- normalizePath("db/merged_counts/", mustWork = F)
+dir_dds <- normalizePath("db/dds/", mustWork = F)
+dir_FC <- normalizePath("db/FC_tables/", mustWork = F)
+dir_final <- normalizePath("db/final_tables_exp_model/", mustWork = F)
 
 #--------------------------------------------------------------#
 # Update exp data
@@ -181,9 +182,10 @@ dev.off()
 #--------------------------------------------------------------#
 dir.create(dir_mergedCounts, showWarnings = F)
 meta[!is.na(DESeq2_group), {
-  counts <- paste0(dir_mergedCounts, "/", DESeq2_group, "_rep", DESeq2_pseudo_rep, "_merged.txt")
+  counts <- paste0(dir_mergedCounts, "/", DESeq2_group, "_", cdition, "_rep", DESeq2_pseudo_rep, "_merged.txt")
   if(!file.exists(counts))
   {
+    print(paste0("Start ", counts))
     files <- paste0(dir_allCounts, output_prefix, ".txt")
     .c <- lapply(files, fread)
     .c <- unique(rbindlist(.c))
@@ -214,4 +216,92 @@ meta[!is.na(DESeq2_group), {
     fwrite(.c, counts)
   }
   print(paste0(counts, " -->>DONE"))
-}, .(DESeq2_group, DESeq2_pseudo_rep, vllib, Spike_in)]
+}, .(DESeq2_group, cdition, DESeq2_pseudo_rep, vllib, Spike_in)]
+
+#--------------------------------------------------------------#
+# DESeq2
+#--------------------------------------------------------------#
+dir.create(dir_dds, showWarnings = F)
+meta[!is.na(DESeq2_group), {
+  dds_file <- paste0(dir_dds, "/", DESeq2_group, "_dds.rds")
+  if(!file.exists(dds_file))
+  {
+    # Import counts
+    file <- list.files(dir_mergedCounts, DESeq2_group, full.names = T)
+    .c <- lapply(file, fread)
+    names(.c) <- gsub(".*_(.*)_(.*)_merged.txt", "\\1_\\2", basename(file))
+    .c <- rbindlist(.c, idcol = T)
+    # Cast and make DF
+    mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
+    DF <- data.frame(mat[, -c(1,2)])
+    rownames(DF) <- paste0(mat$L, "_vs_", mat$R)
+    DF <- DF[rowSums(DF)>20,]
+    # SampleTable
+    sampleTable <- data.frame(cdition= unlist(tstrsplit(colnames(DF), "_rep", keep= 1)),
+                              rep= unlist(tstrsplit(colnames(DF), "_rep", keep= 2)))
+    rownames(sampleTable) <- colnames(DF)
+    # DESeq2
+    dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF, 
+                                          colData= sampleTable, 
+                                          design= ~rep+cdition)
+    # SizeFactors
+    ctls_idx <- grep("control.*vs.*control", rownames(DF))
+    sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[ctls_idx,]))
+    # dds result
+    res <- try(DESeq2::DESeq(dds), silent = T)
+    if(class(res)=="DESeqDataSet")
+    {
+      saveRDS(res, dds_file) 
+      print(paste0(dds_file, "  -->>DONE"))
+    }else print(paste0("No replicates --> ", DESeq2_group, "SKIPED"))
+  }
+  print(paste0(dds_file, "  -->>ALREADY EXISTS"))
+}, DESeq2_group]
+
+#--------------------------------------------------------------#
+# Differential expression
+#--------------------------------------------------------------#
+dir.create(dir_FC, showWarnings = F)
+meta[!is.na(DESeq2_group), {
+  FC <- paste0(dir_FC, "/", DESeq2_group, "_log2FC.txt")
+  if(!file.exists(FC))
+  {
+    # Check if model exists
+    dds_file <- paste0(dir_dds, "/", DESeq2_group, "_dds.rds")
+    if(file.exists(dds_file))
+    {
+      # Import dds
+      dds <- readRDS(paste0(dir_dds, "/", DESeq2_group, "_dds.rds"))
+      # Compoute FC
+      .c <- DESeq2::results(dds, contrast= c("cdition", "DSCP", "input"))
+      # Reformat
+      .c <- as.data.table(as.data.frame(.c), keep.rownames= T)
+      .c[, c("L", "R"):= tstrsplit(rn, "_vs_")]
+      .c <- .c[, !"rn"]
+      setcolorder(.c, c("L", "R"))
+      # save
+      fwrite(.c, FC, col.names = T, row.names = F, sep= "\t", quote= F)
+      print(paste0(FC, " DONE!"))
+    }
+    print(paste0(FC, "  -->> No model --> ", DESeq2_group, " -->> SKIPPED"))
+  }else
+    paste0(FC, " ALREADY EXISTS!")
+}, DESeq2_group]
+
+#--------------------------------------------------------------#
+# Compute Left and right activities
+#--------------------------------------------------------------#
+dir.create(dir_final, showWarnings = F)
+meta[!is.na(DESeq2_group), {
+  final <- paste0(dir_final, "/", DESeq2_group, "_final_oe.txt")
+  FC_file <- paste0(dir_FC, "/", DESeq2_group, "_log2FC.txt")
+  if(file.exists(FC_file))
+  {
+    dat <- fread(FC_file)
+    dat[, ctl_L:= ifelse(!grepl("^ts", L) & median(log2FoldChange, na.rm = T)<0, T, F), L]
+    dat[, ctl_R:= ifelse(!grepl("^ts", L) & median(log2FoldChange, na.rm = T)<0, T, F), R]
+    dat[, median_L:= median(log2FoldChange[ctl_R], na.rm = T), L]
+    dat[, median_R:= median(log2FoldChange[ctl_L], na.rm = T), R]
+    fwrite(dat, final)
+  }
+}, DESeq2_group]
