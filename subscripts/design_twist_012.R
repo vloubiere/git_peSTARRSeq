@@ -1,7 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-peSTARR <- fread("old_versions/20210613_ce87ade_backup/db/DE_analysis/libvl002_DE.txt")
+peSTARR <- fread("old_versions/20210613_ce87ade_backup/Rdata/master_results_peSTARRSeq.rds")
 dat <- as.data.table(readRDS("old_versions/20210613_ce87ade_backup/Rdata/master_results_peSTARRSeq.rds"))
-lib <- as.data.table(readRDS("Rdata/uniq_library_final.rds"))
+lib <- as.data.table(readRDS("old_versions/20210613_ce87ade_backup/Rdata/uniq_library_final.rds"))
 lib_seq <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
 lib[lib_seq, enh_seq:= i.enh_sequence, on= "ID==ID_vl"]
 
@@ -70,7 +70,7 @@ suhw_sel[, enh_seq:= as.character(BSgenome::getSeq(BSgenome.Dmelanogaster.UCSC.d
 #-----------------------------#
 # DHS+ STARR- peaks
 #-----------------------------#
-DHS_sel <- as.data.table(readRDS("../../projects/pe_STARRSeq_add/Rdata/DHS+_STARR-_sequences.rds"))
+DHS_sel <- as.data.table(readRDS("Rdata/DHS+_STARR-_sequences.rds"))
 DHS_sel <- DHS_sel[, .(seqname= seqnames, 
                        start= round(rowMeans(.SD))-124, 
                        end= round(rowMeans(.SD))+124, 

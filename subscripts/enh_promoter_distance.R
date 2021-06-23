@@ -25,7 +25,7 @@ pl$.id <- factor(pl$.id,
 
 
 # PLOT
-pdf("pdf/enh_promoter_distance.pdf", height = 10)
+pdf(2, height = 10)
 par(mfrow= c(4, 1))
 pl[, {
   .c <- V1[is.finite(V1)]
@@ -49,3 +49,4 @@ pl[, {
   print("")
 }, .id]
 dev.off()
+

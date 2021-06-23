@@ -18,23 +18,43 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/design_twist_012.R") # lib can be found at "Rdata/vl_library_twist12_210610.rds"
   
   #-------------------------#
-  # Hamlet luciferase assays
+  # Libraries features
   #-------------------------#
-  file.edit("git_peSTARRSeq/subscripts/HAM_luciferase_assays.R")
+  file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancers_object.R")
+  file.edit("git_peSTARRSeq/subscripts/motifs_clustering_300bp_enhancers.R")
+  file.edit("git_peSTARRSeq/subscripts/final_lib_features.R")
   
   #-------------------------#
-  # rev/intron STARRSeq design
+  # Luciferase assays
   #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/HAM_luciferase_assays.R")
+  file.edit("git_peSTARRSeq/subscripts/validations_luciferase_data_processing.R")
+  file.edit("git_peSTARRSeq/subscripts/validations_luciferase_analyses.R")
+  
+  #-------------------------#
+  # STARRSeq design
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R") # NotI cuts the peSTARRSeq vector but is not detected!?
   file.edit("git_peSTARRSeq/subscripts/enh_promoter_distance.R")
   file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
   file.edit("git_peSTARRSeq/subscripts/design_introns_primers.R")
+  file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP.R")
   
-  file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R") # NotI cuts the peSTARRSeq vector but is not detected!
-  
+  #-------------------------#
+  # Sanger sequencing
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/sanger_STARRSeq_backbone.R")
+  file.edit("git_peSTARRSeq/subscripts/sanger_actCP_STARRSeq_backbones.R")
   
   #-------------------------#
   # peSTARR-Seq pipeline
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
+  
+  #-------------------------#
+  # peSTARR-Seq modeling
+  #-------------------------#
+  
+  
 
 }

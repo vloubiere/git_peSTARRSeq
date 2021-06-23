@@ -80,11 +80,11 @@ if(!file.exists("Rdata/intron_candidates.txt"))
 #-------------------------------------------------#
 # Screenshots
 #-------------------------------------------------#
-if(!file.exists("pdf/screenshot_introns.pdf"))
+if(!file.exists("pdf/STARRSeq_design/screenshot_all_intron_candidates.pdf"))
 {
   sel$sub <- rep(seq(100), each= 5)[1:nrow(sel)]
   
-  pdf("pdf/screenshot_all_intron_candidates.pdf", width = 15)
+  pdf("pdf/STARRSeq_design/screenshot_all_intron_candidates.pdf", width = 15)
   sel[, {
     .c <- GRanges(.SD)
     vl_screenshot(c("/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSM480160_GA0840_Drosophila_S2_RNAseq.bw",
@@ -106,7 +106,7 @@ if(!file.exists("pdf/screenshot_introns.pdf"))
 #-------------------------------------------------#
 sub <- sel[c(3,15,48,257,264,291,348,350,357,365,380,381), !"sub"]              
 
-pdf("pdf/screenshot_selected_introns.pdf", width = 15)
+pdf("pdf/STARRSeq_design/screenshot_selected_introns.pdf", width = 15)
 sub[, {
   .c <- GRanges(seqnames = seqnames, IRanges(start, end))
   vl_screenshot(c("/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSM480160_GA0840_Drosophila_S2_RNAseq.bw",

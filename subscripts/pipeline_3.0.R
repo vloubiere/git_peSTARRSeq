@@ -5,7 +5,6 @@ require(Biostrings)
 require(seqinr)
 require(Rsubread)
 require(DESeq2)
-exp_data_dropbox <- "https://www.dropbox.com/sh/rp60dty3vpudmci/AADU9O_QpnJ-smjB46RW7tfxa?dl=0"
 dir_exp_data <- "/groups/stark/vloubiere/exp_data/"
 subread_index <- paste0(normalizePath("db/subread_index", mustWork = F), "/vllib001-014")
 dir_fq <- normalizePath("db/fastq/", mustWork = F)
@@ -21,11 +20,7 @@ dir_final <- normalizePath("db/final_tables_exp_model/", mustWork = F)
 # Fetch dropbox folder containing my metadata and update local files
 #--------------------------------------------------------------#
 if(F)
-{
-  tmp <- tempfile()
-  system(paste("wget", exp_data_dropbox, "-O", tmp))
-  system(paste("unzip -o", tmp, "-d", dir_exp_data))
-}
+  source("/groups/stark/vloubiere/exp_data/update_files.R")
 constructs <- fread(paste0(dir_exp_data, "vl_constructs_sequences.txt"), key = "name")
 libs <- fread(paste0(dir_exp_data, "vl_libraries.txt"))
 twist8 <- as.data.table(readRDS(paste0("Rdata/vl_library_twist008_112019.rds")))
