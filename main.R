@@ -35,7 +35,10 @@ if(F)
   # STARRSeq design
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R") # NotI cuts the peSTARRSeq vector but is not detected!?
+  file.edit("git_peSTARRSeq/subscripts/spacer_selection_revSTARRSeq.R")
+  file.edit("git_peSTARRSeq/subscripts/primer_design_revSTARRSeq_spacers.R")
   file.edit("git_peSTARRSeq/subscripts/enh_promoter_distance.R")
+  file.edit("git_peSTARRSeq/subscripts/qPCR_non_self_lig_vllib004.R")
   file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
   file.edit("git_peSTARRSeq/subscripts/design_introns_primers.R")
   file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP.R")
@@ -43,8 +46,11 @@ if(F)
   #-------------------------#
   # Sanger sequencing
   #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/sanger_peSTARRSeq_SCR1_luc_validations.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_STARRSeq_backbone.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_actCP_STARRSeq_backbones.R")
+  file.edit("git_peSTARRSeq/subscripts/sanger_seqREADY_revSTARRSeq_single_col.R")
+  file.edit("git_peSTARRSeq/subscripts/sanger_vllib004-007.R") # Check inverse PCR outcome, code broken
   
   #-------------------------#
   # peSTARR-Seq pipeline

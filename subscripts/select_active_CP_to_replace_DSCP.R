@@ -34,3 +34,8 @@ vl_oligo_Tm(actCP1_F)
 vl_oligo_Tm(actCP1_R)
 vl_oligo_Tm(actCP2_F)
 vl_oligo_Tm(actCP2_R)
+
+seq <- data.table(do.call(cbind, tstrsplit(candidates$oligo_id, "_")))
+getSeq(BSgenome.Dmelanogaster.UCSC.dm3, GRanges(seq$V1, 
+                                                IRanges(as.numeric(seq$V2), as.numeric(seq$V3)), 
+                                                strand= seq$V4))

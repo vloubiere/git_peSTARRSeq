@@ -51,7 +51,7 @@ pl <- pl[order(candidate, spacer, adapter, temp_switch)]
 .n <- unique(res[, .N, .(.id, name1, cutsite, consensus_F)][, .(.id, N)])
 colnames(pl) <- .n[colnames(pl), , on=".id"][, paste0(.id, ifelse(is.na(N), "", paste0(" (", N, ")")))]
 
-pdf("pdf/restriction_sites_counts.pdf", width = 20, height = 55)
+pdf("pdf/STARRSeq_design/restriction_sites_counts.pdf", width = 20, height = 55)
 plot.new()
 grid.table(pl)
 mtext("Number cuts restriction enzyme")
