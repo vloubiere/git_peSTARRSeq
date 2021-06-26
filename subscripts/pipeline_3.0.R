@@ -290,11 +290,11 @@ dir.create(dir_final, showWarnings = F)
 meta[!is.na(DESeq2_group), {
   final <- paste0(dir_final, "/", DESeq2_group, "_final_oe.txt")
   FC_file <- paste0(dir_FC, "/", DESeq2_group, "_log2FC.txt")
-  if(file.exists(FC_file))
+  if(!file.exists(FC_file))
   {
     dat <- fread(FC_file)
-    dat[, ctl_L:= ifelse(!grepl("^ts", L) & median(log2FoldChange, na.rm = T)<0, T, F), L]
-    dat[, ctl_R:= ifelse(!grepl("^ts", L) & median(log2FoldChange, na.rm = T)<0, T, F), R]
+    dat[, ctl_L:= ifelse(!grepl("^ts", L) & length(which(log2FoldChange<0))>10, T, F), L]
+    dat[, ctl_R:= ifelse(!grepl("^ts", R) & length(which(log2FoldChange<0))>10, T, F), R]
     dat[, median_L:= median(log2FoldChange[ctl_R], na.rm = T), L]
     dat[, median_R:= median(log2FoldChange[ctl_L], na.rm = T), R]
     fwrite(dat, final)
