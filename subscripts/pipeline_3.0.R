@@ -5,8 +5,8 @@ require(Biostrings)
 require(seqinr)
 require(Rsubread)
 require(DESeq2)
+require(readxl)
 dir_exp_data <- "/groups/stark/vloubiere/exp_data/"
-subread_index <- paste0(normalizePath("db/subread_index", mustWork = F), "/vllib001-014")
 dir_fq <- normalizePath("db/fastq/", mustWork = F)
 dir_sam <- normalizePath("db/sam/", mustWork = F)
 dir_allCounts <- normalizePath("db/umi_counts/", mustWork = F)
@@ -24,7 +24,11 @@ if(F)
 constructs <- fread(paste0(dir_exp_data, "vl_constructs_sequences.txt"), key = "name")
 libs <- fread(paste0(dir_exp_data, "vl_libraries.txt"))
 twist8 <- as.data.table(readRDS(paste0("Rdata/vl_library_twist008_112019.rds")))
-meta <- fread(paste0(dir_exp_data, "vl_sequencing_metadata.txt"))
+twist12 <- as.data.table(readRDS(paste0("Rdata/vl_library_twist12_210610.rds")))
+meta <- read_xlsx(paste0(dir_exp_data, "vl_sequencing_metadata.xlsx"))
+meta <- as.data.table(meta)
+cols <- colnames(meta)
+meta[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
 meta[, output_prefix:= paste0("/", my_ID, "__", gsub(".bam$", "", basename(BAM_path)))]
 # IMPORTANT!!
 if(any(meta[, .N, output_prefix]$N>1))
@@ -56,58 +60,52 @@ mc.cores = getDTthreads())
 # Create Rsubread index
 # Do only once 
 #--------------------------------------------------------------#
-if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_index/vllib001-014.log"))
-{
-  seqs <- c(twist8$oligo_full_sequence,
-            paste0(constructs["Flink_lib", sequence], 
-                   constructs[c("SCR1", "SCR2", "HAM1", "SUP1"), sequence], 
-                   constructs["R1link_lib", sequence]))
-  names <- c(twist8$ID_vl,
-             "ts_SCR1_01001", 
-             "ts_SCR2_01002",
-             "ts_HAM1_01003",
-             "ts_SUP1_01004")
-  write.fasta(as.list(seqs), 
-              names, 
-              file.out = "db/fasta/vllib001-014.fasta",
-              as.string = T)
-  Rsubread::buildindex(basename = subread_index, 
-                       reference = "db/fasta/vllib001-014.fasta")
-}
+if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8.log"))
+  source("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
+if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12.log"))
+  source("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
 
 #--------------------------------------------------------------#
 # Alignment
-# Align esach fastq file and produces SAM ouptut
+# Align each fastq file and produces SAM ouptut
 #--------------------------------------------------------------#
 dir.create(dir_sam, showWarnings = F)
 meta[, {
   sam <- paste0(dir_sam, output_prefix, ".sam")
-  if(!file.exists(sam))
+  if(file.exists(sam))
+    print(paste0(sam, " -->> ALREADY EXISTS")) 
+  else
   {
-   align(index = subread_index,
-         readfile1 = paste0(dir_fq, "/", output_prefix, "_1.fq.gz"),
-         readfile2 = paste0(dir_fq, "/", output_prefix, "_2.fq.gz"), 
-         output_format = "SAM", 
-         output_file = sam, 
-         maxMismatches = 0, 
-         unique = T, 
-         nTrim5 = 3, 
-         nthreads = getDTthreads()) 
+    if(twist_lib==8)
+      subread_index <- "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8"
+    else if(twist_lib==12)
+      subread_index <- "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12"
+    align(index = subread_index,
+          readfile1 = paste0(dir_fq, "/", output_prefix, "_1.fq.gz"),
+          readfile2 = paste0(dir_fq, "/", output_prefix, "_2.fq.gz"), 
+          output_format = "SAM", 
+          output_file = sam, 
+          maxMismatches = 0, 
+          unique = T, 
+          nTrim5 = 3, 
+          nthreads = getDTthreads()) 
+    print(paste0(sam, " -->> DONE")) 
   }
-  print(paste0(sam, " -->>DONE"))
-}, output_prefix]
+}, .(output_prefix, twist_lib)]
 
 #--------------------------------------------------------------#
 # Primary counts
-# Takes each sam file and collapsed reads using UMIs (0 differences)
+# Takes each sam file and collapsed reads using UMIs (0 mistmatches)
 #--------------------------------------------------------------#
 dir.create(dir_allCounts, showWarnings = F)
 meta[, {
   counts <- paste0(dir_allCounts, output_prefix, ".txt")
-  if(!file.exists(counts))
+  if(file.exists(counts))
+    print(paste0(counts, " -->> ALREADY EXISTS"))
+  else
   {
     .c <- fread(paste0(dir_sam, output_prefix, ".sam"), 
-                skip = 1006,
+                skip = ifelse(twist_lib==8, 1006, 395),
                 header= F, 
                 fill= T, 
                 select = c(1,3,4,7,8))
@@ -133,9 +131,9 @@ meta[, {
     # SAVE
     fwrite(.c, counts)
     fwrite(stat, gsub(".txt$", "_summary.txt", counts))
+    print(paste0(counts, " -->>DONE"))
   }
-  print(paste0(counts, " -->>DONE"))
-}, .(output_prefix, type)]
+}, .(output_prefix, type, twist_lib)]
 
 #--------------------------------------------------------------#
 # Basic sequencing statistics
@@ -146,7 +144,10 @@ stats <- stats[, fread(file), file]
 stats[, name:= gsub("_summary.txt", "", basename(file))]
 stats[, Cc:= ifelse(is.na(meta[grep(name, output_prefix), DESeq2_group]), "red", "green"), name]
 
-pdf("pdf/alignment_statistics.pdf", 
+dir.create("pdf/alignment", 
+           showWarnings = F)
+
+pdf("pdf/alignment/alignment_statistics.pdf", 
     height = nrow(stats)/5, 
     width = 10)
 par(mar= c(7,30,2,2))
@@ -178,7 +179,9 @@ dev.off()
 dir.create(dir_mergedCounts, showWarnings = F)
 meta[!is.na(DESeq2_group), {
   counts <- paste0(dir_mergedCounts, "/", DESeq2_group, "_", cdition, "_rep", DESeq2_pseudo_rep, "_merged.txt")
-  if(!file.exists(counts))
+  if(file.exists(counts))
+    print(paste0(counts, " -->> ALREADY EXISTS"))
+  else
   {
     print(paste0("Start ", counts))
     files <- paste0(dir_allCounts, output_prefix, ".txt")
@@ -201,7 +204,7 @@ meta[!is.na(DESeq2_group), {
                                           paste0("_", R_pattern, "_"))]
     .ex$L <- NULL
     .ex$R <- NULL
-    .ex[, Spike:= ifelse(lib_ID==Spike_in, T, F)]
+    .ex[, Spike:= ifelse(lib_ID==Spike_in & !is.na(Spike_in), T, F)]
     # Check if pair exists and is spike in
     .ex[, {
       .c[grepl(L_pattern, L) & grepl(R_pattern, R), type:= ifelse(Spike, "spike-in", "pair")]
@@ -209,94 +212,198 @@ meta[!is.na(DESeq2_group), {
     .c[is.na(type), type:= "switched"]
     # SAVE
     fwrite(.c, counts)
+    print(paste0(counts, " -->> DONE"))
   }
-  print(paste0(counts, " -->>DONE"))
 }, .(DESeq2_group, cdition, DESeq2_pseudo_rep, vllib, Spike_in)]
 
 #--------------------------------------------------------------#
-# DESeq2
+# Method #1 using counts norm
 #--------------------------------------------------------------#
-dir.create(dir_dds, showWarnings = F)
+dir.create("db/final_tables_exp_model/counts_norm/", 
+           showWarnings = F)
 meta[!is.na(DESeq2_group), {
-  dds_file <- paste0(dir_dds, "/", DESeq2_group, "_dds.rds")
-  if(!file.exists(dds_file))
+  FC <- paste0(dir_final, "/counts_norm/", DESeq2_group, "_counts_norm_final_oe.txt")
+  if(file.exists(FC))
+    print(paste0(FC, "  -->> ALREADY EXISTS"))
+  else
   {
     # Import counts
     file <- list.files(dir_mergedCounts, DESeq2_group, full.names = T)
     .c <- lapply(file, fread)
     names(.c) <- gsub(".*_(.*)_(.*)_merged.txt", "\\1_\\2", basename(file))
     .c <- rbindlist(.c, idcol = T)
-    # Cast and make DF
+    # Cast and make matrix
     mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
-    DF <- data.frame(mat[, -c(1,2)])
-    rownames(DF) <- paste0(mat$L, "_vs_", mat$R)
-    DF <- DF[rowSums(DF)>20,]
-    # SampleTable
-    sampleTable <- data.frame(cdition= unlist(tstrsplit(colnames(DF), "_rep", keep= 1)),
-                              rep= unlist(tstrsplit(colnames(DF), "_rep", keep= 2)))
-    rownames(sampleTable) <- colnames(DF)
-    # DESeq2
-    dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF, 
-                                          colData= sampleTable, 
-                                          design= ~rep+cdition)
-    # SizeFactors
-    ctls_idx <- grep("control.*vs.*control", rownames(DF))
-    sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[ctls_idx,]))
-    # dds result
-    res <- try(DESeq2::DESeq(dds), silent = T)
-    if(class(res)=="DESeqDataSet")
-    {
-      saveRDS(res, dds_file) 
-      print(paste0(dds_file, "  -->>DONE"))
-    }else print(paste0("No replicates --> ", DESeq2_group, "SKIPED"))
+    mat <- mat[rowSums(mat[, -c(1,2)])>=10]
+    # melt
+    dat <- melt(mat, id.vars = c("L", "R"))
+    # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
+    dat[, c("cdition", "rep"):= tstrsplit(variable, "_rep")]
+    # Check that input and screen both exist for each rep
+    if(any(dat[, length(unique(cdition)), rep]$V1 != 2))
+      print(paste0(DESeq2_group, " has missing replicates --> SKIPED")) else
+        dat[, norm:= (value+1)/sum(value)*1e6, .(rep, cdition)]
+    # Compute FC and scale
+    res <- unique(dat[, .(L, R, rep)])
+    res$FC <- dat[cdition!="input", norm]/dat[cdition=="input", norm]
+    res <- res[, .(log2FoldChange= log2(mean(FC))), .(L, R)]
+    # Subtract basal activity
+    res[, log2FoldChange:= log2FoldChange-mean(res[grepl("^control", L) & grepl("^control", R), log2FoldChange])]
+    # Compute expected
+    res[, ctl_L:= grepl("^control", L)]
+    res[, ctl_R:= grepl("^control", R)]
+    res[, median_L:= ifelse(length(which(ctl_R))>=5, median(log2FoldChange[ctl_R], na.rm = T), as.numeric(NA)), L]
+    res[, median_R:= ifelse(length(which(ctl_L))>=5, median(log2FoldChange[ctl_L], na.rm = T), as.numeric(NA)), R]
+    # SAVE
+    fwrite(res, FC)
+    print(paste0(FC, "  -->> DONE"))
   }
-  print(paste0(dds_file, "  -->>ALREADY EXISTS"))
 }, DESeq2_group]
 
 #--------------------------------------------------------------#
-# Differential expression
+# Method # 2 using DESeq2
 #--------------------------------------------------------------#
+# dds --------------#
+dir.create(dir_dds, showWarnings = F)
+meta[!is.na(DESeq2_group), {
+  for(stringency in c("low_cutoff", "medium_cutoff", "high_cutoff", "max_cutoff"))
+  {
+    dds_file <- paste0(dir_dds, "/", DESeq2_group, "_", stringency, "_dds.rds")
+    if(file.exists(dds_file))
+      print(paste0(dds_file, "  -->> ALREADY EXISTS"))
+    else
+    {
+      # Import counts
+      file <- list.files(dir_mergedCounts, DESeq2_group, full.names = T)
+      .c <- lapply(file, fread)
+      names(.c) <- gsub(".*_(.*)_(.*)_merged.txt", "\\1_\\2", basename(file))
+      .c <- rbindlist(.c, idcol = T)
+      # Cast and make DF
+      mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
+      DF <- data.frame(mat[, -c(1,2)])
+      rownames(DF) <- paste0(mat$L, "_vs_", mat$R)
+      if(stringency=="low_cutoff")
+        DF <- DF[rowSums(DF)>5,]
+      if(stringency=="medium_cutoff")
+        DF <- DF[rowSums(DF)>25,]
+      if(stringency=="high_cutoff")
+        DF <- DF[rowSums(DF)>5 & apply(DF, 1, function(x) all(x)>0),]
+      if(stringency=="max_cutoff")
+        DF <- DF[rowSums(DF)>25 & apply(DF, 1, function(x) all(x)>0),]
+      # SampleTable
+      sampleTable <- data.frame(cdition= unlist(tstrsplit(colnames(DF), "_rep", keep= 1)),
+                                rep= unlist(tstrsplit(colnames(DF), "_rep", keep= 2)))
+      rownames(sampleTable) <- colnames(DF)
+      # DESeq2
+      dds <- try(DESeq2::DESeqDataSetFromMatrix(countData= DF, 
+                                                colData= sampleTable, 
+                                                design= ~rep+cdition), 
+                 silent = T)
+      if(class(dds)=="try-error")
+        print(paste0(DESeq2_group, " could not pass DESeqDataSetFromMatrix command and will be skipped -->> Check N replicates?"))
+      else
+      {
+        # SizeFactors
+        ctls_idx <- grep("control.*vs.*control", rownames(DF))
+        sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[ctls_idx,]))
+        # dds result
+        res <- try(DESeq2::DESeq(dds), silent = T)
+        if(class(res)=="try-error")
+          print(paste0("No replicates --> ", DESeq2_group, "SKIPED"))
+        else
+        {
+          saveRDS(res, dds_file) 
+          print(paste0(dds_file, "  -->> DONE"))
+        }
+      }
+    }
+  }
+}, DESeq2_group]
+
+# Differential expression----------#
 dir.create(dir_FC, showWarnings = F)
 meta[!is.na(DESeq2_group), {
-  FC <- paste0(dir_FC, "/", DESeq2_group, "_log2FC.txt")
-  if(!file.exists(FC))
+  for(stringency in c("low_cutoff", "medium_cutoff", "high_cutoff", "max_cutoff"))
   {
-    # Check if model exists
-    dds_file <- paste0(dir_dds, "/", DESeq2_group, "_dds.rds")
-    if(file.exists(dds_file))
+    FC <- paste0(dir_FC, "/", DESeq2_group, "_", stringency, "_log2FC.txt")
+    if(file.exists(FC))
+      paste0(FC, "  -->> ALREADY EXISTS")
+    else
     {
-      # Import dds
-      dds <- readRDS(paste0(dir_dds, "/", DESeq2_group, "_dds.rds"))
-      # Compoute FC
-      .c <- DESeq2::results(dds, contrast= c("cdition", "DSCP", "input"))
-      # Reformat
-      .c <- as.data.table(as.data.frame(.c), keep.rownames= T)
-      .c[, c("L", "R"):= tstrsplit(rn, "_vs_")]
-      .c <- .c[, !"rn"]
-      setcolorder(.c, c("L", "R"))
-      # save
-      fwrite(.c, FC, col.names = T, row.names = F, sep= "\t", quote= F)
-      print(paste0(FC, " DONE!"))
+      # Check if models exists
+      dds_file <- paste0(dir_dds, "/", DESeq2_group, "_", stringency, "_dds.rds")
+      if(!file.exists(dds_file))
+        print(paste0(FC, "  -->> No model --> ", DESeq2_group, " -->> SKIPPED"))
+      else
+      {
+        # Import dds
+        dds <- readRDS(dds_file)
+        # Compoute FC
+        .c <- DESeq2::results(dds, contrast= c("cdition", "DSCP", "input"))
+        # Reformat
+        .c <- as.data.table(as.data.frame(.c), keep.rownames= T)
+        .c[, c("L", "R"):= tstrsplit(rn, "_vs_")]
+        .c <- .c[, !"rn"]
+        setcolorder(.c, c("L", "R"))
+        # save
+        fwrite(.c, FC, col.names = T, row.names = F, sep= "\t", quote= F)
+        print(paste0(FC, "  -->> DONE!"))
+      }
     }
-    print(paste0(FC, "  -->> No model --> ", DESeq2_group, " -->> SKIPPED"))
-  }else
-    paste0(FC, " ALREADY EXISTS!")
-}, DESeq2_group]
-
-#--------------------------------------------------------------#
-# Compute Left and right activities
-#--------------------------------------------------------------#
-dir.create(dir_final, showWarnings = F)
-meta[!is.na(DESeq2_group), {
-  final <- paste0(dir_final, "/", DESeq2_group, "_final_oe.txt")
-  FC_file <- paste0(dir_FC, "/", DESeq2_group, "_log2FC.txt")
-  if(!file.exists(FC_file))
-  {
-    dat <- fread(FC_file)
-    dat[, ctl_L:= ifelse(!grepl("^ts", L) & length(which(log2FoldChange<0))>10, T, F), L]
-    dat[, ctl_R:= ifelse(!grepl("^ts", R) & length(which(log2FoldChange<0))>10, T, F), R]
-    dat[, median_L:= median(log2FoldChange[ctl_R], na.rm = T), L]
-    dat[, median_R:= median(log2FoldChange[ctl_L], na.rm = T), R]
-    fwrite(dat, final)
   }
 }, DESeq2_group]
+
+# Compute Left and right activities -----------------------#
+dir.create(dir_final, showWarnings = F)
+meta[!is.na(DESeq2_group), {
+  for(stringency in c("low_cutoff", "medium_cutoff", "high_cutoff", "max_cutoff"))
+  {
+    final <- paste0(dir_final, "/DESeq2/", DESeq2_group, "_", stringency, "_final_oe.txt")
+    if(file.exists(final))
+      paste0(final, "  -->> ALREADY EXISTS")
+    else
+    {
+      FC_file <- paste0(dir_FC, "/", DESeq2_group, "_", stringency, "_log2FC.txt")
+      if(!file.exists(FC_file))
+        print(paste0(FC_file, " does not exist. -->> SKIPPED"))
+      else
+      {
+        dat <- fread(FC_file)
+        if(type=="peSTARRSeq")
+        {
+          #---------- Select robust controls -----------#
+          cor <- data.table(ID= unique(grep("^control", c(dat$L, dat$R), value = T)))
+          # Compute L/R PCC for each control fragment
+          cor[, PCC:= {
+            .c <- merge(dat[.BY, .(enh= L, L= log2FoldChange), on= "R==ID"],
+                        dat[.BY, .(enh= R, R= log2FoldChange), on= "L==ID"])
+            .c <- na.omit(.c)
+            if(nrow(.c)>=5)
+              cor.test(.c$L, .c$R)$estimate
+            else
+              as.numeric(NA)
+          }, ID]
+          # Compute outliers frequency
+          out <- copy(dat)
+          out[grepl("^control", L), out_R:= log2FoldChange %in% boxplot(log2FoldChange, plot= F)$out, R]
+          out[grepl("^control", L), out_fL:= length(which(out_R))/.N, L]
+          out[grepl("^control", R), out_L:= log2FoldChange %in% boxplot(log2FoldChange, plot= F)$out, L]
+          out[grepl("^control", R), out_fR:= length(which(out_L))/.N, R]
+          # Robust controls list
+          dat[, ctl_L:= L %in% cor[PCC>0.75, ID] & L %in% out[out_fL<0.025, L]]
+          dat[, ctl_R:= R %in% cor[PCC>0.75, ID] & R %in% out[out_fR<0.025, R]]
+          #---------- Compute expected values -----------#
+          dat[, length(which(ctl_R)), L]
+        }else if(type=="revpeSTARRSeq")
+        {
+          dat[, ctl_L:= grepl("^control", L)]
+          dat[, ctl_R:= grepl("^control", R)]
+        }
+        dat[, median_L:= ifelse(length(which(ctl_R))>=5, median(log2FoldChange[ctl_R], na.rm = T), as.numeric(NA)), L]
+        dat[, median_R:= ifelse(length(which(ctl_L))>=5, median(log2FoldChange[ctl_L], na.rm = T), as.numeric(NA)), R]
+        fwrite(dat, final)
+        print(final, "  -->> DONE")
+      }
+    }
+  }
+}, .(DESeq2_group, type)]

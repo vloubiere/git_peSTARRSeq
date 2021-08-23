@@ -1,3 +1,5 @@
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+
 #--------------------------------------------------------------------------####
 # Compute enhancer features ####
 lib <- as.data.table(readRDS("Rdata/uniq_300bp_enhancers.rds"))
@@ -62,44 +64,32 @@ lib$H3K27me3_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubier
                                             Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed"),
                                             peaks = lib[, .(seqnames, start, end)], 
                                             ext_peaks = 1000)$log2_enr
+lib$SUHW_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41354_SuHw_rep1_uniq.bed"),
+                                        peaks = lib[, .(seqnames, start, end)], 
+                                        ext_peaks = 1000)$log2_enr
 
 
 #---------------------------------#
-# Compute counts for most informative motifs
+# Retrieve counts for most informative motifs
 #---------------------------------#
-som <- readRDS("Rdata/som_clustering_motifs_300bp_enhancers.rds")
-setorderv(som$info, "dist")
-sel <- som$info[!is.na(BA_cluster), .SD[1, .(motif, Dmel, BA_cluster)], cl]
-sel_idx <- name(TF_clusters_PWMs$All_pwms_log_odds) %in% sel$motif
-hit <- matchMotifs(TF_clusters_PWMs$All_pwms_log_odds[sel_idx], 
-                   GRanges(lib[!grepl("Ecoli", ID), .(seqnames, start, end)]), 
-                   genome= "dm3", 
-                   p.cutoff= 5e-4, 
-                   bg="even", 
-                   out= "scores")
-counts <- as.matrix(motifCounts(hit))
-colnames(counts) <- paste0("motif__", name(TF_clusters_PWMs$All_pwms_log_odds)[sel_idx])
-rownames(counts) <- lib[!grepl("Ecoli", ID), ID]
-counts <- as.data.table(counts, keep.rownames = T)
-
-lib <- merge(lib, 
-             counts, 
-             by.x= "ID",
-             by.y= "rn", 
-             all.x= T)
+mot <- readRDS("Rdata/informatrive_motifs_300bp_enhancers.rds")
+lib <- cbind(lib, 
+             mot)
 
 
 # SAVE
-setcolorder(lib, c("ID", 
+setcolorder(lib, c("ID_BA",
+                   "ID_twist08",
+                   "ID_twist12",
                    "group", 
                    "detail", 
-                   "vl", 
-                   "linker_ID", 
-                   "col", 
+                   "linker_twist08", 
+                   "linker_twist12", 
                    "seqnames", 
                    "start", 
                    "end", 
-                   "strand", 
+                   "strand",
+                   "col",
                    "closest_tss", 
                    "closest_sel_tss",
                    "dev_log2FoldChange", 
