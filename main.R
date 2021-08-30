@@ -61,25 +61,19 @@ if(F)
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
   file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
-  
-  #-------------------------#
-  # Others
-  #-------------------------#
-  file.edit("git_peSTARRSeq/subscripts/shn_screenshot.R")
-  
-  #---------------------------------------------------------------------------------#
-  #---WIP---WIP---WIP---WIP---WIP---WIP---WIP---WIP---WIP---WIP---WIP---WIP---WIP---#
-  #---------------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/functions/generate_final_data_table.R")
   
   #-------------------------#
   # Aggregate activity
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/heatmap_activity_aggreagte.R")
-  
+  file.edit("git_peSTARRSeq/subscripts/smoothsScatter_obs_exp.R")
+  file.edit("git_peSTARRSeq/subscripts/boxplot_insulator_act_LR.R")
   
   #-------------------------#
   # peSTARR-Seq modeling
   #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/modelling_motifs.R")
   file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_sum_motif_counts.R") # Motifs from L and R enhancers are summed
   file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_LR_motif_counts.R") # Motifs from L and R enhancers are kept separately
   file.edit("git_peSTARRSeq/subscripts/vllib002_residuals_motif_enrichment.R") # Not working yet. Idea: fisher using residuals
@@ -89,11 +83,15 @@ if(F)
   
   file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
   
-  
   #-------------------------#
   # Spacer length impact
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/comparison_vllib002_vllib006.R")
+  
+  #-------------------------#
+  # Others
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/shn_screenshot.R")
 }
 
 # BA clusters motif enrichment

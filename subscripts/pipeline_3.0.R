@@ -261,6 +261,50 @@ meta[!is.na(DESeq2_group), {
 }, DESeq2_group]
 
 #--------------------------------------------------------------#
+# Do the same for each replicate separately #####
+#--------------------------------------------------------------#
+dir.create("db/final_tables_exp_model/replicates_counts_norm/", 
+           showWarnings = F)
+meta[!is.na(DESeq2_group), {
+  FC <- paste0(dir_final, "/replicates_counts_norm/", DESeq2_group, "_rep", DESeq2_pseudo_rep, "_counts_norm_final_oe.txt")
+  if(file.exists(FC))
+    print(paste0(FC, "  -->> ALREADY EXISTS"))
+  else
+  {
+    # Import counts
+    file <- list.files(dir_mergedCounts, paste0(DESeq2_group, "_.*_rep", DESeq2_pseudo_rep), full.names = T)
+    .c <- lapply(file, fread)
+    names(.c) <- gsub(".*_(.*)_(.*)_merged.txt", "\\1_\\2", basename(file))
+    .c <- rbindlist(.c, idcol = T)
+    # Cast and make matrix
+    mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
+    mat <- mat[rowSums(mat[, -c(1,2)])>=10]
+    # melt
+    dat <- melt(mat, id.vars = c("L", "R"))
+    # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
+    dat[, c("cdition", "rep"):= tstrsplit(variable, "_rep")]
+    # Check that input and screen both exist for each rep
+    if(any(dat[, length(unique(cdition)), rep]$V1 != 2))
+      print(paste0(DESeq2_group, " has missing replicates --> SKIPED")) else
+        dat[, norm:= (value+1)/sum(value)*1e6, .(rep, cdition)]
+    # Compute FC and scale
+    res <- unique(dat[, .(L, R, rep)])
+    res$FC <- dat[cdition!="input", norm]/dat[cdition=="input", norm]
+    res <- res[, .(log2FoldChange= log2(mean(FC))), .(L, R)]
+    # Subtract basal activity
+    res[, log2FoldChange:= log2FoldChange-mean(res[grepl("^control", L) & grepl("^control", R), log2FoldChange])]
+    # Compute expected
+    res[, ctl_L:= grepl("^control", L)]
+    res[, ctl_R:= grepl("^control", R)]
+    res[, median_L:= ifelse(length(which(ctl_R))>=5, median(log2FoldChange[ctl_R], na.rm = T), as.numeric(NA)), L]
+    res[, median_R:= ifelse(length(which(ctl_L))>=5, median(log2FoldChange[ctl_L], na.rm = T), as.numeric(NA)), R]
+    # SAVE
+    fwrite(res, FC)
+    print(paste0(FC, "  -->> DONE"))
+  }
+}, .(DESeq2_group, DESeq2_pseudo_rep)]
+
+#--------------------------------------------------------------#
 # Method # 2 using DESeq2
 #--------------------------------------------------------------#
 # dds --------------#

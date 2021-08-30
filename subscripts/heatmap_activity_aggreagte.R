@@ -1,12 +1,44 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+require(vlfunctions)
 
-dat <- data.table(file= list.files("db/final_tables_exp_model/counts_norm/", full.names = T))
-dat[, cdition:= tstrsplit(basename(file), "_", keep= 1)]
-dat <- dat[, fread(file), (dat)]
-lib8 <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
-dat[cdition %in% c("vllib002", "vllib006", "vllib013", "vllib014"), ]
+# Import
+dat <- readRDS("Rdata/final_results_table.rds")
 
-
+# PLOT
+pdf("pdf/aggregate_activity_additivity.pdf", height = 4.75, width = 10.5)
+par(mfrow= c(1, 2))
 dat[, {
-  vl_heatmap()
+  .act <- dcast(data = .SD, 
+                formula= group_L~group_R, 
+                value.var= "log2FoldChange",
+                fun.aggregate= median, na.rm= T)
+  .act <- as.matrix(.act, 1)
+  .add <- dcast(data = .SD, 
+                formula= group_L~group_R, 
+                value.var= "diff",
+                fun.aggregate= median, na.rm= T)
+  .add <- as.matrix(.add, 1)
+  row_ord <- order(rowSums(.act))
+  col_ord <- order(colSums(.act))
+  .act <- .act[row_ord, ]
+  .act <- .act[, col_ord]
+  .add <- .add[row_ord, ]
+  .add <- .add[, col_ord]
+  vl_heatmap(mat = .act, 
+             cluster_rows = F, 
+             cluster_cols = F, 
+             col = c("blue", "cornflowerblue", "yellow"),
+             main= cdition, 
+             display_numbers = T, 
+             legend_title = "Activity (log2)")
+  vl_heatmap(mat = .add, 
+             cluster_rows = F, 
+             cluster_cols = F,
+             main= cdition, 
+             breaks = c(-1.5, -0.5, 0, 0.5, 1.5),
+             col = c("cornflowerblue", "white", "white", "white", "tomato"),
+             display_numbers = T, 
+             legend_title = "Additivity (log2)")
 }, cdition]
+dev.off()
+
