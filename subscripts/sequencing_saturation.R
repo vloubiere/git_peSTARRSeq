@@ -1,12 +1,12 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
-dat <- read_xlsx(paste0(dir_exp_data, "vl_sequencing_metadata.xlsx"))
+dat <- read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
 dat <- as.data.table(dat)
 cols <- colnames(dat)
 dat[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
 
-dat <- dat[, .(file= list.files("db/merged_counts/", paste0(DESeq2_group, "_", cdition, "_rep", DESeq2_pseudo_rep), full.names = T)), 
+dat <- dat[, .(file= list.files("db/merged_counts/", paste0(DESeq2_group, "_", cdition, "_", CP, "_rep", DESeq2_pseudo_rep, ".*merged.txt$"), full.names = T)), 
              .(DESeq2_group, cdition, DESeq2_pseudo_rep)]
 dat <- dat[, fread(file), (dat)]
 dat <- dat[type!="switched"]

@@ -6,14 +6,26 @@ require(seqinr)
 require(Rsubread)
 require(DESeq2)
 require(readxl)
+
+# PATHS
 dir_exp_data <- "/groups/stark/vloubiere/exp_data/"
 dir_fq <- normalizePath("db/fastq/", mustWork = F)
+dir.create(dir_fq, showWarnings = F)
 dir_sam <- normalizePath("db/sam/", mustWork = F)
-dir_allCounts <- normalizePath("db/umi_counts/", mustWork = F)
+dir.create(dir_sam, showWarnings = F)
+dir_umiCounts <- normalizePath("db/umi_counts/", mustWork = F)
+dir.create(dir_umiCounts, showWarnings = F)
 dir_mergedCounts <- normalizePath("db/merged_counts/", mustWork = F)
+dir.create(dir_mergedCounts, showWarnings = F)
 dir_dds <- normalizePath("db/dds/", mustWork = F)
+dir.create(dir_dds, showWarnings = F)
 dir_FC <- normalizePath("db/FC_tables/", mustWork = F)
+dir.create(dir_FC, showWarnings = F)
 dir_final <- normalizePath("db/final_tables_exp_model/", mustWork = F)
+dir.create(dir_final, showWarnings = F)
+dir.create("pdf/alignment", showWarnings = F)
+dir.create("db/final_tables_exp_model/counts_norm/", showWarnings = F)
+dir.create("db/final_tables_exp_model/replicates_counts_norm/", showWarnings = F)
 
 #--------------------------------------------------------------#
 # Update exp data
@@ -38,7 +50,6 @@ if(any(meta[, .N, output_prefix]$N>1))
 # Extract from VBC bam file
 # For each sequencing run, extract my reads from the bam containing the full lane
 #--------------------------------------------------------------#
-dir.create(dir_fq, showWarnings = F)
 mcmapply(function(b, o, i){
   fq_files <- paste0(o, c("_1.fq.gz", "_2.fq.gz"))
   if(any(!file.exists(fq_files)))
@@ -47,8 +58,9 @@ mcmapply(function(b, o, i){
                                              output_prefix = o,
                                              rev_comp_i5 = i)
     system(cmd)
-  }
-  print(paste0(fq_files, " -->>DONE!"))
+    print(paste0(fq_files, " -->> DONE!"))
+  }else
+    print(paste0(fq_files, " -->> ALREADY EXISTS!"))
 },
 b= meta[, BAM_path],
 o= meta[, paste0(dir_fq, output_prefix)],
@@ -57,19 +69,9 @@ mc.preschedule = F,
 mc.cores = getDTthreads())
 
 #--------------------------------------------------------------#
-# Create Rsubread index
-# Do only once 
-#--------------------------------------------------------------#
-if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8.log"))
-  source("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
-if(!file.exists("/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12.log"))
-  source("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
-
-#--------------------------------------------------------------#
 # Alignment
 # Align each fastq file and produces SAM ouptut
 #--------------------------------------------------------------#
-dir.create(dir_sam, showWarnings = F)
 meta[, {
   sam <- paste0(dir_sam, output_prefix, ".sam")
   if(file.exists(sam))
@@ -82,13 +84,13 @@ meta[, {
       subread_index <- "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12"
     align(index = subread_index,
           readfile1 = paste0(dir_fq, "/", output_prefix, "_1.fq.gz"),
-          readfile2 = paste0(dir_fq, "/", output_prefix, "_2.fq.gz"), 
-          output_format = "SAM", 
-          output_file = sam, 
-          maxMismatches = 0, 
-          unique = T, 
-          nTrim5 = 3, 
-          nthreads = getDTthreads()) 
+          readfile2 = paste0(dir_fq, "/", output_prefix, "_2.fq.gz"),
+          output_format = "SAM",
+          output_file = sam,
+          maxMismatches = 0,
+          unique = T,
+          nTrim5 = 3,
+          nthreads = getDTthreads())
     print(paste0(sam, " -->> DONE")) 
   }
 }, .(output_prefix, twist_lib)]
@@ -97,9 +99,8 @@ meta[, {
 # Primary counts
 # Takes each sam file and collapsed reads using UMIs (0 mistmatches)
 #--------------------------------------------------------------#
-dir.create(dir_allCounts, showWarnings = F)
 meta[, {
-  counts <- paste0(dir_allCounts, output_prefix, ".txt")
+  counts <- paste0(dir_umiCounts, output_prefix, ".txt")
   if(file.exists(counts))
     print(paste0(counts, " -->> ALREADY EXISTS"))
   else
@@ -136,55 +137,19 @@ meta[, {
 }, .(output_prefix, type, twist_lib)]
 
 #--------------------------------------------------------------#
-# Basic sequencing statistics
-# Outputs a barplot showing total and collapsed reads for quality check
-#--------------------------------------------------------------#
-stats <- data.table(file= list.files("db/umi_counts/", "summary.txt$", full.names = T))
-stats <- stats[, fread(file), file]
-stats[, name:= gsub("_summary.txt", "", basename(file))]
-stats[, Cc:= ifelse(is.na(meta[grep(name, output_prefix), DESeq2_group]), "red", "green"), name]
-
-dir.create("pdf/alignment", 
-           showWarnings = F)
-
-pdf("pdf/alignment/alignment_statistics.pdf", 
-    height = nrow(stats)/5, 
-    width = 10)
-par(mar= c(7,30,2,2))
-barplot(t(stats[, .(umi_collapsed_reads, total_reads)]), 
-        beside = T,
-        col= unlist(lapply(stats$Cc, function(x) c(x, "white"))), 
-        names.arg = basename(stats$name),
-        cex.names= 0.5, 
-        # col.names= stats$Cc,
-        horiz = T, 
-        las= 1)
-abline(v= 1e6, 
-       lty= 2)
-mtext(text = "N reads", 
-      side = 1, 
-      line = 5)
-legend("bottomright", 
-       bty= "n",
-       fill= c("black", "white"), 
-       legend = c("UMI collapsed", "all"))
-dev.off()
-
-#--------------------------------------------------------------#
 # Merged counts
 # Takes counts from separated runs and merge them per condition
 # +UMI collapsing with 1nt difference
 # +annotation based on library
 #--------------------------------------------------------------#
-dir.create(dir_mergedCounts, showWarnings = F)
 meta[!is.na(DESeq2_group), {
-  counts <- paste0(dir_mergedCounts, "/", DESeq2_group, "_", cdition, "_rep", DESeq2_pseudo_rep, "_merged.txt")
+  counts <- paste0(dir_mergedCounts, "/", DESeq2_group, "_", cdition, "_", CP, "_rep", DESeq2_pseudo_rep, "_merged.txt")
   if(file.exists(counts))
     print(paste0(counts, " -->> ALREADY EXISTS"))
   else
   {
     print(paste0("Start ", counts))
-    files <- paste0(dir_allCounts, output_prefix, ".txt")
+    files <- paste0(dir_umiCounts, output_prefix, ".txt")
     .c <- lapply(files, fread)
     .c <- unique(rbindlist(.c))
     # Remove problematic UMIs
@@ -210,17 +175,21 @@ meta[!is.na(DESeq2_group), {
       .c[grepl(L_pattern, L) & grepl(R_pattern, R), type:= ifelse(Spike, "spike-in", "pair")]
     }, .(L_pattern, R_pattern, Spike)]
     .c[is.na(type), type:= "switched"]
+    # Generate read summary
+    sum_files <- data.table(pattern= gsub(".txt", "", basename(files)))
+    sum_files[, file:= list.files(dir_sam, paste0(pattern, ".*.summary$"), full.names = T), pattern]
+    sum_files[, mapped:= fread(file)[V1=="Mapped_fragments", V2], file]
+    summary <- sum_files[, .(mapped= sum(mapped), collapsed= sum(.c$umi_counts))]
     # SAVE
     fwrite(.c, counts)
+    fwrite(summary, gsub(".txt$", ".summary.txt", counts))
     print(paste0(counts, " -->> DONE"))
   }
-}, .(DESeq2_group, cdition, DESeq2_pseudo_rep, vllib, Spike_in)]
+}, .(DESeq2_group, cdition, CP, DESeq2_pseudo_rep, vllib, Spike_in)]
 
 #--------------------------------------------------------------#
-# Method #1 using counts norm
+# Method #1 using counts norm (Tolerates one rep)
 #--------------------------------------------------------------#
-dir.create("db/final_tables_exp_model/counts_norm/", 
-           showWarnings = F)
 meta[!is.na(DESeq2_group), {
   FC <- paste0(dir_final, "/counts_norm/", DESeq2_group, "_counts_norm_final_oe.txt")
   if(file.exists(FC))
@@ -228,9 +197,9 @@ meta[!is.na(DESeq2_group), {
   else
   {
     # Import counts
-    file <- list.files(dir_mergedCounts, DESeq2_group, full.names = T)
+    file <- list.files(dir_mergedCounts, paste0(DESeq2_group, ".*_merged.txt$"), full.names = T)
     .c <- lapply(file, fread)
-    names(.c) <- gsub(".*_(.*)_(.*)_merged.txt", "\\1_\\2", basename(file))
+    names(.c) <- basename(file)
     .c <- rbindlist(.c, idcol = T)
     # Cast and make matrix
     mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
@@ -238,17 +207,21 @@ meta[!is.na(DESeq2_group), {
     # melt
     dat <- melt(mat, id.vars = c("L", "R"))
     # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
-    dat[, c("cdition", "rep"):= tstrsplit(variable, "_rep")]
+    dat[, cdition:= if(grepl("input", variable)){"input"}else if(grepl("screen", variable)){"screen"}, variable]
+    dat[, rep:= gsub(".*_rep([1-9]{1})_merged.txt$", "\\1", variable), variable]
+    dat[, rep:= paste0("log2FC_rep", rep), rep]
     # Check that input and screen both exist for each rep
     if(any(dat[, length(unique(cdition)), rep]$V1 != 2))
       print(paste0(DESeq2_group, " has missing replicates --> SKIPED")) else
         dat[, norm:= (value+1)/sum(value)*1e6, .(rep, cdition)]
     # Compute FC and scale
     res <- unique(dat[, .(L, R, rep)])
-    res$FC <- dat[cdition!="input", norm]/dat[cdition=="input", norm]
-    res <- res[, .(log2FoldChange= log2(mean(FC))), .(L, R)]
-    # Subtract basal activity
-    res[, log2FoldChange:= log2FoldChange-mean(res[grepl("^control", L) & grepl("^control", R), log2FoldChange])]
+    res$FC <- log2(dat[cdition!="input", norm]/dat[cdition=="input", norm])
+    res <- dcast(res, L+R~rep, value.var = "FC")
+    cols <- grep("^log2FC_rep", colnames(res), value = T)
+    res[, log2FoldChange:= log2(rowMeans(2^.SD)), .SDcols= cols]
+    # Subtract basal activity (center controls on 0)
+    res[, log2FoldChange:= log2FoldChange-median(res[grepl("^control", L) & grepl("^control", R), log2FoldChange])]
     # Compute expected
     res[, ctl_L:= grepl("^control", L)]
     res[, ctl_R:= grepl("^control", R)]
@@ -261,54 +234,9 @@ meta[!is.na(DESeq2_group), {
 }, DESeq2_group]
 
 #--------------------------------------------------------------#
-# Do the same for each replicate separately #####
-#--------------------------------------------------------------#
-dir.create("db/final_tables_exp_model/replicates_counts_norm/", 
-           showWarnings = F)
-meta[!is.na(DESeq2_group), {
-  FC <- paste0(dir_final, "/replicates_counts_norm/", DESeq2_group, "_rep", DESeq2_pseudo_rep, "_counts_norm_final_oe.txt")
-  if(file.exists(FC))
-    print(paste0(FC, "  -->> ALREADY EXISTS"))
-  else
-  {
-    # Import counts
-    file <- list.files(dir_mergedCounts, paste0(DESeq2_group, "_.*_rep", DESeq2_pseudo_rep), full.names = T)
-    .c <- lapply(file, fread)
-    names(.c) <- gsub(".*_(.*)_(.*)_merged.txt", "\\1_\\2", basename(file))
-    .c <- rbindlist(.c, idcol = T)
-    # Cast and make matrix
-    mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
-    mat <- mat[rowSums(mat[, -c(1,2)])>=10]
-    # melt
-    dat <- melt(mat, id.vars = c("L", "R"))
-    # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
-    dat[, c("cdition", "rep"):= tstrsplit(variable, "_rep")]
-    # Check that input and screen both exist for each rep
-    if(any(dat[, length(unique(cdition)), rep]$V1 != 2))
-      print(paste0(DESeq2_group, " has missing replicates --> SKIPED")) else
-        dat[, norm:= (value+1)/sum(value)*1e6, .(rep, cdition)]
-    # Compute FC and scale
-    res <- unique(dat[, .(L, R, rep)])
-    res$FC <- dat[cdition!="input", norm]/dat[cdition=="input", norm]
-    res <- res[, .(log2FoldChange= log2(mean(FC))), .(L, R)]
-    # Subtract basal activity
-    res[, log2FoldChange:= log2FoldChange-mean(res[grepl("^control", L) & grepl("^control", R), log2FoldChange])]
-    # Compute expected
-    res[, ctl_L:= grepl("^control", L)]
-    res[, ctl_R:= grepl("^control", R)]
-    res[, median_L:= ifelse(length(which(ctl_R))>=5, median(log2FoldChange[ctl_R], na.rm = T), as.numeric(NA)), L]
-    res[, median_R:= ifelse(length(which(ctl_L))>=5, median(log2FoldChange[ctl_L], na.rm = T), as.numeric(NA)), R]
-    # SAVE
-    fwrite(res, FC)
-    print(paste0(FC, "  -->> DONE"))
-  }
-}, .(DESeq2_group, DESeq2_pseudo_rep)]
-
-#--------------------------------------------------------------#
 # Method # 2 using DESeq2
 #--------------------------------------------------------------#
 # dds --------------#
-dir.create(dir_dds, showWarnings = F)
 meta[!is.na(DESeq2_group), {
   for(stringency in c("low_cutoff", "medium_cutoff", "high_cutoff", "max_cutoff"))
   {
@@ -365,7 +293,6 @@ meta[!is.na(DESeq2_group), {
 }, DESeq2_group]
 
 # Differential expression----------#
-dir.create(dir_FC, showWarnings = F)
 meta[!is.na(DESeq2_group), {
   for(stringency in c("low_cutoff", "medium_cutoff", "high_cutoff", "max_cutoff"))
   {
@@ -398,7 +325,6 @@ meta[!is.na(DESeq2_group), {
 }, DESeq2_group]
 
 # Compute Left and right activities -----------------------#
-dir.create(dir_final, showWarnings = F)
 meta[!is.na(DESeq2_group), {
   for(stringency in c("low_cutoff", "medium_cutoff", "high_cutoff", "max_cutoff"))
   {

@@ -2,20 +2,24 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import
-if(!exists("dat"))
-  dat <- readRDS("Rdata/final_results_table.rds")
-dat[cdition=="vllib015" & ((group_L=="dev" & group_R=="control") | (group_L=="control" & group_R=="dev")), plot_group:= "vllib015: Ctl. x dev / dev x Ctl."]
-dat[cdition=="vllib015" & ((group_L=="dev" & group_R=="SUHW_peak") | (group_L=="SUHW_peak" & group_R=="dev")), plot_group:= "vllib015: Put. Ins. x dev / dev x Put. Ins."]
-dat[cdition=="vllib016" & ((group_L=="hk" & group_R=="control") | (group_L=="control" & group_R=="hk")), plot_group:= "vllib016: Ctl. x hk / hk x Ctl."]
-dat[cdition=="vllib016" & ((group_L=="hk" & group_R=="SUHW_peak") | (group_L=="SUHW_peak" & group_R=="hk")), plot_group:= "vllib016: Put. Ins. x hk / hk x Put. Ins."]
+if(!exists("DT"))
+  DT <- readRDS("Rdata/final_results_table.rds")
+sel <- c("vllib015: control x dev / dev x control",
+         "vllib015: dev x SUHW_peak / SUHW_peak x dev",
+         "vllib016: control x dev / dev x control",
+         "vllib016: dev x SUHW_peak / SUHW_peak x dev")
+dat <- DT[plot_group %in% sel & L!=R]
+dat[, plot_group:= factor(plot_group, levels = sel)]
+dat <- dat[!is.na(plot_group)]
+
 
 # PLOT
-pdf("pdf/boxplot_insulator_act_LR.pdf", width = 15, height = 5)
-dat[!is.na(plot_group), {
-  left_enh_ins <- grepl("Put. Ins.", plot_group) & group_L==ifelse(cdition=="vllib015", "dev", "hk")
-  right_enh_ins <- grepl("Put. Ins.", plot_group) & group_R==ifelse(cdition=="vllib015", "dev", "hk")
-  left_enh_ctl <- grepl("Ctl.", plot_group) & group_L==ifelse(cdition=="vllib015", "dev", "hk")
-  right_enh_ctl <- grepl("Ctl.", plot_group) & group_R==ifelse(cdition=="vllib015", "dev", "hk")
+pdf("pdf/aggregate_activity/boxplot_insulator_act_LR.pdf", width = 15, height = 5)
+dat[, {
+  left_enh_ins <- grepl("SUHW_peak", plot_group) & group_L==ifelse(cdition=="vllib015", "dev", "hk")
+  right_enh_ins <- grepl("SUHW_peak", plot_group) & group_R==ifelse(cdition=="vllib015", "dev", "hk")
+  left_enh_ctl <- grepl("control", plot_group) & group_L==ifelse(cdition=="vllib015", "dev", "hk")
+  right_enh_ctl <- grepl("control", plot_group) & group_R==ifelse(cdition=="vllib015", "dev", "hk")
   # Compute left/right and ctl/ins pval
   pval <- c(wilcox.test(log2FoldChange[left_enh_ins], 
                         log2FoldChange[right_enh_ins])$p.value,
@@ -75,7 +79,7 @@ dat[!is.na(plot_group), {
                   median(log2FoldChange[right_enh_ins]))), 
          lty= 2)
   print("")
-}, cdition]
+}, plot_group]
 dev.off()
 
 

@@ -38,10 +38,10 @@ lib <- merge(lib,
                       strand)], all.x= T, all.y= T)
 
 # Uniq groups
+lib[BA_enhancer_group=="shared", uniq_group:= ifelse(dev_log2FoldChange>hk_log2FoldChange, "dev", "hk")]
 lib[BA_enhancer_group=="dev", uniq_group:= "dev"]
 lib[BA_enhancer_group=="hk", uniq_group:= "hk"]
 lib[BA_enhancer_group=="Inducible", uniq_group:= "inducible"]
-lib[BA_enhancer_group=="shared", uniq_group:= "shared"]
 lib[BA_enhancer_group=="Controls", uniq_group:= "control"]
 lib[group_twist08=="OSC", uniq_group:= "OSC"]
 lib[group_twist08=="control", uniq_group:= "control"]
@@ -52,8 +52,6 @@ lib[group_twist12=="CP", uniq_group:= "CP"]
 
 # Uniq details
 lib[uniq_group== "dev", 
-    uniq_detail:= cut(dev_log2FoldChange, c(-Inf,4,6,8,Inf), labels = c("inactive", "weak", "medium", "strong"))]
-lib[uniq_group== "shared", 
     uniq_detail:= cut(dev_log2FoldChange, c(-Inf,4,6,8,Inf), labels = c("inactive", "weak", "medium", "strong"))]
 lib[uniq_group== "hk", 
     uniq_detail:= cut(hk_log2FoldChange, 
@@ -89,8 +87,8 @@ clean <- lib[, .(ID_BA,
                  strand, 
                  dev_log2FoldChange, 
                  hk_log2FoldChange)]
-class_Cc <- data.table(group= c("hk", "shared", "dev", "OSC", "inducible", "control", "CP", "DHS_peak", "Silencer", "SUHW_peak"),
-                       col= c("tomato", "royalblue2", "#74C27A", "black", "gold", "lightgrey", "cyan3", "darkgreen", "deeppink2", "darkorchid3"))
+class_Cc <- data.table(group= c("hk", "dev", "OSC", "inducible", "control", "CP", "DHS_peak", "Silencer", "SUHW_peak"),
+                       col= c("tomato", "#74C27A", "black", "gold", "lightgrey", "cyan3", "royalblue2", "deeppink2", "darkorchid3"))
 clean <- clean[class_Cc, , on= "group"]
 
 # SAVE

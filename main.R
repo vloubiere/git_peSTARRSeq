@@ -59,8 +59,13 @@ if(F)
   #-------------------------#
   # peSTARR-Seq pipeline
   #-------------------------#
+  file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
+  file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
+  file.edit("git_peSTARRSeq/subscripts/basic_alignment_statistics.R") # Used by the pipeline
+  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R") # Used by the pipeline
   file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
+  file.edit("git_peSTARRSeq/subscripts/PCC.R")
   file.edit("git_peSTARRSeq/functions/generate_final_data_table.R")
   
   #-------------------------#
@@ -68,19 +73,28 @@ if(F)
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/heatmap_activity_aggreagte.R")
   file.edit("git_peSTARRSeq/subscripts/smoothsScatter_obs_exp.R")
-  file.edit("git_peSTARRSeq/subscripts/boxplot_insulator_act_LR.R")
+  file.edit("git_peSTARRSeq/subscripts/boxplot_FC_silencer_insulator_LR.R")
+  
+  #-------------------------#
+  # Fine grained heatmaps
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/heatmap_activity.R")
+  file.edit("git_peSTARRSeq/subscripts/detailed_heatmap_additivity.R")
   
   #-------------------------#
   # peSTARR-Seq modeling
   #-------------------------#
-  file.edit("git_peSTARRSeq/subscripts/modelling_motifs.R")
+  file.edit("git_peSTARRSeq/subscripts/linear_models_activity_residuals.R")
+  
+  # OLD:
+  file.edit("git_peSTARRSeq/subscripts/modelling_add_model_interaction_w_wo_motifs.R")
+  file.edit("git_peSTARRSeq/subscripts/modelling_motif_pairs_additivity.R")
   file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_sum_motif_counts.R") # Motifs from L and R enhancers are summed
   file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_LR_motif_counts.R") # Motifs from L and R enhancers are kept separately
   file.edit("git_peSTARRSeq/subscripts/vllib002_residuals_motif_enrichment.R") # Not working yet. Idea: fisher using residuals
   file.edit("git_peSTARRSeq/subscripts/vllib013_modeling_sum_motif_counts.R")
   file.edit("git_peSTARRSeq/subscripts/vllib014_modeling_sum_motif_counts.R")
   file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
-  
   file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
   
   #-------------------------#
@@ -92,6 +106,11 @@ if(F)
   # Others
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/shn_screenshot.R")
+  
+  #-------------------------#
+  # OLD
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/boxplot_insulator_act_LR.R")
 }
 
 # BA clusters motif enrichment

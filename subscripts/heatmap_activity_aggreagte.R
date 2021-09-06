@@ -5,9 +5,9 @@ require(vlfunctions)
 dat <- readRDS("Rdata/final_results_table.rds")
 
 # PLOT
-pdf("pdf/aggregate_activity_additivity.pdf", height = 4.75, width = 10.5)
+pdf("pdf/aggregate_activity/aggregate_activity_additivity.pdf", height = 4.75, width = 10.5)
 par(mfrow= c(1, 2))
-dat[, {
+dat[L!=R, {
   .act <- dcast(data = .SD, 
                 formula= group_L~group_R, 
                 value.var= "log2FoldChange",
@@ -41,4 +41,3 @@ dat[, {
              legend_title = "Additivity (log2)")
 }, cdition]
 dev.off()
-
