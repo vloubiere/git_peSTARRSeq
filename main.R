@@ -104,23 +104,10 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/aggregate_ChIPSeq_tracks.R")
   # Get 200bp STARR-Seq peaks from Bernardo
   file.edit("git_peSTARRSeq/subscripts/get_200bp_STARRSeq_peaks_BA.R")
-  
+  # BA clusters motif enrichment
+  file.edit("git_peSTARRSeq/subscripts/get_clusters_motifs_enrichment_BA.R")
+
   #-------------------------#
   # OLD
   #-------------------------#
-  # Compare left right
-  file.edit("git_peSTARRSeq/subscripts/boxplot_insulator_act_LR.R")
-  # Modelling
-  file.edit("git_peSTARRSeq/subscripts/modelling_add_model_interaction_w_wo_motifs.R")
-  file.edit("git_peSTARRSeq/subscripts/modelling_motif_pairs_additivity.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_sum_motif_counts.R") # Motifs from L and R enhancers are summed
-  file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_LR_motif_counts.R") # Motifs from L and R enhancers are kept separately
-  file.edit("git_peSTARRSeq/subscripts/vllib002_residuals_motif_enrichment.R") # Not working yet. Idea: fisher using residuals
-  file.edit("git_peSTARRSeq/subscripts/vllib013_modeling_sum_motif_counts.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib014_modeling_sum_motif_counts.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
 }
-
-# BA clusters motif enrichment
-# test <- get(load("/groups/stark/almeida/Projects/High_resolution_STARRseq/results/20210122_deep_learning_prediction_bins_100bp_stride/Nucleot_contr_scores/Motif_enrichment_all.RData"))
