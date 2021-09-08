@@ -42,7 +42,6 @@ cmb[, plot_group:= if(V1==V2)
     paste0(paste0(sort(c(V1, V2)), collapse = " x "), " / ", paste0(rev(sort(c(V1, V2))), collapse = " x ")), .(V1, V2)]
 cmb[, plot_group_LR:= paste0(V1, " x ", V2)]
 res[cmb, c("plot_group", "plot_group_LR"):= .(i.plot_group, i.plot_group_LR), on= c("group_L==V1", "group_R==V2")]
-res[cmb, c("plot_group", "plot_group_LR"):= .(i.plot_group, i.plot_group_LR), on= c("group_L==V2", "group_R==V1")]
 res[, plot_group:= paste0(cdition, ": ", plot_group), .(cdition, plot_group)]
 res[, plot_group_LR:= paste0(cdition, ": ", plot_group_LR), .(cdition, plot_group_LR)]
 res[, active_plot_group:= as.character(NA)]
@@ -74,7 +73,7 @@ cols <- c("cdition",
           "closest_tss_L", "closest_tss_R",
           "closest_sel_tss_L", "closest_sel_tss_R",
           c(sort(grep("_log2FC_", colnames(res), value = T))),
-          c(sort(grep("^motif__", colnames(res), value = T))))
+          c(sort(grep("^motif", colnames(res), value = T))))
 res <- res[, ..cols]
 
 saveRDS(res, "Rdata/final_results_table.rds")

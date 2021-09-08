@@ -2,58 +2,17 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import
-if(!exists("dat"))
-  dat <- readRDS("Rdata/final_results_table.rds")
-if("plot_group" %in% names(dat))
-  dat$plot_group <- NULL
-dat[cdition=="vllib002" & ((group_L=="OSC" & group_R=="OSC" & median_L>1 & median_R>1)), plot_group:= "vllib002: OSC x OSC"]
-dat[cdition=="vllib002" & ((group_L=="OSC" & group_R=="dev" & median_L>1 & median_R>1)), plot_group:= "vllib002: OSC x dev"]
-dat[cdition=="vllib002" & ((group_L=="dev" & group_R=="dev" & median_L>1 & median_R>1)), plot_group:= "vllib002: dev x OSC"]
-dat[cdition=="vllib002" & ((group_L=="hk" & group_R=="hk" & median_L>1 & median_R>1)), plot_group:= "vllib002: hk x hk"]
-dat[cdition=="vllib002" & ((group_L=="hk" & group_R=="dev" & median_L>1 & median_R>1)), plot_group:= "vllib002: hk x dev"]
-dat[cdition=="vllib002" & ((group_L=="dev" & group_R=="hk" & median_L>1 & median_R>1)), plot_group:= "vllib002: dev x hk"]
-dat[cdition=="vllib002" & ((group_L=="dev" & group_R=="dev" & median_L>1 & median_R>1)), plot_group:= "vllib002: dev x dev"]
+if(!exists("DT"))
+  DT <- readRDS("Rdata/final_results_table.rds")
 
-dat[cdition=="vllib015" & group_L=="hk" & group_R=="hk", plot_group:= "vllib015: hk x hk"]
-dat[cdition=="vllib015" & group_L=="hk" & group_R=="dev", plot_group:= "vllib015: hk x dev"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="hk", plot_group:= "vllib015: dev x hk"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="dev", plot_group:= "vllib015: dev x dev"]
-dat[cdition=="vllib015" & group_L=="DHS" & group_R=="DHS", plot_group:= "vllib015: DHS x DHS"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="DHS", plot_group:= "vllib015: dev x DHS"]
-dat[cdition=="vllib015" & group_L=="DHS" & group_R=="dev", plot_group:= "vllib015: DHS x dev"]
-dat[cdition=="vllib015" & group_L=="Silencer" & group_R=="Silencer", plot_group:= "vllib015: Sil. x Sil."]
-dat[cdition=="vllib015" & group_L=="Silencer" & group_R=="dev", plot_group:= "vllib015: Sil. x dev"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="Silencer", plot_group:= "vllib015: dev x Sil."]
-dat[cdition=="vllib015" & group_L=="CP" & group_R=="CP", plot_group:= "vllib015: CP x CP"]
-dat[cdition=="vllib015" & group_L=="CP" & group_R=="dev", plot_group:= "vllib015: CP x dev"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="CP", plot_group:= "vllib015: dev x CP"]
-dat[cdition=="vllib015" & group_L=="SUHW_peak" & group_R=="SUHW_peak", plot_group:= "vllib015: Ins. x Ins."]
-dat[cdition=="vllib015" & group_L=="SUHW_peak" & group_R=="dev", plot_group:= "vllib015: Ins. x dev"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="SUHW_peak", plot_group:= "vllib015: dev x Ins."]
-dat[cdition=="vllib015" & group_L=="SUHW_peak" & group_R=="SUHW_peak", plot_group:= "vllib015: Ins. x Ins."]
-
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="hk", plot_group:= "vllib016: hk x hk"]
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="dev", plot_group:= "vllib016: hk x dev"]
-dat[cdition=="vllib016" & group_L=="dev" & group_R=="hk", plot_group:= "vllib016: dev hk"]
-dat[cdition=="vllib016" & group_L=="dev" & group_R=="dev", plot_group:= "vllib016: dev x dev"]
-dat[cdition=="vllib016" & group_L=="DHS" & group_R=="DHS", plot_group:= "vllib016: DHS x DHS"]
-dat[cdition=="vllib016" & group_L=="DHS" & group_R=="hk", plot_group:= "vllib016: DHS x hk"]
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="DHS", plot_group:= "vllib016: hk x DHS"]
-dat[cdition=="vllib016" & group_L=="Silencer" & group_R=="Silencer", plot_group:= "vllib016: Sil. x Sil."]
-dat[cdition=="vllib016" & group_L=="Silencer" & group_R=="hk", plot_group:= "vllib016: Sil. x hk"]
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="Silencer", plot_group:= "vllib016: hk x Sil."]
-dat[cdition=="vllib016" & group_L=="SUHW_peak" & group_R=="SUHW_peak", plot_group:= "vllib016: Ins. x Ins."]
-dat[cdition=="vllib016" & group_L=="SUHW_peak" & group_R=="hk", plot_group:= "vllib016: Ins. x hk"]
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="SUHW_peak", plot_group:= "vllib016: hk x Ins."]
-dat[cdition=="vllib016" & group_L=="CP" & group_R=="CP", plot_group:= "vllib016: CP x CP"]
-dat[cdition=="vllib016" & group_L=="CP" & group_R=="hk", plot_group:= "vllib016: CP x hk"]
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="CP", plot_group:= "vllib016: hk x CP"]
-
+dat <- DT[L!=R]
+dat <- dat[!is.na(active_plot_group_LR)]
+dat <- dat[!is.na(additive) & !is.na(log2FoldChange) & !is.na(diff)]
 
 # PLOT
 pdf("pdf/all_pairs_activity_additivity.pdf", height = 4.75, width = 5*3)
 par(mfrow= c(1, 3))
-dat[!is.na(plot_group) & L!=R, {
+dat[, {
   # Use expected additive values to order the heatmap
   .add <- dcast(data = .SD, 
                 formula= L~R, 
@@ -64,7 +23,7 @@ dat[!is.na(plot_group) & L!=R, {
   .add <- .add[row_ord,]
   .add <- .add[, col_ord]
   vl_heatmap(mat = .add, 
-             main= plot_group, 
+             main= active_plot_group_LR, 
              cluster_rows = F,
              cluster_cols = F,
              show_rownames = F,
@@ -80,7 +39,7 @@ dat[!is.na(plot_group) & L!=R, {
   .act <- .act[row_ord,]
   .act <- .act[, col_ord]
   vl_heatmap(mat = .act, 
-             main= plot_group, 
+             main= active_plot_group_LR, 
              cluster_rows = F,
              cluster_cols = F,
              col = viridis::plasma(10),
@@ -97,7 +56,7 @@ dat[!is.na(plot_group) & L!=R, {
   .diff <- .diff[, col_ord]
   .breaks <- max(abs(quantile(.diff, c(0.05, 0.975), na.rm= T)))
   vl_heatmap(mat = .diff, 
-             main= plot_group, 
+             main= active_plot_group_LR, 
              cluster_rows = F,
              cluster_cols = F,
              show_rownames = F,
@@ -126,7 +85,7 @@ dat[!is.na(plot_group) & L!=R, {
   #            legend_title = "Motif counts")
   # rect(0,0,1,1)
   print("DONE")
-}, plot_group]
+}, active_plot_group_LR]
 dev.off()
 
 

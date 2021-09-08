@@ -21,7 +21,9 @@ if(F)
   # Libraries features
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancers_object.R")
-  file.edit("git_peSTARRSeq/subscripts/informative_motif_counts.R") # I do not use som clustering anymore (trop 50 motifs)
+  file.edit("git_peSTARRSeq/subscripts/informative_motif_counts.R") # I do not use som clustering anymore (top 50 motifs)
+  file.edit("git_peSTARRSeq/subscripts/SOM_informative_motif_counts.R") # SOM
+  file.edit("git_peSTARRSeq/subscripts/chromatin_features_and_gene_assignment.R")
   file.edit("git_peSTARRSeq/subscripts/final_lib_features.R")
   
   #-------------------------#
@@ -85,17 +87,8 @@ if(F)
   # peSTARR-Seq modeling
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/linear_models_activity_residuals.R")
-  
-  # OLD:
-  file.edit("git_peSTARRSeq/subscripts/modelling_add_model_interaction_w_wo_motifs.R")
-  file.edit("git_peSTARRSeq/subscripts/modelling_motif_pairs_additivity.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_sum_motif_counts.R") # Motifs from L and R enhancers are summed
-  file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_LR_motif_counts.R") # Motifs from L and R enhancers are kept separately
-  file.edit("git_peSTARRSeq/subscripts/vllib002_residuals_motif_enrichment.R") # Not working yet. Idea: fisher using residuals
-  file.edit("git_peSTARRSeq/subscripts/vllib013_modeling_sum_motif_counts.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib014_modeling_sum_motif_counts.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
-  file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
+  file.edit("git_peSTARRSeq/subscripts/smoothScatterplot_motifs_contribution.R")
+  file.edit("git_peSTARRSeq/subscripts/barplot_motifs_contribution.R")
   
   #-------------------------#
   # Spacer length impact
@@ -105,12 +98,28 @@ if(F)
   #-------------------------#
   # Others
   #-------------------------#
+  # shn screenshot
   file.edit("git_peSTARRSeq/subscripts/shn_screenshot.R")
+  # Average CHIP-Seq tracks
+  file.edit("git_peSTARRSeq/subscripts/aggregate_ChIPSeq_tracks.R")
+  # Get 200bp STARR-Seq peaks from Bernardo
+  file.edit("git_peSTARRSeq/subscripts/get_200bp_STARRSeq_peaks_BA.R")
   
   #-------------------------#
   # OLD
   #-------------------------#
+  # Compare left right
   file.edit("git_peSTARRSeq/subscripts/boxplot_insulator_act_LR.R")
+  # Modelling
+  file.edit("git_peSTARRSeq/subscripts/modelling_add_model_interaction_w_wo_motifs.R")
+  file.edit("git_peSTARRSeq/subscripts/modelling_motif_pairs_additivity.R")
+  file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_sum_motif_counts.R") # Motifs from L and R enhancers are summed
+  file.edit("git_peSTARRSeq/subscripts/vllib002_modeling_LR_motif_counts.R") # Motifs from L and R enhancers are kept separately
+  file.edit("git_peSTARRSeq/subscripts/vllib002_residuals_motif_enrichment.R") # Not working yet. Idea: fisher using residuals
+  file.edit("git_peSTARRSeq/subscripts/vllib013_modeling_sum_motif_counts.R")
+  file.edit("git_peSTARRSeq/subscripts/vllib014_modeling_sum_motif_counts.R")
+  file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
+  file.edit("git_peSTARRSeq/subscripts/vllib006_modeling_sum_motif_counts.R")
 }
 
 # BA clusters motif enrichment

@@ -3,11 +3,12 @@ require(vlfunctions)
 
 # Import
 dat <- readRDS("Rdata/final_results_table.rds")
+dat <- dat[L!=R]
 
 # PLOT
 pdf("pdf/aggregate_activity/aggregate_activity_additivity.pdf", height = 4.75, width = 10.5)
 par(mfrow= c(1, 2))
-dat[L!=R, {
+dat[, {
   .act <- dcast(data = .SD, 
                 formula= group_L~group_R, 
                 value.var= "log2FoldChange",

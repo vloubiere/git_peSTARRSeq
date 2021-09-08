@@ -1,95 +1,96 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
+dir.create("db/linear_models", 
+           showWarnings = F)
+dir.create("db/linear_models/global_models", 
+           showWarnings = F)
+dir.create("db/linear_models/motif_pairs", 
+           showWarnings = F)
 
 # Import
-if(!exists("dat"))
-  dat <- readRDS("Rdata/final_results_table.rds")
-if("plot_group" %in% names(dat))
-  dat$plot_group <- NULL
-dat[cdition=="vllib002" & ((group_L=="dev" & group_R=="control" & median_L>1) | (group_L=="control" & group_R=="dev" & median_R>1)), plot_group:= "vllib002: Ctl. x dev / dev x Ctl."]
-dat[cdition=="vllib002" & ((group_L=="dev" & group_R=="hk" & median_L>1) | (group_L=="hk" & group_R=="dev" & median_R>1)), plot_group:= "vllib002: dev x hk / dev x hk"]
-dat[cdition=="vllib002" & ((group_L=="dev" & group_R=="dev" & median_L>1 & median_R>1)), plot_group:= "vllib002: dev x dev"]
-dat[cdition=="vllib015" & ((group_L=="dev" & group_R=="control") | (group_L=="control" & group_R=="dev")), plot_group:= "vllib015: Ctl. x dev / dev x Ctl."]
-dat[cdition=="vllib015" & ((group_L=="dev" & group_R=="DHS_peak") | (group_L=="DHS_peak" & group_R=="dev")), plot_group:= "vllib015: DHS x dev / dev x DHS"]
-dat[cdition=="vllib015" & group_L=="dev" & group_R=="dev", plot_group:= "vllib015: dev x dev"]
-dat[cdition=="vllib015" & ((group_L=="dev" & group_R=="Silencer") | (group_L=="Silencer" & group_R=="dev")), plot_group:= "vllib015: Sil. x dev / dev x Sil."]
-dat[cdition=="vllib015" & ((group_L=="dev" & group_R=="SUHW_peak") | (group_L=="SUHW_peak" & group_R=="dev")), plot_group:= "vllib015: Put. Ins. x dev / dev x Put. Ins."]
-dat[cdition=="vllib016" & group_L=="hk" & group_R=="hk", plot_group:= "vllib016: hk x hk"]
-dat[cdition=="vllib016" & ((group_L=="hk" & group_R=="control") | (group_L=="control" & group_R=="hk")), plot_group:= "vllib016: Ctl. x hk / hk x Ctl."]
-dat[cdition=="vllib016" & ((group_L=="hk" & group_R=="DHS_peak") | (group_L=="DHS_peak" & group_R=="hk")), plot_group:= "vllib016: DHS x hk / hk x DHS"]
-dat[cdition=="vllib016" & ((group_L=="hk" & group_R=="Silencer") | (group_L=="Silencer" & group_R=="hk")), plot_group:= "vllib016: Sil. x hk / hk x Sil."]
-dat[cdition=="vllib016" & ((group_L=="hk" & group_R=="SUHW_peak") | (group_L=="SUHW_peak" & group_R=="hk")), plot_group:= "vllib016: Put. Ins. x hk / dev x hk"]
-dat[, plot_group:= factor(plot_group, levels = c("vllib002: Ctl. x dev / dev x Ctl.",
-                                                 "vllib002: inducible x dev / dev x inducible",
-                                                 "vllib002: OSC x dev / dev x OSC",
-                                                 "vllib002: dev x hk / dev x hk",
-                                                 "vllib002: dev x dev",
-                                                 "vllib015: Sil. x dev / dev x Sil.",
-                                                 "vllib015: Put. Ins. x dev / dev x Put. Ins.",
-                                                 "vllib015: Ctl. x dev / dev x Ctl.",
-                                                 "vllib015: DHS x dev / dev x DHS",
-                                                 "vllib015: dev x dev",
-                                                 "vllib016: Sil. x hk / hk x Sil.",
-                                                 "vllib016: Put. Ins. x hk / dev x hk", 
-                                                 "vllib016: hk x hk", 
-                                                 "vllib016: Ctl. x hk / hk x Ctl.", 
-                                                 "vllib016: DHS x hk / hk x DHS"))]
+if(!exists("DT"))
+  DT <- readRDS("Rdata/final_results_table.rds")
+dat <- DT[L!=R]
+dat <- dat[!is.na(additive)]
+dat <- dat[(cdition== "vllib002" & group_L== "dev" & group_R== "dev" & median_L>1 & median_R>1) |
+           (cdition== "vllib016" & group_L== "hk" & group_R== "hk")]
+# Top motifs
+comb <- data.table(L_mot= grep("^motif__.*_L", names(dat), value = T))
+comb[, R_mot:= gsub("_L$", "_R", L_mot)]
+comb[, colName:= gsub("_L$", "_merge", L_mot)]
+comb[, {
+  dat[[colName]] <<- dat[[.BY[[1]]]]+dat[[.BY[[2]]]]
+}, (comb)]
+# Som motif groups
+comb <- data.table(L_mot= grep("^motifSom__.*_L", names(dat), value = T))
+comb[, R_mot:= gsub("_L$", "_R", L_mot)]
+comb[, colName:= gsub("_L$", "_merge", L_mot)]
+comb[, {
+  dat[[colName]] <<- dat[[.BY[[1]]]]+dat[[.BY[[2]]]]
+}, (comb)]
+setkeyv(dat, "active_plot_group")
 
-# PLOT
-pdf("pdf/aggregate_activity/smoothScatter_observed_expected.pdf", 
-    width = 18*0.7, 
-    height = 4.7*0.7)
-layout(matrix(1:5, ncol= 5), widths = c(1, rep(0.82, 3), 1))
-dat[!is.na(plot_group) & L!=R, {
-  lim <- c(switch(cdition, 
-                  "vllib002"= -1, 
-                  "vllib015"= -3, 
-                  "vllib016"= -3),
-           switch(cdition, 
-                  "vllib002"= 10, 
-                  "vllib015"= 12, 
-                  "vllib016"= 9))
-  if(.GRP %in% seq(1,101, 5))
+#-------------------------#
+# Build models formulas
+#-------------------------#
+# Make a string for all motifs
+mot <- CJ(grep("^motif__.*_L$", names(dat), value = T), grep("^motif__.*_R$", names(dat), value = T), unique= T)
+motSom <- CJ(grep("^motifSom__.*_L$", names(dat), value = T), grep("^motifSom__.*_R$", names(dat), value = T), unique= T)
+motMerge <- grep("^motif__.*_merge$", names(dat), value = T)
+motMergeSom <- grep("^motifSom__.*_merge$", names(dat), value = T)
+mod <- rbind(data.table(form= "log2FoldChange~median_L*median_R", # log2FC / Activity only w/ interaction
+                        save= "predict_log2FoldChange__actL*R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~median_L*median_R+", paste0(paste0(mot[, paste0(V1, "*", V2)], collapse= "+"))), # log2FC / Activity and motifs w/ interaction
+                        save= "predict_log2FoldChange__actL*R+motL*R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~median_L*median_R+", paste0(paste0(motSom[, paste0(V1, "*", V2)], collapse= "+"))), # log2FC / Activity and motifsSOM w/ interaction
+                        save= "predict_log2FoldChange__actL*R+motSomL*R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~", paste0(paste0(mot[, paste0(V1, "*", V2)], collapse= "+"))),  # log2FC / Motifs only w/ interaction
+                        save= "predict_log2FoldChange__motL*R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~", paste0(paste0(motSom[, paste0(V1, "*", V2)], collapse= "+"))),  # log2FC / MotifsSOM only w/ interaction
+                        save= "predict_log2FoldChange__motSomL*R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~", mot[, paste0(V1, "+", V2)]), # log2FC / Motif pair w/0 interaction
+                        save= paste0("predict_log2FoldChange__", mot[, paste0(V1, "+", V2)]),
+                        folder= "db/linear_models/motif_pairs/"),
+             data.table(form= paste0("diff~", mot[, paste0(V1, "+", V2)]), # Residuals / Motif pair w/0 interaction
+                        save= paste0("predict_residuals__", mot[, paste0(V1, "+", V2)]),
+                        folder= "db/linear_models/motif_pairs/"),
+             data.table(form= paste0("log2FoldChange~median_L*median_R+", paste0(motMerge, collapse = "+")), # log2FC / Activity  and merged motif w/0 interaction
+                        save= "predict_log2FoldChange__actL*R+mergedMot",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~median_L*median_R+", paste0(motMergeSom, collapse = "+")), # log2FC / Activity  and merged motifSOM w/0 interaction
+                        save= "predict_log2FoldChange__actL*R+mergedMotSom",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("log2FoldChange~", paste0(motMerge, collapse = "+")), # log2FC / Merged motifs only w/0 interaction
+                        save= "predict_log2FoldChange__mergedMot",
+                        folder= "db/linear_models/global_models/"),
+             #### Residuals prediction
+             data.table(form= paste0("diff~", paste0(paste0(mot[, paste0(V1, "*", V2)], collapse= "+"))),  # Residuals / Motifs only w/ interaction
+                        save= "predict_residuals__motL*R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("diff~", paste0(unique(unlist(mot)), collapse= "+")), # Residuals / Motifs only w/o interaction
+                        save= "predict_residuals__motL+R",
+                        folder= "db/linear_models/global_models/"),
+             data.table(form= paste0("diff~", paste0(motMerge, collapse = "+")), # Residuals / Merged motifs only w/0 interaction
+                        save= "predict_residuals__mergedMot",
+                        folder= "db/linear_models/global_models/"))
+mod <- mod[, .(group= unique(dat$active_plot_group)), (mod)]
+mod[, save:= paste0(folder, gsub(": | ", "_", group), "__", save, ".rds"), .(folder, save, group)]
+
+#-------------------------#
+# MODELS
+#-------------------------#
+for(i in seq(nrow(mod)))
+{
+  if(!file.exists(mod[i, save]))
   {
-    pl <- T
-    yl <- "Activity (log2)"
-    par(mar= c(5.1, 4.1, 4.1, 0))
-  }else if(.GRP %in% seq(5,100, 5))
-  {
-    pl <- F
-    yl <- NA
-    par(mar= c(5.1, 0, 4.1, 4.1))
-  }else
-  {
-    pl <- F
-    yl <- NA
-    par(mar= c(5.1, 0, 4.1, 0))
+    print(paste0(mod[i, save], " -->> START!"))
+    .c <- lm(as.formula(mod[i, form]), dat[mod[i, group]])
+    saveRDS(.c, mod[i, save])
+    print(paste0(mod[i, save], " -->> DONE!"))
   }
-  smoothScatter(additive, 
-                log2FoldChange, 
-                xlab= NA,
-                ylab= NA,
-                xlim= lim,
-                ylim= lim,
-                yaxt= ifelse(pl, "s", "n"),
-                las= 1)
-  .lm <- lm(log2FoldChange~additive)
-  .eq <- vl_model_equation(.lm, digits= 2)
-  mtext(side=1, 
-        text= "Expected additive (log2)", 
-        line= 2.5,
-        cex= 0.8)
-  mtext(side=2.5, 
-        text= yl, 
-        line= 2,
-        cex= 0.8)
-  mtext(gsub("log2FoldChange", "Activity", .eq), 
-        line = 0.8,
-        cex= 0.8)
-  mtext(plot_group, 
-        line = 3,
-        cex= 0.8)
-  abline(.lm, lty= 2)
-  abline(0, 1)
-}, keyby= .(plot_group, cdition)]
-dev.off()
+}
