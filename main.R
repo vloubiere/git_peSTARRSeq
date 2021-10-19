@@ -37,35 +37,51 @@ if(F)
   #-------------------------#
   # STARRSeq design
   #-------------------------#
+  # revSTARRSeq
   file.edit("git_peSTARRSeq/subscripts/restriction_enzyme_selection.R") # NotI cuts the peSTARRSeq vector but is not detected!?
   file.edit("git_peSTARRSeq/subscripts/spacer_selection_revSTARRSeq.R")
   file.edit("git_peSTARRSeq/subscripts/primer_design_revSTARRSeq_spacers.R")
   file.edit("git_peSTARRSeq/subscripts/enh_promoter_distance.R")
   file.edit("git_peSTARRSeq/subscripts/qPCR_non_self_lig_vllib004.R")
+  # Introns without enhancer
   file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
   file.edit("git_peSTARRSeq/subscripts/design_introns_primers.R")
-  file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP.R")
+  # Introns with enhancer
+  file.edit("git_peSTARRSeq/subscripts/intron_enhancer_selection.R")
+  file.edit("git_peSTARRSeq/subscripts/design_introns_enhancer_primers.R")
+  # Change promoter
+  file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP.R") # Forgot to check that CPs do not contain AgeI/SalI sites (see next line)
+  file.edit("git_peSTARRSeq/subscripts/select_active_CP_no_restriciton_to_replace_DSCP.R")
   
   #-------------------------#
   # Sanger sequencing
   #-------------------------#
+  # Hamlet
   file.edit("git_peSTARRSeq/subscripts/sanger_HAM_SUP1_luciferase_constructs.R")
+  # Validations
   file.edit("git_peSTARRSeq/subscripts/sanger_peSTARRSeq_SCR1_luc_validations.R")
+  # Backbones
   file.edit("git_peSTARRSeq/subscripts/sanger_STARRSeq_backbone.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_actCP_STARRSeq_backbones.R")
+  file.edit("git_peSTARRSeq/subscripts/sanger_actCP3_STARRSeq_backbone.R") # Failed, the CP is DSCP
+  # Libraries single cols
   file.edit("git_peSTARRSeq/subscripts/sanger_seqREADY_revSTARRSeq_single_col.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib004-007.R") # Check inverse PCR outcome, code broken
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib015-016.R") # First libs dumped -> no gel purif before gibson, many single enhancers
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib015-016_#2.R") # Second libs OK
+  file.edit("git_peSTARRSeq/subscripts/sanger_vllib017-020.R") # Seems OK
+  file.edit("git_peSTARRSeq/subscripts/sanger_vllib021-022.R") # Seems OK
   
   #-------------------------#
   # peSTARR-Seq pipeline
   #-------------------------#
+  # Used by the pipeline (indexes and functions)
   file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
   file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
+  file.edit("git_peSTARRSeq/subscripts/basic_alignment_statistics.R")
+  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
+  #------ Pipeline 3.0 ------#
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
-  file.edit("git_peSTARRSeq/subscripts/basic_alignment_statistics.R") # Used by the pipeline
-  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R") # Used by the pipeline
   file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
   file.edit("git_peSTARRSeq/subscripts/PCC.R")
   file.edit("git_peSTARRSeq/functions/generate_final_data_table.R")
@@ -89,6 +105,11 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/linear_models_activity_residuals.R")
   file.edit("git_peSTARRSeq/subscripts/smoothScatterplot_motifs_contribution.R")
   file.edit("git_peSTARRSeq/subscripts/barplot_motifs_contribution.R")
+  
+  #-------------------------#
+  # Modelling endogenous activity
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Modelling_endogenous_activity.R")
   
   #-------------------------#
   # Spacer length impact
