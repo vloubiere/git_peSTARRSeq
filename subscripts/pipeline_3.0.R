@@ -197,36 +197,48 @@ meta[!is.na(DESeq2_group), {
   else
   {
     # Import counts
-    file <- list.files(dir_mergedCounts, paste0(DESeq2_group, ".*_merged.txt$"), full.names = T)
-    .c <- lapply(file, fread)
-    names(.c) <- basename(file)
-    .c <- rbindlist(.c, idcol = T)
-    # Cast and make matrix
-    mat <- dcast(.c[type!="switched"], L+R~.id, value.var = "umi_counts", fill= 0)
-    mat <- mat[rowSums(mat[, -c(1,2)])>=10]
-    # melt
-    dat <- melt(mat, id.vars = c("L", "R"))
+    dat <- data.table(file= list.files(dir_mergedCounts, paste0(DESeq2_group, ".*_merged.txt$"), full.names = T))
+    dat <- dat[, fread(file), file][type=="pair"]
+    dat[, rep:= paste0("log2FC_rep", gsub(".*_rep([1-9]{1})_merged.txt$", "\\1", file)), file]
+    dat[grepl("input", basename(file)), cdition:= "input"]
+    dat[grepl("screen", basename(file)), cdition:= "screen"]
+    # Filter
+    dat[, check_counts:= sum(umi_counts)>=10, .(L, R)]
+    dat <- dat[(check_counts), !c("file", "check_counts", "type")]
     # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
-    dat[, cdition:= if(grepl("input", variable)){"input"}else if(grepl("screen", variable)){"screen"}, variable]
-    dat[, rep:= gsub(".*_rep([1-9]{1})_merged.txt$", "\\1", variable), variable]
-    dat[, rep:= paste0("log2FC_rep", rep), rep]
-    # Check that input and screen both exist for each rep
-    if(any(dat[, length(unique(cdition)), rep]$V1 != 2))
-      print(paste0(DESeq2_group, " has missing replicates --> SKIPED")) else
-        dat[, norm:= (value+1)/sum(value)*1e6, .(rep, cdition)]
-    # Compute FC and scale
-    res <- unique(dat[, .(L, R, rep)])
-    res$FC <- log2(dat[cdition!="input", norm]/dat[cdition=="input", norm])
-    res <- dcast(res, L+R~rep, value.var = "FC")
-    cols <- grep("^log2FC_rep", colnames(res), value = T)
-    res[, log2FoldChange:= log2(rowMeans(2^.SD)), .SDcols= cols]
+    # Add merged counts
+    dat <- rbind(dat, 
+                 dat[, .(umi_counts= sum(umi_counts), 
+                         rep= "log2FC_merge"), .(L, R, cdition)])
+    # Normalize
+    dat[, norm:= (umi_counts+1)/sum(umi_counts)*1e6, .(rep, cdition)]
+    # Compute FC 
+    dat <- dat[, .(FC= log2(norm[cdition=="screen"]/norm[cdition=="input"])), .(L, R, rep)]
+    dat <- rbind(dat,
+                 dat[!grepl("merge$", rep), data.table(rep= "log2FoldChange",
+                                                       FC= mean(FC)), .(L, R)])
+    # Cast
+    res <- dcast(dat, 
+                 L+R~rep, 
+                 value.var= "FC")
     # Subtract basal activity (center controls on 0)
-    res[, log2FoldChange:= log2FoldChange-median(res[grepl("^control", L) & grepl("^control", R), log2FoldChange])]
+    cols <- grep("^log2", names(res), value = T)
+    res[, (cols):= lapply(.SD, function(x) x-median(x[grepl("^control", L) & grepl("^control", R)], na.rm = T)), .SDcols= cols]
     # Compute expected
-    res[, ctl_L:= grepl("^control", L)]
-    res[, ctl_R:= grepl("^control", R)]
-    res[, median_L:= ifelse(length(which(ctl_R))>=5, median(log2FoldChange[ctl_R], na.rm = T), as.numeric(NA)), L]
-    res[, median_R:= ifelse(length(which(ctl_L))>=5, median(log2FoldChange[ctl_L], na.rm = T), as.numeric(NA)), R]
+    med_L <- gsub("log2FoldChange", "median", paste0(gsub("log2FC", "median", cols), "_L"))
+    res[, (med_L):= lapply(.SD, function(x) {
+      x <- na.omit(x[grepl("control", R)])
+      if(length(x)>=5)
+        median(x) else
+          as.numeric(NA)
+    }), L, .SDcols= cols]
+    med_R <- gsub("log2FoldChange", "median", paste0(gsub("log2FC", "median", cols), "_R"))
+    res[, (med_R):= lapply(.SD, function(x) {
+      x <- na.omit(x[grepl("control", L)])
+      if(length(x)>=5)
+        median(x) else
+          as.numeric(NA)
+    }), R, .SDcols= cols]
     # SAVE
     fwrite(res, FC)
     print(paste0(FC, "  -->> DONE"))

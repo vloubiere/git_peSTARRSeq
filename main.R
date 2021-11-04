@@ -45,13 +45,14 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/qPCR_non_self_lig_vllib004.R")
   # Introns without enhancer
   file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
-  file.edit("git_peSTARRSeq/subscripts/design_introns_primers.R")
+  file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/design_introns_primers.R")
   # Introns with enhancer
   file.edit("git_peSTARRSeq/subscripts/intron_enhancer_selection.R")
   file.edit("git_peSTARRSeq/subscripts/design_introns_enhancer_primers.R")
   # Change promoter
   file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP.R") # Forgot to check that CPs do not contain AgeI/SalI sites (see next line)
-  file.edit("git_peSTARRSeq/subscripts/select_active_CP_no_restriciton_to_replace_DSCP.R")
+  file.edit("git_peSTARRSeq/subscripts/select_active_CP_no_enzymatic_restriciton_to_replace_DSCP.R")# I realized the design was not optimal cause did not take into account hk induction@!
+  file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP_final.R")# I realized the design was not optimal cause did not take into account hk induction@!
   
   #-------------------------#
   # Sanger sequencing
@@ -78,10 +79,10 @@ if(F)
   # Used by the pipeline (indexes and functions)
   file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
   file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
-  file.edit("git_peSTARRSeq/subscripts/basic_alignment_statistics.R")
-  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
   #------ Pipeline 3.0 ------#
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
+  file.edit("git_peSTARRSeq/subscripts/basic_alignment_statistics.R")
+  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
   file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
   file.edit("git_peSTARRSeq/subscripts/PCC.R")
   file.edit("git_peSTARRSeq/functions/generate_final_data_table.R")
@@ -90,7 +91,7 @@ if(F)
   # Aggregate activity
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/heatmap_activity_aggreagte.R")
-  file.edit("git_peSTARRSeq/subscripts/smoothsScatter_obs_exp.R")
+  file.edit("git_peSTARRSeq/subscripts/smoothsScatter_obs_expAdd.R")
   file.edit("git_peSTARRSeq/subscripts/boxplot_FC_silencer_insulator_LR.R")
   
   #-------------------------#
@@ -102,14 +103,19 @@ if(F)
   #-------------------------#
   # peSTARR-Seq modeling
   #-------------------------#
-  file.edit("git_peSTARRSeq/subscripts/linear_models_activity_residuals.R")
+  file.edit("git_peSTARRSeq/subscripts/full_data_linear_models_activity_residuals.R")
+  file.edit("git_peSTARRSeq/subscripts/collapsed_data_linear_models_activity_residuals.R")
   file.edit("git_peSTARRSeq/subscripts/smoothScatterplot_motifs_contribution.R")
   file.edit("git_peSTARRSeq/subscripts/barplot_motifs_contribution.R")
   
   #-------------------------#
-  # Modelling endogenous activity
+  # Modelling gene endogenous activity
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/Modelling_endogenous_activity.R")
+  
+  #-------------------------#
+  # hk/dev specificity in paired STARR-Seq
+  #-------------------------#
   
   #-------------------------#
   # Spacer length impact

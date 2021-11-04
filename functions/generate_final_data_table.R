@@ -28,7 +28,7 @@ res <- merge(res,
              .m,
              by.x= c("cdition", "R"),
              by.y= c("cdition", "ID"),
-             all.x= T, 
+             all.x= T,
              suffixes= c("_L", "_R"))
 res[, coor_L:= paste0(seqnames_L, ":", start_L, "-", end_L, ":", strand_L)]
 res[, coor_R:= paste0(seqnames_R, ":", start_R, "-", end_R, ":", strand_R)]

@@ -1,4 +1,5 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+require(vlfunctions)
 require(BSgenome.Dmelanogaster.UCSC.dm3)
 
 #-------------------#
@@ -37,6 +38,7 @@ cons[owner=="fl", name:= paste0("actCP_fl", seq(.N))]
 dat <- copy(lib)
 dat[, x:= log2(no_enh_Rep1+1)]
 dat[, y:= log2(zfh1_enh_avg+1)]
+dat[, z:= log2(ssp3_enh_Rep1+1)]
 # Present in Franzis or my  selection
 dat[cons, c("Cc", "name"):= .(ifelse(i.owner=="fl", "red", "green"),
                               i.name), on= "oligo_id"]
@@ -44,7 +46,7 @@ dat[cons, c("Cc", "name"):= .(ifelse(i.owner=="fl", "red", "green"),
 RPS12_tss <- data.table(seqnames= "chr3L", 
                         start= 13016456, 
                         end= 13016456, strand= "+")
-dat[RPS12_tss, c("Cc", "name"):= .("gold", "RpS12"), on= c("seqnames", "start<end", "end>start")]
+dat[RPS12_tss, c("Cc", "name"):= .("gold", "RpS12"), on= c("seqnames", "start<end", "end>start", "strand")]
 #Check for the presence of restriction sites incompatible with STARR-Seq
 dat[!is.na(Cc) & grepl("ACCGGT|GTCGAC", sequence), Cc:= "blue"] # AgeI|SalI
 
@@ -78,9 +80,12 @@ dat[(check), c("Cc", "name"):= .("purple",
 pdf("pdf/STARRSeq_design/CPs_responsiveness.pdf")
 par(pty= "s", 
     las= 1)
+# Plot developmental induction
 smoothScatter(dat$x,
               dat$y,
-              colramp = colorRampPalette(c("white", "grey30", "grey20", "grey10")))
+              colramp = colorRampPalette(c("white", "grey30", "grey20", "grey10")),
+              xlab= "No enhancer",
+              ylab= "ZFH1 enhancer")
 points(dat[!is.na(Cc), x],
        dat[!is.na(Cc), y], 
        col= dat[!is.na(Cc), Cc],
@@ -108,8 +113,32 @@ design[, {
          name,
          pos= 4)
 }, (design)]
+# Plot housekeeping induction
+smoothScatter(dat$x,
+              dat$z,
+              colramp = colorRampPalette(c("white", "grey30", "grey20", "grey10")),
+              xlab= "No enhancer",
+              ylab= "SSP3 enhancer")
+points(dat[!is.na(Cc), x],
+       dat[!is.na(Cc), z], 
+       col= dat[!is.na(Cc), Cc],
+       pch= 19)
+text(dat[!is.na(Cc), x],
+     dat[!is.na(Cc), z], 
+     labels = dat[!is.na(Cc), name], 
+     pos= 4,
+     cex= 0.2,
+     col= dat[!is.na(Cc), Cc])
+legend("bottomright", 
+       bty= "n",
+       pch= 19, 
+       col= c("red", "green", "gold", "blue"),
+       legend = c("Franzi", "vl", "RpS12", "AgeI/SalI"))
 dev.off()
 
+#------------------------------#
+# SAVE selected primers
+#------------------------------#
 fwrite(dat[Cc=="purple", .(oligo_id, name, seqnames, start, end, strand, F_primer, R_primer, CP_sequence= sequence)], 
        "Rdata/selected_CPs_primers_#2.txt", 
        sep= "\t")
