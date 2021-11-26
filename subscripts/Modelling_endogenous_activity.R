@@ -5,7 +5,7 @@ require(readxl)
 #------------------------------------------#
 # Import Vanja TSSs with activity
 #------------------------------------------#
-tss <- read_xlsx("/groups/stark/vloubiere/exp_data/COF.STAPseq.TSSs.clustered.with.metadata.xlsx")
+tss <- read_xlsx("/groups/stark/vloubiere/projects/PROSeq_leo/Rdata/COF.STAPseq.TSSs.clustered.with.metadata.xlsx")
 tss <- as.data.table(tss)
 tss <- tss[S2_RNAseq_RPKM!="NA" & S2_whole_cell_CAGE!="NA"]
 cols <- names(tss)[-c(1,2,6,7,8,9,10,11,33)]

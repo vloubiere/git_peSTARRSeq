@@ -2,7 +2,11 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
 stats <- data.table(file= list.files("db/merged_counts/", "summary.txt$", full.names = T))
 stats <- stats[, fread(file), file]
-stats[, name:= gsub("_merged.summary.txt", "", basename(file))]
+stats[, name:= {
+  .c <- gsub("_merged.summary.txt", "", basename(file))
+  .c <- c(tstrsplit(.c, "_"))
+  paste0(.c[1], "_", .c[length(.c)-1], "_", .c[length(.c)])
+}, file]
 stats <- stats[order(name, decreasing = T)]
 
 pdf("pdf/alignment/aggregate_alignment_statistics.pdf", 
@@ -10,14 +14,13 @@ pdf("pdf/alignment/aggregate_alignment_statistics.pdf",
     width = 15)
 par(mar= c(7,15,2,2),
     mfrow= c(1, 2))
-barplot(t(stats[, .(umi_collapsed, mapped)]), 
+barplot(t(stats[, .(collapsed, mapped)]), 
         beside = T,
         col= c("green", "white"), 
         names.arg = basename(stats$name),
-        cex.names= 0.5, 
         # col.names= stats$Cc,
         horiz = T, 
-        las= 1)
+        las= 1, log= "x")
 abline(v= 1e6, 
        lty= 2)
 abline(v= 2.5e6, 
@@ -31,14 +34,15 @@ legend("bottomright",
        bty= "n",
        fill= c("black", "white"), 
        legend = c("UMI collapsed", "all"))
-barplot(t(stats[, .(umi_collapsed/mapped*100)]),
+barplot(t(stats[, .(collapsed/mapped*100)]),
         names.arg = basename(stats$name),
         cex.names= 0.5,
         col= stats[, ifelse(grepl("input", name), "grey", "tomato"), name]$V1,
         beside = T,
         horiz = T, 
         las= 1, 
-        xlim= c(0, 100))
+        xlim= c(0, 50),
+        xlab= "% reads left after collapsing")
 abline(v= 50, 
        lty= 2)
 dev.off()

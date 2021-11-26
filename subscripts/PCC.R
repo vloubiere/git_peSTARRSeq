@@ -7,10 +7,11 @@ dat <- as.data.table(dat)
 cols <- colnames(dat)
 dat[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
 
-dat <- dat[, .(file= list.files("db/merged_counts/", paste0(DESeq2_group, "_", cdition, "_", CP, "_rep", DESeq2_pseudo_rep, ".*merged.txt$"), full.names = T)), 
+dat <- dat[, .(file= list.files("db/merged_counts/", paste0(DESeq2_group, "_", cdition, "_rep", DESeq2_pseudo_rep, "_merged.txt"), full.names = T)), 
            .(DESeq2_group, cdition, DESeq2_pseudo_rep)]
 dat <- dat[, fread(file), (dat)]
 dat <- dat[type!="switched"]
+# dat <- dat[grepl("vllib014", DESeq2_group) & cdition=="input"]
 
 PCC <- dcast(dat, DESeq2_group+cdition+L+R~DESeq2_pseudo_rep,
              value.var= "umi_counts")

@@ -7,6 +7,11 @@ require(BSgenome.Dmelanogaster.UCSC.dm3)
 #-------------------#
 lib <- readRDS("/groups/stark/lorbeer/vincent/STAP_oligo.RDS")
 lib[, sequence:= as.character(getSeq(BSgenome.Dmelanogaster.UCSC.dm3, GRanges(seqnames, IRanges(start, end), strand)))]
+# add DSCP
+DSCP <- fread("../STAPSeq_vanja/db/normalized_counts/GSE116197_Enhancer_screens_Normalized_tagcounts_per_oligo.txt.gz")
+DSCP <- DSCP[oligo_id=="DSCP"]
+DSCP <- DSCP[, zfh1_enh_avg:= mean(c(zfh1_enh_Rep1, zfh1_enh_Rep2))]
+lib <- rbind(lib, DSCP, fill= T)
 
 #-------------------#
 # Color data based on overlaps
@@ -24,6 +29,8 @@ dat[, ratio:= hk-dev]
 #-------------------#
 # Franzis CP
 dat[oligo_id=="chr3L_217307_217440_+", c("Cc", "name"):= .("red", "fl_8"), on= "oligo_id"]
+# DSCP
+dat[oligo_id=="DSCP", c("Cc", "name"):= .("limegreen", "DSCP")]
 # Overlaps Rps12 promoter
 RPS12_tss <- data.table(seqnames= "chr3L", 
                         start= 13016456, 
@@ -100,11 +107,11 @@ text(dat[!is.na(Cc), basal],
      labels = dat[!is.na(Cc), name], 
      pos= 4,
      col= dat[!is.na(Cc), Cc])
-legend("bottomright", 
-       bty= "n",
-       pch= 19, 
-       col= c("red", "green", "gold", "blue"),
-       legend = c("Franzi", "vl", "RpS12", "AgeI/SalI"))
+# legend("bottomright", 
+#        bty= "n",
+#        pch= 19, 
+#        col= c("red", "green", "gold", "blue"),
+#        legend = c("Franzi", "vl", "RpS12", "AgeI/SalI"))
 # Plot dev
 smoothScatter(dat$basal,
               dat$dev,
@@ -155,6 +162,29 @@ dev.off()
 #------------------------------#
 # SAVE selected primers
 #------------------------------#
-fwrite(dat[!is.na(F_primer), .(oligo_id, name, seqnames, start, end, strand, F_primer, R_primer, CP_sequence= sequence)],
+sel <- dat[!is.na(F_primer), .(oligo_id, name, seqnames, start, end, strand, F_primer, R_primer, CP_sequence= sequence)]
+fwrite(sel,
        "Rdata/selected_CPs_primers_final.txt",
        sep= "\t")
+
+#------------------------------#
+# Check COFs inducibility
+#------------------------------#
+STAP <- get(load("/groups/stark/haberle/projects/Drosophila_STAPseq/results/factor.recruitment/CoF_screen_oligo_pool_selection_from_all_CoFs_for_first_submission_20171220/correlation.and.clustering/oligos.clustering/merged.reps/Oligos.clustering.based.on.Z-score.kmeans.5.of.total.tagcount.at.sig.activated.oligos.above.5.total.tags.and.3.tags.at.dominant.tss.in.at.least.two.reps.TSS.assigned.clusters.RData"))
+STAP <- as.data.table(STAP)
+cols <- names(STAP)[3:(ncol(STAP)-3)]
+STAP[, paste0(cols, "_norm") := lapply(.SD, function(x) scale(log2(x+1)-log2(GFP+1))), .SDcols= cols]
+all_CPs <- c(sel$oligo_id, 
+             "chr3L_13016389_13016522_+", 
+             "chr3L_13016403_13016536_+", 
+             "chr3L_13016429_13016562_+", 
+             "chr3L_217307_217440_+",
+             "DSCP")
+mat <- as.matrix(STAP[all_CPs, .SD, on= "bowtie_index", .SDcols= patterns("_norm")])
+rownames(mat) <- paste0(all_CPs, "/", dat[all_CPs, name, on= "oligo_id"], " -> cl", STAP[sel$oligo_id, TSS_cluster, on= "bowtie_index"])
+
+pdf("pdf/STARRSeq_design/heatmp_COF_induction_active_CPs.pdf", width = 12)
+vl_heatmap(mat, 
+           breaks = c(-2,0,8), 
+           display_numbers = T)
+dev.off()

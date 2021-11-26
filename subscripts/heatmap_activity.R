@@ -2,28 +2,31 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import
-if(!exists("DT"))
-  DT <- readRDS("Rdata/final_results_table.rds")
-
-dat <- DT[L!=R]
-dat <- dat[!is.na(active_plot_group_LR)]
-dat <- dat[!is.na(additive) & !is.na(log2FoldChange) & !is.na(diff)]
-
+if(!exists("dat"))
+{
+  dat <- readRDS("Rdata/final_results_table.rds")
+  dat <- dat[L!=R]
+  dat <- dat[!is.na(active_group)]
+  dat <- dat[!is.na(additive_merge) & !is.na(log2FC_merge) & !is.na(diff_merge)]
+}
+  
 # PLOT
-pdf("pdf/all_pairs_activity_additivity.pdf", height = 4.75, width = 5*3)
+pdf("pdf/all_pairs_activity_additivity.pdf",
+    height = 4.75, 
+    width = 5*3)
 par(mfrow= c(1, 3))
 dat[, {
   # Use expected additive values to order the heatmap
   .add <- dcast(data = .SD, 
                 formula= L~R, 
-                value.var= "additive")
+                value.var= "additive_merge")
   .add <- as.matrix(.add, 1)
   row_ord <- order(-rowMeans(.add, na.rm = T))
   col_ord <- order(colMeans(.add, na.rm = T))
   .add <- .add[row_ord,]
   .add <- .add[, col_ord]
-  vl_heatmap(mat = .add, 
-             main= active_plot_group_LR, 
+  vl_heatmap(.add, 
+             main= active_group, 
              cluster_rows = F,
              cluster_cols = F,
              show_rownames = F,
@@ -34,12 +37,12 @@ dat[, {
   # Activity
   .act <- dcast(data = .SD, 
                 formula= L~R, 
-                value.var= "log2FoldChange")
+                value.var= "log2FC_merge")
   .act <- as.matrix(.act, 1)
   .act <- .act[row_ord,]
   .act <- .act[, col_ord]
-  vl_heatmap(mat = .act, 
-             main= active_plot_group_LR, 
+  vl_heatmap(.act, 
+             main= active_group, 
              cluster_rows = F,
              cluster_cols = F,
              col = viridis::plasma(10),
@@ -50,13 +53,13 @@ dat[, {
   # Additivity
   .diff <- dcast(data = .SD, 
                 formula= L~R, 
-                value.var= "diff")
+                value.var= "diff_merge")
   .diff <- as.matrix(.diff, 1)
   .diff <- .diff[row_ord,]
   .diff <- .diff[, col_ord]
   .breaks <- max(abs(quantile(.diff, c(0.05, 0.975), na.rm= T)))
-  vl_heatmap(mat = .diff, 
-             main= active_plot_group_LR, 
+  vl_heatmap(.diff, 
+             main= active_group, 
              cluster_rows = F,
              cluster_cols = F,
              show_rownames = F,
@@ -85,7 +88,5 @@ dat[, {
   #            legend_title = "Motif counts")
   # rect(0,0,1,1)
   print("DONE")
-}, active_plot_group_LR]
+}, active_group]
 dev.off()
-
-
