@@ -118,6 +118,10 @@ final <- rbind(ctl_sel,
                suhw_sel, 
                DHS_sel, 
                rep_sel)
+
+#-----------------------------#
+# Compute full sequence
+#-----------------------------#
 linkers <- unique(lib_seq[, .(linker_ID, fw_linker, rev_linker)])
 setkeyv(linkers, "linker_ID")
 final[group %in% c("control", "dev", "hk", "shared"), c("fw_linker", "rev_linker", "linker_ID"):= .(linkers["A"]$fw_linker, 
@@ -130,11 +134,16 @@ final[group %in% c("CP", "SUHW_peak"), c("fw_linker", "rev_linker", "linker_ID")
                                                                                      linkers["C"]$rev_linker,
                                                                                      "C")]
 final[, oligo_full_sequence:= paste0(fw_linker, enh_seq, rev_linker)]
+
+#-----------------------------#
+# Make IDs
+#-----------------------------#
+# For enhancers present in twist 008 with same FULL sequence (i.e including linker)
+T8 <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
+final[T8, ID:= ID_vl, on= "oligo_full_sequence"]
+# Generate other IDs
 setorderv(final, c("group", "detail", "seqnames", "start"))
-final[, ID:= paste0(group,  
-                    ifelse(detail %in% c("inactive", "weak", "medium", "strong"), paste0("_", detail), ""))]
-final[, ID:= paste0(ID, "_", linker_ID, "_"), linker_ID]
-final[, ID:= paste0(ID, sprintf("%05d", .I))]
+final[is.na(ID), ID:= paste0(group, "_", linker_ID, "_", sprintf("%05d", .I+1000)), linker_ID]
 
 saveRDS(final, "Rdata/vl_library_twist12_210610.rds")
 

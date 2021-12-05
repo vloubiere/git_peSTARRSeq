@@ -1,10 +1,10 @@
-dat <- fread("Rdata/STARR_ATAC_DHS_CHIP_quantif.txt")
+dat <- fread("old_versions/original_folder_twist12_design_backup/Rdata/STARR_ATAC_DHS_CHIP_quantif.txt")
 dat[, center:= rowMeans(.SD), .SDcols= c("start", "end")]
-K4me3 <- fread("db/peaks/H3K4me3_peaks.txt")
+K4me3 <- fread("old_versions/original_folder_twist12_design_backup/db/peaks/H3K4me3_peaks.txt")
 K4me3[, center:= rowMeans(.SD), .SDcols= c("start", "end")]
-STARR200 <- fread("db/peaks/STARR_DSCP_200_peaks.txt")
+STARR200 <- fread("old_versions/original_folder_twist12_design_backup/db/peaks/STARR_DSCP_200_peaks.txt")
 STARR200[, center:= rowMeans(.SD), .SDcols= c("start", "end")]
-STARR600 <- fread("db/peaks/STARR_DSCP_600_peaks.txt")
+STARR600 <- fread("old_versions/original_folder_twist12_design_backup/db/peaks/STARR_DSCP_600_peaks.txt")
 STARR600[, center:= rowMeans(.SD), .SDcols= c("start", "end")]
 
 dat$K4me3_dist <- K4me3[dat, min(abs(center-i.center)), .EACHI, on= "seqnames"]$V1
@@ -40,12 +40,13 @@ bw <- c("/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/DSCP_200bp_
 pdf("pdf/screenshots_selection_DHS+_STARR-.pdf", width = 10, height = 7)
 par(mar= c(1,15,1,1))
 sel[, {
-  vl_screenshot(GRanges(ext), 
-                bw, 
-                highlight_regions = GRanges(peaks), 
+  vl_screenshot(GRanges(ext),
+                bw,
+                highlight_regions = GRanges(peaks),
                 max = c(45, 100, 8, 8, 13, 35, 30))
   print("")
 }, idx]
 dev.off()
 
-saveRDS(sel, "Rdata/DHS+_STARR-_sequences.rds")
+saveRDS(sel, "Rdata/DHS+_STARR-_sequences.rds") 
+

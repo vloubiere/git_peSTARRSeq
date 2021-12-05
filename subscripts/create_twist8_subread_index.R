@@ -1,3 +1,4 @@
+twist8 <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/vl_library_twist008_112019.rds")
 seqs <- c(twist8$oligo_full_sequence,
           paste0(constructs["Flink_lib", sequence], 
                  constructs[c("SCR1", "SCR2", "HAM1", "SUP1"), sequence], 

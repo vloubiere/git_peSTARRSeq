@@ -2,32 +2,27 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 require(readxl)
 
-dat <- read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
-dat <- as.data.table(dat)
-cols <- colnames(dat)
-dat[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
-
-dat <- dat[, .(file= list.files("db/merged_counts/", paste0(DESeq2_group, "_", cdition, "_rep", DESeq2_pseudo_rep, "_merged.txt"), full.names = T)), 
-           .(DESeq2_group, cdition, DESeq2_pseudo_rep)]
-dat <- dat[, fread(file), (dat)]
-dat <- dat[type!="switched"]
-# dat <- dat[grepl("vllib014", DESeq2_group) & cdition=="input"]
-
-PCC <- dcast(dat, DESeq2_group+cdition+L+R~DESeq2_pseudo_rep,
-             value.var= "umi_counts")
-names(PCC)[(length(PCC)-1):length(PCC)] <- paste0("rep", names(PCC)[(length(PCC)-1):length(PCC)])
+dat <- fread("Rdata/metadata_processed.txt")
+dat <- dat[DESeq2 & file.exists(pairs_counts)]
+dat <- dat[, fread(pairs_counts), .(vllib, pairs_counts, cdition, DESeq2_pseudo_rep)]
+dat <- dat[, check:= all(c(1, 2) %in% DESeq2_pseudo_rep), .(vllib, cdition)]
+dat <- dat[(check)]
 
 pdf("pdf/alignment/PCC_replicates.pdf")
-PCC[L!=R & !is.na(rep1) & !is.na(rep2), {
-  x <- log2(rep1)
-  y <- log2(rep2)
+dat[, {
+  title <- paste(vllib, cdition)
+  mat <- dcast(.SD, 
+               L+R~DESeq2_pseudo_rep, 
+               value.var= "umi_counts")
+  x <- log2(mat[, `1`]+1)
+  y <- log2(mat[, `2`]+1)
   smoothScatter(x, 
                 y,
-                main= paste(cdition, DESeq2_group),
+                main= title,
                 las=1)
   legend("topleft", 
          paste0("PCC= ", round(cor.test(x, y)$estimate, 2)),
          bty= "n")
-  print("")
-}, .(DESeq2_group, cdition)]
+  print(title)
+}, .(vllib, cdition)]
 dev.off()

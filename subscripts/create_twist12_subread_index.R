@@ -1,3 +1,4 @@
+twist12 <- readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/vl_library_twist12_210610.rds")
 seqs <- twist12$oligo_full_sequence
 names <- twist12$ID
 write.fasta(as.list(seqs), 

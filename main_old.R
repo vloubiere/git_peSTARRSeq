@@ -14,7 +14,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/SUHW_peak_selection.R")
   file.edit("git_peSTARRSeq/subscripts/ATAC_STARR_DHS_peak_calling.R")
   file.edit("git_peSTARRSeq/subscripts/ATAC_STARR_DHS_enrichment_quantif.R")
-  file.edit("git_peSTARRSeq/subscripts/ATAC_STARR_DHS_candidates_selection.R")
+  file.edit("git_peSTARRSeq/subscripts/ATAC_STARR_DHS_candidates_selection.R")# Somehow, peaks are different from original run. See old folders
   file.edit("git_peSTARRSeq/subscripts/CPs_selection_twist.R")
   file.edit("git_peSTARRSeq/subscripts/design_twist_012.R") # lib can be found at "Rdata/vl_library_twist12_210610.rds"
   
@@ -66,7 +66,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/sanger_STARRSeq_backbone.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_actCP_STARRSeq_backbones.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_actCP3_STARRSeq_backbone.R") # Failed, the CP is DSCP
-  file.edit("git_peSTARRSeq/subscripts/sanger_alternative_CPs_STARRSeq_final.R") # 
+  file.edit("git_peSTARRSeq/subscripts/sanger_alternative_CPs_STARRSeq_final.R")
   # Libraries single cols
   file.edit("git_peSTARRSeq/subscripts/sanger_seqREADY_revSTARRSeq_single_col.R")
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib004-007.R") # Check inverse PCR outcome, code broken
@@ -74,6 +74,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib015-016_#2.R") # Second libs OK
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib017-020.R") # Seems OK
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib021-022.R") # Seems OK
+  file.edit("git_peSTARRSeq/subscripts/sanger_vllib023-028.R") # Seems OK
   
   #-------------------------#
   # peSTARR-Seq pipeline
@@ -82,18 +83,16 @@ if(F)
   file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
   file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
   #------ Pipeline 3.0 ------#
-  file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
+  file.edit("git_peSTARRSeq/functions/pipeline_3.0.R")
   file.edit("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
   file.edit("git_peSTARRSeq/functions/generate_final_data_table.R")
   #----------- QC -----------#
-  file.edit("git_peSTARRSeq/subscripts/basic_alignment_statistics.R")
   file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
   file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
   file.edit("git_peSTARRSeq/subscripts/barplot_read_per_theoretical_pair.R")
   file.edit("git_peSTARRSeq/subscripts/PCC.R")
   file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron.R")
-  file.edit("git_peSTARRSeq/subscripts/PCC_vllib006_screens.R")
   
   #-------------------------#
   # Aggregate activity

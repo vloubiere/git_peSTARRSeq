@@ -2,31 +2,9 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 require(readxl)
 
-dat <-
-  read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
-dat <- as.data.table(dat)
-cols <- colnames(dat)
-dat[, (cols) := lapply(.SD, function(x)
-  ifelse(x == "NA", NA, x)), .SDcols = cols]
-
-dat <- dat[, .(file = list.files(
-  "db/merged_counts/",
-  paste0(
-    DESeq2_group,
-    "_",
-    cdition,
-    "_rep",
-    DESeq2_pseudo_rep,
-    "_merged.txt"
-  ),
-  full.names = T
-)),
-.(DESeq2_group, cdition, DESeq2_pseudo_rep)]
-dat <- dat[, fread(file), (dat)]
-dat <- dat[type != "switched"]
-
-dir.create("pdf/alignment",
-           showWarnings = F)
+dat <- fread("Rdata/metadata_processed.txt")
+dat <- dat[DESeq2 & file.exists(pairs_counts)]
+dat <- dat[, fread(pairs_counts), .(group, pairs_counts, cdition, DESeq2_pseudo_rep)]
 
 pdf("pdf/alignment/saturation.pdf", 4.5, 5)
 par(las = 1)
@@ -38,7 +16,7 @@ dat[, {
     ylim = c(0, 0.6),
     xlab = "log2(counts+1)",
     ylab = "Density",
-    main = DESeq2_group
+    main = group
   )
   # Legend
   leg <- .SD[, {
@@ -70,6 +48,6 @@ dat[, {
       lty = 2
     )
   }, cdition]
-  print(paste0(DESeq2_group, " -->>DONE!"))
-}, DESeq2_group]
+  print(paste0(group, " -->>DONE!"))
+}, group]
 dev.off()
