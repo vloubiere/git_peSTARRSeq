@@ -30,8 +30,8 @@ dat[, {
                    as.matrix(.diff, 1),
                    x_breaks= c(-2, 7),
                    color_breaks= c(-2, 0, 2),
-                   main= paste(c(.BY), collapse = " "), 
+                   main= paste(c(as.character(vllib), CP, spacer), collapse = " "), 
                    balloon_size_legend= "Activity",
                    balloon_col_legend= "o/e")
-}, .(vllib, CP, spacer)]
+}, keyby= .(vllib, CP, spacer)]
 dev.off()

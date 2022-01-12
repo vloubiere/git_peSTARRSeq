@@ -13,9 +13,8 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
   #----------- QC -----------#
-  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
-  file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
-  file.edit("git_peSTARRSeq/subscripts/barplot_read_per_theoretical_pair.R")
-  file.edit("git_peSTARRSeq/subscripts/PCC.R")
-  file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron.R")
+  source("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
+  source("git_peSTARRSeq/subscripts/sequencing_saturation.R")
+  source("git_peSTARRSeq/subscripts/barplot_read_per_theoretical_pair.R")
+  source("git_peSTARRSeq/subscripts/PCC.R")
 }

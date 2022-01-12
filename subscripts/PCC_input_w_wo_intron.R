@@ -2,19 +2,33 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 require(readxl)
 
-dat <- fread("Rdata/metadata_processed.txt")
-dat <- dat[vllib %in% c("vllib017", "vllib019", "vllib021") 
+input <- fread("Rdata/metadata_processed.txt")
+input <- input[vllib %in% c("vllib017", "vllib019", "vllib021") 
            & file.exists(pairs_counts) 
            & cdition=="input"]
-dat[is.na(DESeq2_pseudo_rep), DESeq2_pseudo_rep:= 2]
-dat <- dat[, fread(pairs_counts), .(vllib, pairs_counts, cdition, DESeq2_pseudo_rep)]
+input[, .(DESeq2_pseudo_rep, comment), vllib]
+input[is.na(DESeq2_pseudo_rep), DESeq2_pseudo_rep:= 2]
+input <- input[, fread(pairs_counts), .(vllib, pairs_counts, cdition, DESeq2_pseudo_rep)]
+
+screen <- fread("Rdata/metadata_processed.txt")
+screen <- screen[vllib=="vllib021"
+               & file.exists(pairs_counts) 
+               & cdition=="screen"]
+screen[, .(DESeq2_pseudo_rep, comment), vllib]
+screen[!is.na(DESeq2_pseudo_rep), DESeq2_pseudo_rep:= 1]
+screen[is.na(DESeq2_pseudo_rep), DESeq2_pseudo_rep:= 2]
+screen <- screen[, fread(pairs_counts), .(vllib, pairs_counts, cdition, DESeq2_pseudo_rep)]
+
+dat <- rbind(screen, input)
+
 
 pdf("pdf/alignment/PCC_replicates_w_wo_intron.pdf")
 dat[, {
   title <- paste(vllib, cdition)
   mat <- dcast(.SD, 
                L+R~DESeq2_pseudo_rep, 
-               value.var= "umi_counts")
+               value.var= "umi_counts",
+               fun.aggregate= sum)
   x <- log2(mat[, `1`]+1)
   y <- log2(mat[, `2`]+1)
   smoothScatter(x, 
@@ -29,3 +43,6 @@ dat[, {
   print(title)
 }, .(vllib, cdition)]
 dev.off()
+
+
+file.show("pdf/alignment/PCC_replicates_w_wo_intron.pdf")

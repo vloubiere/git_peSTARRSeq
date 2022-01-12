@@ -64,39 +64,46 @@ files <- c(files, list.files("db/final_tables_exp_model/counts_norm/", pattern, 
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
+cols <- c("fq1", "fq2", "sam", "sam_summary", "umi_counts", "umi_summary", 
+          "summary_counts", "pairs_counts", "spike_counts", "switched_counts", "FC_file")
+meta$check_exists <- meta[, apply(.SD, 1, function(x) all(file.exists(x[!is.na(x)]))), .SDcols= cols]
 meta[, {
-  # Save as a .R script
-  tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
-  fwrite(cbind(.SD, DESeq2, group), tmp)
-  # Bsub
-  Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
-                normalizePath("git_peSTARRSeq/functions/pipeline_3.0.R"),
-                tmp)
-  if(DESeq2)
+  if(any(!check_exists))
   {
-    bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
-                      "-C 12", # N cpus
-                      "-m 32", # memory
-                      paste("-n", group), #name
-                      "-T '2-00:00:00'", #name
-                      "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
-                      "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde 
-    
-  }else{
-    bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
-                      "-C 4", # N cpus
-                      "-m 8", # memory
-                      paste("-n", group), #name
-                      "-T '08:00:00'", #name
-                      "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
-                      "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde
+    # Save as a .R script
+    test <<- tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
+    fwrite(cbind(.SD, DESeq2, group), tmp)
+    # Bsub
+    Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
+                  normalizePath("git_peSTARRSeq/functions/pipeline_3.0.R"),
+                  tmp)
+    if(DESeq2)
+    {
+      bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
+                        "-C 12", # N cpus
+                        "-m 32", # memory
+                        paste("-n", group), #name
+                        "-T '2-00:00:00'", #name
+                        "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
+                        "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde 
+      
+    }else{
+      bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
+                        "-C 4", # N cpus
+                        "-m 8", # memory
+                        paste("-n", group), #name
+                        "-T '08:00:00'", #name
+                        "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
+                        "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde
+    }
+    # Wrap and Submit
+    bsub_cmd <- paste0(bsub_cmd, " \"", Rcmd, "\"")
+    Sys.unsetenv("SBATCH_RESERVATION")
+    Sys.unsetenv("SBATCH_WCKEY")
+    job_ID <- system(bsub_cmd, intern = T)
+    # Return bsub ID
+    unlist(job_ID[2])
   }
-  # Wrap and Submit
-  bsub_cmd <- paste0(bsub_cmd, " \"", Rcmd, "\"")
-  Sys.unsetenv("SBATCH_RESERVATION")
-  Sys.unsetenv("SBATCH_WCKEY")
-  job_ID <- system(bsub_cmd, intern = T)
-  # Return bsub ID
-  unlist(job_ID[2])
+  print("Submitted!")
 }, .(group, DESeq2)]
 

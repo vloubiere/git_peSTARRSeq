@@ -1,3 +1,7 @@
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+require(vlfunctions)
+require(BSgenome.Dmelanogaster.UCSC.dm3)
+
 #--------------------#
 # Peak calling
 #--------------------#

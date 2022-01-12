@@ -88,7 +88,7 @@ legend("topright",
        bty= "n")
 dev.off()
 
-pdf("pdf/STARRSeq_design/CPs_hk_dev_responsiveness.pdf", width = 8, height = 8)
+pdf("pdf/STARRSeq_design/CPs_hk_dev_responsiveness.pdf", width = 6, height = 6)
 par(pty= "s", 
     las= 1, 
     mfrow= c(2,2), cex= 0.5)
@@ -132,7 +132,7 @@ smoothScatter(dat$basal,
               dat$ratio,
               colramp = colorRampPalette(c("white", "grey30", "grey20", "grey10")),
               xlab= "Basal activity",
-              ylab= "dev/hk")
+              ylab= "hk/dev")
 points(dat[!is.na(Cc), basal],
        dat[!is.na(Cc), ratio], 
        col= dat[!is.na(Cc), Cc],

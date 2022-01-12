@@ -1,6 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 require(motifmatchr)
+require(rtracklayer)
 
 #---------------------------------------------------------------#
 # Clean object containing available data
@@ -41,6 +42,7 @@ lib[group== "hk",
                  quantile(hk_log2FoldChange, seq(0, 1, length.out= 5)), 
                  include.lowest = T, 
                  labels = c("inactive", "weak", "medium", "strong"))]
+lib[group=="control" & detail=="Ecoli", detail:= "ecoli"]
 lib[, detail:= factor(detail, 
                       as.data.table(table(lib$detail))[N>0, V1])]
 # Add colors
@@ -70,123 +72,126 @@ lib$closest_sel_tss <- tss[lib, ifelse(.N>0 & min(abs(start-i.start))<100000,
 # DNA motifs clustering
 #---------------------------------------------------------------#
 # Count hits low cutoff
-load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAerts/TF_clusters_PWMs.RData")
-sel <- TF_clusters_PWMs$metadata$motif_name[!is.na(TF_clusters_PWMs$metadata$FBgn)]
-sel <- name(TF_clusters_PWMs$All_pwms_log_odds) %in% sel
-hit <- matchMotifs(TF_clusters_PWMs$All_pwms_log_odds[sel], 
-                   DNAStringSet(lib$oligo_full_sequence),
-                   p.cutoff= 5e-4, 
-                   bg="even", 
-                   out= "scores")
-counts <- as.matrix(motifCounts(hit))
-colnames(counts) <- name(TF_clusters_PWMs$All_pwms_log_odds)[sel]
-rownames(counts) <- lib$ID
+hits <- vl_motif_counts(sequences =  lib$oligo_full_sequence)
 # Select motifs enriched in at least one of the lib groups
-.m <- melt(as.data.table(counts, keep.rownames = T), 
-           id.vars = "rn")
-.m[lib, "group":= i.group, on= "rn==ID"]
-.m[as.data.table(TF_clusters_PWMs$metadata[, c("motif_name", "FBgn")]), "FBgn":= i.FBgn, on= "variable==motif_name"]
-cls <- data.table(cl= unique(.m[group!="control", group]))
-.m <- .m[, cls[, {
-  .tab <- table(group==cl, value>1)
-  if(identical(dim(.tab), c(2L,2L)))
-  {
-    .c<- fisher.test(.tab)
-    .(OR= .c$estimate, pval= .c$p.value)
-  }else
-    .(OR= as.numeric(NA), pval= as.numeric(NA))
-}, cl], .(variable, FBgn)]
-.m[, padj:= p.adjust(pval, "fdr")]
-enriched_motifs <- unique(.m[padj<0.001 & OR>1, variable])
-saveRDS(.m, "Rdata/motif_enrichment_per_group.rds")
-# Cluster enhancers based on enriched motifs
-enr <- counts[, colnames(counts) %in% enriched_motifs]
-enr <- log2(enr+1)
-# Clip outliers
-enr <- apply(enr, 2, function(x){
+enr <- vl_motif_cl_enrich(hits, 
+                          cl_IDs = lib$group, 
+                          plot = F, 
+                          N_top = 10)
+motifs <- unique(enr[padj<0.00001 & log2OR>1, motif])
+#---------------------------------------------------------------#
+# Compute motifs'clusters
+#---------------------------------------------------------------#
+cl <- hits[, ..motifs]
+# Clip outliers and log
+cl <- cl[, lapply(.SD, function(x) {
   lim <- quantile(x, c(0.05, 0.95))
   x[x<lim[1]] <- lim[1]
   x[x>lim[2]] <- lim[2]
-  return(x)
-})
+  log2(x+1)
+})]
 # Cluster and add to lib objectsave heatmap clustering
-final_cl <- vl_heatmap(enr, 
+final_cl <- vl_heatmap(as.matrix(cl), 
                        cutree_rows = 12,
                        clustering_distance_cols = "spearman",
                        plot = F)
-lib[final_cl$result, motif_cl:= i.rn_cl, on= "ID==rn"]
-# Plot clustering diag
-pdf("pdf/motifs_clustering/heatmap_motif_clustering_3200bp_uniq_enhancers.pdf", 
+pdf("pdf/motifs_clustering/heatmap_motif_clustering_300bp_uniq_enhancers.pdf", 
     height = 10)
 plot(final_cl,
      breaks = c(0, 3), 
      col = c("blue", "yellow"), 
      cutree_rows= 12,
      cutree_cols = 12)
-association <- CJ(group= unique(lib$group),
-                  motif_cl= unique(lib$motif_cl))
-association[, c("OR", "pval"):= 
-              fisher.test(table(lib$group==group, lib$motif_cl==motif_cl))[c("estimate", "p.value")], .(group, motif_cl)]
-mat <- dcast(association, group~motif_cl, value.var = "OR")
-pval <- dcast(association, group~motif_cl, value.var = "pval")
-pval <- as.matrix(pval, 1)
-mat <- as.matrix(mat, 1)
-mat <- log2(mat+min(mat[mat>0]))
-mat[pval>0.05] <- NA
-vl_heatmap(mat, 
-           breaks = c(-2, 0, 2), 
-           cluster_rows=F, 
-           cluster_cols=F)
 dev.off()
+lib[, motif_cl:= final_cl$result_DT[, unique(rn_cl), keyby= as.numeric(rn)]$V1]
+top_motifs <- unique(enr[padj<1e-10 & log2OR>1, motif])
+top_motifs <- hits[, ..top_motifs][, lapply(.SD, function(x) log2(x+1))]
+names(top_motifs) <- paste0("top_motif__", names(top_motifs))
+lib <- cbind(lib, top_motifs)
 
 #---------------------------------------------------------------#
 # Chromatin features
 #---------------------------------------------------------------#
 # ChIP-Seq enrichment
-ChIP <- lib[, .(ID= .(ID)), .(seqnames, start, end)]
-ChIP$ATAC_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE119708_ATAC_rep1_uniq.bed",
-                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE119708_ATAC_rep2_uniq.bed",
-                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE119708_ATAC_rep3_uniq.bed",
-                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE119708_ATAC_rep4_uniq.bed"),
-                                         peaks = ChIP[, .(seqnames, start, end)], 
-                                         ext_peaks = 1000)$log2_enr
-ChIP$H3K27ac_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27ac_rep1_uniq.bed",
-                                                         "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27ac_rep2_uniq.bed"),
-                                            Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed",
-                                                          "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep2_uniq.bed"),
-                                            peaks = ChIP[, .(seqnames, start, end)], 
-                                            ext_peaks = 1000)$log2_enr
-ChIP$H3K4me1_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K4me1_rep1_uniq.bed",
-                                                         "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K4me1_rep2_uniq.bed"),
-                                           Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed",
-                                                         "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep2_uniq.bed"),
-                                           peaks = ChIP[, .(seqnames, start, end)], 
-                                           ext_peaks = 1000)$log2_enr
-ChIP$H3K4me3_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_H3K4me3_rep1_uniq.bed",
-                                                         "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_H3K4me3_rep2_uniq.bed"),
-                                            Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_input_rep1_uniq.bed",
-                                                          "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_input_rep2_uniq.bed"),
-                                            peaks = ChIP[, .(seqnames, start, end)], 
-                                            ext_peaks = 1000)$log2_enr
-ChIP$H3K27me3_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27me3_rep1_uniq.bed"),
-                                             Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed"),
-                                             peaks = ChIP[, .(seqnames, start, end)], 
-                                             ext_peaks = 1000)$log2_enr
-ChIP$Pol2_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_RNAPolII_rep1_uniq.bed"),
-                                         Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed"),
-                                         peaks = ChIP[, .(seqnames, start, end)], 
-                                         ext_peaks = 1000)$log2_enr
-ChIP$GAF_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_GAF_rep1_uniq.bed",
-                                                     "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_GAF_rep2_uniq.bed"),
-                                        Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_input_rep1_uniq.bed",
-                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_input_rep2_uniq.bed"),
-                                        peaks = ChIP[, .(seqnames, start, end)], 
-                                        ext_peaks = 1000)$log2_enr
-ChIP$SUHW_log2FC <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41354_SuHw_rep1_uniq.bed"),
-                                         peaks = ChIP[, .(seqnames, start, end)], 
-                                         ext_peaks = 1000)$log2_enr
-ChIP <- ChIP[, .(ID= unlist(ID)), setdiff(names(ChIP), "ID")]
-lib <- lib[ChIP[, ATAC_log2FC:ID], on= "ID"]
+if(!file.exists("db/bed/GSE119708_ATAC_merged.bed"))
+{
+  ATAC <- list.files("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/",
+                      "ATAC_rep.*.bed$", 
+                     full.names = T)
+  system(paste(c("cat", ATAC, ">", "db/bed/GSE119708_ATAC_merged.bed"), collapse = " "))
+  vl_exportBed(vl_shuffleBed("db/bed/GSE119708_ATAC_merged.bed"), "db/bed/GSE119708_ATAC_shuffled.bed")
+}
+lib$ATAC_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                            center = "center", 
+                                                            upstream = 500, 
+                                                            downstream = 500, 
+                                                            ignore.strand = T),
+                                     ChIP_bed = "db/bed/GSE119708_ATAC_merged.bed",
+                                     Input_bed = "db/bed/GSE119708_ATAC_shuffled.bed")$signalValue)
+
+lib$H3K27ac_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                               center = "center", 
+                                                               upstream = 500, 
+                                                               downstream = 500, 
+                                                               ignore.strand = T),
+                                        ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27ac_rep1_uniq.bed",
+                                                     "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27ac_rep2_uniq.bed"),
+                                        Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed",
+                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep2_uniq.bed"))$signalValue)
+
+lib$H3K4me1_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                               center = "center", 
+                                                               upstream = 500, 
+                                                               downstream = 500, 
+                                                               ignore.strand = T),
+                                        ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K4me1_rep1_uniq.bed",
+                                                     "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K4me1_rep2_uniq.bed"),
+                                        Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed",
+                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep2_uniq.bed"))$signalValue)
+
+lib$H3K4me3_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                               center = "center", 
+                                                               upstream = 500, 
+                                                               downstream = 500, 
+                                                               ignore.strand = T),
+                                        ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_H3K4me3_rep1_uniq.bed",
+                                                     "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_H3K4me3_rep2_uniq.bed"),
+                                        Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_input_rep1_uniq.bed",
+                                                      "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_input_rep2_uniq.bed"))$signalValue)
+
+lib$H3K27me3_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                                center = "center", 
+                                                                upstream = 500, 
+                                                                downstream = 500, 
+                                                                ignore.strand = T),
+                                         ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27me3_rep1_uniq.bed"),
+                                         Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed"))$signalValue)
+
+lib$Pol2_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                                center = "center", 
+                                                                upstream = 500, 
+                                                                downstream = 500, 
+                                                                ignore.strand = T),
+                                     ChIP_bed = "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_RNAPolII_rep1_uniq.bed",
+                                     Input_bed = "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_input_rep1_uniq.bed")$signalValue)
+
+lib$GAF_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                            center = "center", 
+                                                            upstream = 500, 
+                                                            downstream = 500, 
+                                                            ignore.strand = T),
+                                    ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_GAF_rep1_uniq.bed",
+                                                 "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_GAF_rep2_uniq.bed"),
+                                    Input_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_input_rep1_uniq.bed",
+                                                  "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_input_rep2_uniq.bed"))$signalValue)
+
+lib$SUHW_log2FC <- log2(vl_enrichBed(regions = vl_resizeBed(lib, 
+                                                           center = "center", 
+                                                           upstream = 500, 
+                                                           downstream = 500, 
+                                                           ignore.strand = T),
+                                    ChIP_bed = "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41354_SuHw_rep1_uniq.bed",
+                                    Input_bed = "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41354_input_rep1_uniq.bed")$signalValue)
 
 #------------------------------------------------------------------------------------------------#
 # SAVE
