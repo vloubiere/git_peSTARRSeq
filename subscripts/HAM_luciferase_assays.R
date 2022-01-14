@@ -3,7 +3,7 @@ require(data.table)
 require(vlfunctions)
 require(plater)
 constructs <- fread("/groups/stark/vloubiere/exp_data/vl_constructs_sequences.txt", key= "name")
-pl <- fread("/groups/stark/vloubiere/exp_data/vl_plasmids.txt")
+pl <- as.data.table(read_xlsx("/groups/stark/vloubiere/exp_data/vl_plasmids.xlsx"))
 pl <- pl[Experiment=="ham_pilot_luc"]
 
 #----------------------------#
@@ -51,8 +51,6 @@ spa2 <- c(0.5,0.5,0.5,1,2,2,2)
 #-----------------------------------------------#
 # PLOT
 #-----------------------------------------------#
-dir.create("pdf/luciferase", showWarnings = F)
-
 pdf("pdf/luciferase/barplot_ham_luciferase.pdf",
     height = 5)
 par(las= 1)
@@ -63,7 +61,7 @@ pl[, points(jitter(rep(b1, length(unlist(mean_all)))), unlist(mean_all), pch= 16
 arrows(pl$b1, pl$mean, pl$b1, pl[, mean+sd], length = 0.075, angle = 90)
 arrows(pl$b1, pl$mean, pl$b1, pl[, mean-sd], length = 0.075, angle = 90)
 
-vl_plot_pval(x = pl$b1, y = pl$max, pl$pval, offset = 1, pos = 3, stars_only = T)
+vl_plot_pval_text(x = pl$b1[!is.na(pl$pval)], y = pl$max[!is.na(pl$pval)], pl$pval[!is.na(pl$pval)], stars_only = T)
 text(pl$b1, pl$max, ifelse(is.na(pl$FC), NA, paste0("x", pl$FC)), offset = 0.7, pos = 3, cex= 0.8)
 
 bar2 <- barplot(pl[, add], space = spa2, col= Cc, ylim= c(0, 14), add= T)

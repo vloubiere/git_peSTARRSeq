@@ -1,11 +1,11 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-dir_pdf <- normalizePath("pdf/luciferase", mustWork = F)
 require(data.table)
 require(vlfunctions)
 require(plater)
-dir.create(dir_pdf, showWarnings = F)
+
 constructs <- fread("/groups/stark/vloubiere/exp_data/vl_constructs_sequences.txt", key= "name")
-pl <- fread("/groups/stark/vloubiere/exp_data/vl_plasmids.txt")
+
+pl <- as.data.table(readxl::read_xlsx("/groups/stark/vloubiere/exp_data/vl_plasmids.xlsx"))
 pl <- pl[Experiment=="ham_pilot_luc"]
 
 #----------------------------#
@@ -19,7 +19,7 @@ p3 <- "db/sanger_sequencing/ham_pilot/240220_reseq_last_sample/"
 pl[, file_3:= .(list(list.files(p3, x, full.names= T))), .(x= paste0("pluc", gsub(".* (.*$)", "\\1_", labbook)))]
 pl <- melt(pl, measure.vars = patterns("file"))
 pl <- pl[lengths(value)>0, .(value= unlist(value)), setdiff(colnames(pl), "value")]
-plasmids <- fread("/groups/stark/vloubiere/exp_data/vl_plasmids.txt")
+plasmids <- as.data.table(readxl::read_xlsx("/groups/stark/vloubiere/exp_data/vl_plasmids.xlsx"))
 upstream <- vl_digest(plasmids[grepl("pLuc002", ID), Sequence], "KpnI")[1]
 downstream <- vl_digest(plasmids[grepl("pLuc002", ID), Sequence], "KpnI")[2]
 pl[grepl("-", contains), seq:= paste0(substr(upstream, 
@@ -51,7 +51,7 @@ pl[, rev:= ifelse(grepl("CASeq001", value), F, T)]
 #----------------------------#
 # Plot
 #----------------------------#
-pdf(paste0(dir_pdf, "/sanger_sequencing.pdf"), height = 5)
+pdf("/groups/stark/vloubiere/projects/pe_STARRSeq/pdf/luciferase/sanger_sequencing.pdf", height = 5)
 par(mar= c(2,20,5,2))
 pl[, 
    {

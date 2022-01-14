@@ -179,32 +179,25 @@ if(any(meta$DESeq2))
         # Collapse input counts and screen reps
         dat <- dat[, .(umi_counts= sum(umi_counts)), .(cdition, L, R)]
         # Filter
-        dat[, check_counts:= sum(umi_counts)>=10, .(L, R)]
+        dat[, check_counts:= sum(umi_counts)>5, .(L, R)]
         dat <- dat[(check_counts), !"check_counts"]
         # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
         # Normalize
         dat[, norm:= (umi_counts+1)/sum(umi_counts)*1e6, cdition]
-        # Compute FC
+        # Cast before FC computation
         res <- dcast(dat,
                      L+R~cdition,
                      value.var= "norm")
         res <- na.omit(res)
+        # Compute FC for each rep and then log2
         res[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
         # Subtract basal activity (center controls on 0)
-        res[, log2FoldChange:= log2FoldChange-median(res[grepl("control", L) & grepl("control", R), log2FoldChange])]
+        res[, log2FoldChange:= log2FoldChange-mean(res[grepl("control", L) & grepl("control", R), log2FoldChange])]
         # Compute expected
-        res[, median_L:= {
-          sub <- .SD[grepl("control", R)]
-          if(nrow(sub)>=5)
-            log2(median(2^sub$log2FoldChange)) else
-              as.numeric(NA)
-        }, L]
-        res[, median_R:= {
-          sub <- .SD[grepl("control", L)]
-          if(nrow(sub)>=5)
-            log2(median(2^sub$log2FoldChange)) else
-              as.numeric(NA)
-        }, R]
+        median_L <- res[grepl("control", R) , .(check= .N>5, median_L= median(log2FoldChange)), L][(check)]
+        res[median_L, median_L:= i.median_L, on= "L"]
+        median_R <- res[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange)), R][(check)]
+        res[median_R, median_R:= i.median_R, on= "R"]
         res[, additive:= log2(2^median_L+2^median_R)]
         # SAVE
         res <- na.omit(res[, .(L, R, log2FoldChange, median_L, median_R, additive)])

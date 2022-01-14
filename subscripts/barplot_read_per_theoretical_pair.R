@@ -37,5 +37,3 @@ legend("topright",
        bty= "n")
 abline(h= 10)
 dev.off()
-
-file.show("pdf/alignment/barplot_read_per_theoretical_pair.pdf")

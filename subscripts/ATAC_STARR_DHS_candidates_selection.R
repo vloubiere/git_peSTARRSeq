@@ -37,10 +37,11 @@ bw <- c("/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/DSCP_200bp_
         "/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSE81795_H3K4me3_rep1_uniq.bw",
         "/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSE41440_H3K27ac_rep1_uniq.bw")
 
-pdf("pdf/screenshots_selection_DHS+_STARR-.pdf", width = 10, height = 7)
+pdf("pdf/design/screenshots_selection_DHS+_STARR-.pdf", width = 10, height = 7)
 par(mar= c(1,15,1,1))
 sel[, {
   vl_screenshot(GRanges(ext),
+                genome = "dm3",
                 bw,
                 highlight_regions = GRanges(peaks),
                 max = c(45, 100, 8, 8, 13, 35, 30))

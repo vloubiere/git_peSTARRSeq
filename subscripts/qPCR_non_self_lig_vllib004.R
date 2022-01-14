@@ -1,4 +1,4 @@
-setw("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
 #------------------------------------------------#
 # PCR 1, 12-01-2021, too high quantities 
@@ -30,7 +30,7 @@ pl1[dna_quant>0, efficiency:= sapply(lm, function(x) round((-1/(10^summary(x)$co
 pl2 <- dat[!grepl("0ng$", dna), .(temp= unlist(melt_temp[[1]]), value= unlist(melt_value[[1]])), .(Well, primer, Cc)]
 
 # PLOT
-pdf("pdf/qPCR_non_self_ligation/vllib004_20210112.pdf", width = 11, height = 4)
+pdf("pdf/design/qPCR_non_self_ligation_vllib004_20210112.pdf", width = 11, height = 4)
 layout(matrix(1:3, ncol=3), widths = c(1,0.5,1))
 plot(NA, xlim= c(-3.5, 2), ylim= c(5, 20), xlab= "log(DNA)", ylab= "Cq")
 pl1[dna_quant>0, 
@@ -83,7 +83,7 @@ pl1[dna_quant>0, efficiency:= sapply(lm, function(x) round((-1/(10^summary(x)$co
 pl2 <- dat[!grepl("H2O$", dna), .(temp= unlist(melt_temp[[1]]), value= unlist(melt_value[[1]])), .(Well, primer, Cc)]
 
 # PLOT
-pdf("pdf/qPCR_non_self_ligation/vllib004_20210113.pdf", width = 11, height = 4)
+pdf("pdf/design/qPCR_non_self_ligation_vllib004_20210113.pdf", width = 11, height = 4)
 layout(matrix(1:4, ncol=4), widths = c(1,0.5,0.5,1))
 plot(NA, xlim= c(-10, -5), ylim= c(8, 30), xlab= "log(DNA)", ylab= "Cq")
 pl1[dna_quant>0, 

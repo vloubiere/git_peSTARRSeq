@@ -21,8 +21,8 @@ dat[!file.exists(file), file.copy(molBio, file), .(molBio, file)]
 #---------------------------------------------------#
 # IMPORT sequences
 #---------------------------------------------------#
-pl <- fread("../../exp_data/vl_plasmids.txt", 
-            key= "ID")
+pl <- as.data.table(readxl::read_xlsx("../../exp_data/vl_plasmids.xlsx"), 
+                    key= "ID")
 constructs <- fread("../../exp_data/vl_constructs_sequences.txt", 
                     key= "name")
 dat[, refseq:= pl[.BY, Sequence, on= "ID==current"], .(current= gsub("(.*)_.*", "\\1", name))]
@@ -32,7 +32,7 @@ dat[, refseq:= paste0(substr(refseq, 4000, nchar(refseq)), substr(refseq, 1, 399
 #---------------------------------------------------#
 # IMPORT sequences
 #-------------------------------------------------------#
-pdf("pdf/sanger_sequencing/sanger_alternative_CPs_20211122.pdf")
+pdf("pdf/design/sanger/sanger_alternative_CPs_FINAL_20211122.pdf")
 dat[, {
   vl_sanger_align(refseq, 
                   abfiles = file, 

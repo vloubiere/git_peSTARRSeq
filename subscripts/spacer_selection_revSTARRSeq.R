@@ -20,7 +20,7 @@ dat[, no_RE:=  peaks[dat, all(abs(i.end-start)>3000 & i.start>min & i.end<max), 
 
 # Overlap exons
 TxDb <- "TxDb.Dmelanogaster.UCSC.dm3.ensGene"
-.e <- as.data.table(exons(TxDb.Dmelanogaster.UCSC.dm3.ensGene, columns= "GENEID"))
+.e <- as.data.table(GenomicFeatures::exons(TxDb.Dmelanogaster.UCSC.dm3.ensGene::TxDb.Dmelanogaster.UCSC.dm3.ensGene, columns= "GENEID"))
 .e <- .e[, .(GENEID= unlist(GENEID)), seqnames:strand]
 .e <- .e[order(seqnames, start, end, GENEID)]
 dat[, no_junction:= .e[dat, all(abs(i.start-start)>3000 & abs(i.start-end)>3000), .EACHI, on= "seqnames"]$V1]
@@ -39,12 +39,13 @@ dat[, CG_check:= CG_perc>45 & CG_perc<55]
 #-------------------------------------------------#
 regions <- dat[(no_RE) & (CG_check) & (no_junction)]
 
-pdf("pdf/STARRSeq_design/screenshot_potential_revSTARRSeq_spacers.pdf", width = 20, height = 5)
+pdf("pdf/design/screenshot_potential_revSTARRSeq_spacers.pdf", width = 20, height = 5)
 par(mar= c(5,20,2,2))
 regions[, {
   .c <- GRanges(.SD)
   .c <- unlist(GRangesList(.c, resize(.c, 20000, "center"), resize(.c, 100000, "center")))
   vl_screenshot(bed= .c,
+                genome = "dm3",
                 tracks =  c("/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSM480160_GA0840_Drosophila_S2_RNAseq.bw",
                             "/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSE119708_ATAC_rep1_uniq.bw",
                             "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/DSCP_200bp_gw.UMI_cut_merged.bw",

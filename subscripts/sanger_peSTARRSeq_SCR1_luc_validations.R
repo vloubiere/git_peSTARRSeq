@@ -32,7 +32,7 @@ dat[, refseq:= toupper(refseq)]
 feat <- fread("/groups/stark/vloubiere/exp_data/vl_constructs_sequences.txt", key = "name")
 feat <- feat[c("Flink_+0", "R1link+0", "R2link+0", "R3link+0", "SCR1")]
 
-pdf("pdf/sanger_sequencing/peSTARRSeq_SCR1_luciferase_validations_constructs.pdf", height = 2, width = 10)
+pdf("pdf/luciferase/sanger_sequencing_2.pdf", height = 2, width = 10)
 par(mar= c(1, 15, 5, 10))
 for(i in seq(nrow(dat)))
 {

@@ -25,7 +25,7 @@ pl$.id <- factor(pl$.id,
 
 
 # PLOT
-pdf("pdf/prom_enh_en_enh_distance.pdf", 
+pdf("pdf/design/prom_enh_en_enh_distance.pdf", 
     6, 
     8)
 par(mfrow= c(4, 1))

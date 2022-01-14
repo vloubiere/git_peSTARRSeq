@@ -39,7 +39,7 @@ dat[, refseq:= substr(refseq, 500, nchar(refseq)-250)]
 #-------------------------------------------------------#
 # Final check and plot
 #-------------------------------------------------------#
-pdf("pdf/sanger_sequencing/sanger_actCP_DSCP_20210714.pdf")
+pdf("pdf/design/sanger/sanger_actCP_DSCP_20210714.pdf")
 # par(mar= c(5,10,5,5))
 dat[, vl_sanger_align(refseq, 
                       abfiles = file, 

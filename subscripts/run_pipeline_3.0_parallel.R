@@ -10,8 +10,6 @@ dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/merged_counts/", sho
 dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", showWarnings = F)
 dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", showWarnings = F)
 dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/counts_norm/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/replicates_counts_norm/", showWarnings = F)
 
 #--------------------------------------------------------------#
 # Update exp data
@@ -47,7 +45,7 @@ meta[, c("summary_counts", "pairs_counts", "spike_counts", "switched_counts"):= 
     paste0(dir, "_merged_spikein_counts.txt"),
     paste0(dir, "_merged_switched_counts.txt"))
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
-meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/counts_norm/", 
+meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/", 
                                 group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
@@ -59,7 +57,7 @@ files <- list.files("db/fastq/", pattern, full.names = T)
 files <- c(files, list.files("db/sam/", pattern, full.names = T))
 files <- c(files, list.files("db/umi_counts/", pattern, full.names = T))
 files <- c(files, list.files("db/merged_counts/", pattern, full.names = T))
-files <- c(files, list.files("db/final_tables_exp_model/counts_norm/", pattern, full.names = T))
+files <- c(files, list.files("db/final_tables_exp_model/", pattern, full.names = T))
 
 #-------------------------------------------------------------#
 # PARALLELIZATION
@@ -71,7 +69,7 @@ meta[, {
   if(any(!check_exists))
   {
     # Save as a .R script
-    test <<- tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
+    tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
     fwrite(cbind(.SD, DESeq2, group), tmp)
     # Bsub
     Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 

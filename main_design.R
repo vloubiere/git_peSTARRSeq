@@ -42,8 +42,7 @@ if(F)
   # Sanger sequencing
   #-------------------------#
   # Backbones
-  file.edit("git_peSTARRSeq/subscripts/sanger_STARRSeq_backbone.R")
-  file.edit("git_peSTARRSeq/subscripts/sanger_actCP_STARRSeq_backbones.R")
+  file.edit("git_peSTARRSeq/subscripts/sanger_actCP_STARRSeq_backbones.R") # Failed, the CP is DSCP
   file.edit("git_peSTARRSeq/subscripts/sanger_actCP3_STARRSeq_backbone.R") # Failed, the CP is DSCP
   file.edit("git_peSTARRSeq/subscripts/sanger_alternative_CPs_STARRSeq_final.R")
   # Libraries single cols

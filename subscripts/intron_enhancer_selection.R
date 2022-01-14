@@ -52,11 +52,11 @@ if(!file.exists("Rdata/intron_enhancer_candidates.txt"))
 #-------------------------------------------------#
 # Screenshots
 #-------------------------------------------------#
-if(!file.exists("pdf/STARRSeq_design/screenshot_all_intron_enhncer_candidates.pdf"))
+if(!file.exists("pdf/design/screenshot_all_intron_enhncer_candidates.pdf"))
 {
   sel$sub <- rep(seq(100), each= 5)[1:nrow(sel)]
   
-  pdf("pdf/STARRSeq_design/screenshot_all_intron_enhncer_candidates.pdf", width = 15)
+  pdf("pdf/design/screenshot_all_intron_enhncer_candidates.pdf", width = 15)
   sel[, {
     .c <- GRanges(.SD)
     vl_screenshot(c("/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSM480160_GA0840_Drosophila_S2_RNAseq.bw",
@@ -65,6 +65,7 @@ if(!file.exists("pdf/STARRSeq_design/screenshot_all_intron_enhncer_candidates.pd
                     "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/DSCP_600bp_gw_cut_merged.bw",
                     "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/RpS12_200bp_gw.UMI_cut_merged.bw",
                     "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/RPS12_600bp_gw_cut_merged.bw"), 
+                  genome= "dm3",
                   bed = resize(.c, end-start+(2*size), "center") , 
                   max = c(100, 20, 50, 150, 150, 150), 
                   highlight_regions = .c)
@@ -78,7 +79,7 @@ if(!file.exists("pdf/STARRSeq_design/screenshot_all_intron_enhncer_candidates.pd
 #-------------------------------------------------#
 sub <- sel[c(1,7,8), !"sub"]              
 
-pdf("pdf/STARRSeq_design/screenshot_selected_introns_enhancer.pdf", width = 15)
+pdf("pdf/design/screenshot_selected_introns_enhancer.pdf", width = 15)
 sub[, {
   .c <- GRanges(seqnames = seqnames, IRanges(start, end))
   vl_screenshot(c("/groups/stark/vloubiere/projects/available_data_dm3/db/bw/GSM480160_GA0840_Drosophila_S2_RNAseq.bw",
@@ -87,6 +88,7 @@ sub[, {
                   "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/DSCP_600bp_gw_cut_merged.bw",
                   "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/RpS12_200bp_gw.UMI_cut_merged.bw",
                   "/groups/stark/vloubiere/projects/gw_STARRSeq_bernardo/db/bw/RPS12_600bp_gw_cut_merged.bw"), 
+                genome= "dm3",
                 bed = resize(.c, end-start+(2*size), "center") , 
                 max = c(100, 20, 50, 150, 150, 150), 
                 highlight_regions = .c)

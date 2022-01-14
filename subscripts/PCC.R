@@ -26,5 +26,3 @@ dat[, {
   print(title)
 }, .(vllib, cdition)]
 dev.off()
-
-file.show("pdf/alignment/PCC_replicates.pdf")
