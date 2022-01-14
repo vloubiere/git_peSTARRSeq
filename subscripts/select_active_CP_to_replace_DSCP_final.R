@@ -75,7 +75,7 @@ dat[grepl("vl_", name), name:= paste0(name, seq(.N)), name]
 #-------------------#
 # PLOT
 #-------------------#
-pdf("pdf/STARRSeq_design/RpS12_promoter_barplot.pdf", width= 10)
+pdf("pdf/design/RpS12_promoter_barplot.pdf", width= 10)
 mat <- dat[Cc=="gold", .(oligo_id, basal, dev, hk)]
 mat <- t(as.matrix(mat, 1))
 barplot(mat, 
@@ -88,7 +88,7 @@ legend("topright",
        bty= "n")
 dev.off()
 
-pdf("pdf/STARRSeq_design/CPs_hk_dev_responsiveness.pdf", width = 6, height = 6)
+pdf("pdf/design/CPs_hk_dev_responsiveness.pdf", width = 6, height = 6)
 par(pty= "s", 
     las= 1, 
     mfrow= c(2,2), cex= 0.5)
@@ -107,11 +107,6 @@ text(dat[!is.na(Cc), basal],
      labels = dat[!is.na(Cc), name], 
      pos= 4,
      col= dat[!is.na(Cc), Cc])
-# legend("bottomright", 
-#        bty= "n",
-#        pch= 19, 
-#        col= c("red", "green", "gold", "blue"),
-#        legend = c("Franzi", "vl", "RpS12", "AgeI/SalI"))
 # Plot dev
 smoothScatter(dat$basal,
               dat$dev,
@@ -183,7 +178,7 @@ all_CPs <- c(sel$oligo_id,
 mat <- as.matrix(STAP[all_CPs, .SD, on= "bowtie_index", .SDcols= patterns("_norm")])
 rownames(mat) <- paste0(all_CPs, "/", dat[all_CPs, name, on= "oligo_id"], " -> cl", STAP[sel$oligo_id, TSS_cluster, on= "bowtie_index"])
 
-pdf("pdf/STARRSeq_design/heatmp_COF_induction_active_CPs.pdf", width = 12)
+pdf("pdf/design/heatmp_COF_induction_active_CPs.pdf", width = 12)
 vl_heatmap(mat, 
            breaks = c(-2,0,8), 
            display_numbers = T)

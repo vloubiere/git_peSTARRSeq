@@ -77,7 +77,7 @@ dat[(check), c("Cc", "name"):= .("purple",
 # PLOT
 #-------------------#
 # Order so that colored dots appear first
-pdf("pdf/STARRSeq_design/CPs_responsiveness.pdf")
+pdf("pdf/design/CPs_responsiveness.pdf")
 par(pty= "s", 
     las= 1)
 # Plot developmental induction

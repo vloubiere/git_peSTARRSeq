@@ -51,5 +51,3 @@ dat[, {
   print(paste0(group, " -->>DONE!"))
 }, group]
 dev.off()
-
-file.show("pdf/alignment/saturation.pdf")

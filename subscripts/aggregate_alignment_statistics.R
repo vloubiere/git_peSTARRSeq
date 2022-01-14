@@ -44,5 +44,3 @@ barplot(pl,
 abline(v= 50, 
        lty= 2)
 dev.off()
-
-file.show("pdf/alignment/aggregate_alignment_statistics.pdf")

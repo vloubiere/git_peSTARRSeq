@@ -32,7 +32,7 @@ scheme <- scheme[, .SD[, .(row, col,
 scheme <- scheme[, !"tech_replicate"]
 
 # ID/sample correspondance
-pl <- fread("../../exp_data/vl_plasmids.txt")[Experiment=="peSTARRSeq_validations"]
+pl <- as.data.table(read_xlsx("../../exp_data/vl_plasmids.xlsx"))[Experiment=="peSTARRSeq_validations"]
 pl[, Sample_ID:= gsub(".* (.*)$", "\\1", labbook)]
 scheme[pl, c("L", "R"):= tstrsplit(i.contains, "__SCR1__"), on= "Sample_ID"]
 
@@ -59,11 +59,28 @@ dat[, check := .N>=3 & !is.na(Sample_ID), Sample_ID]
 dat <- dat[(check), !"check"]
 # Mean replicates
 dat <- dat[, .(luc_norm= mean(luc/ren)), .(Sample_ID, L, R, bio_replicate= replicate)]
-# Normalize for negative controls
-dat[, luc_norm:= luc_norm/mean(dat[grepl("^control", L) & grepl("^control", R), luc_norm])]
-# Compute additive scores
-dat[, luc_mean_L:= mean(.SD[grepl("^control", R), luc_norm], na.rm= T), .(bio_replicate, L)]
-dat[, luc_mean_R:= mean(.SD[grepl("^control", L), luc_norm], na.rm= T), .(bio_replicate, R)]
-dat[, luc_add:= luc_mean_L+luc_mean_R]
 
-saveRDS(dat, "Rdata/validations_luciferase_final_table.rds")
+#------------------------------------------------------------#
+# 4- Process similarly to STARR-Seq norm and merge with STARR-Seq
+#------------------------------------------------------------#
+# log2FC and sd
+final <- dat[, .(log2FoldChange_luc= mean(log2(luc_norm), na.rm= T), 
+                 sd_luc= sd(log2(luc_norm), na.rm= T)), .(L, R)]
+# Center on negative controls
+center <- mean(final[grepl("control", L) & grepl("control", R), log2FoldChange_luc])
+final[, log2FoldChange_luc:= log2FoldChange_luc-center]
+final[, log2FoldChange_luc_all:= .(.(dat[.BY, log2(luc_norm), on=c("L", "R")]-center)), .(L, R)]
+# add features
+feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
+final[feat, c("group_L", "col_L"):= .(group, col), on= "L==ID"]
+final[feat, c("group_R", "col_R"):= .(group, col), on= "R==ID"]
+# Add STARR
+STARR <- fread("db/final_tables_exp_model/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.txt")
+final[STARR, log2FoldChange_STARR:= i.log2FoldChange, on= c("L", "R")]
+final[STARR, additive_STARR:= i.additive, on= c("L", "R")]
+# Add leftright/add act for barplot
+final[, mean_luc_L:= mean(log2FoldChange_luc[group_R=="control"], na.rm= T), L]
+final[, mean_luc_R:= mean(log2FoldChange_luc[group_L=="control"], na.rm= T), R]
+final[, additive_luc:= log2(2^mean_luc_L+2^mean_luc_R)]
+
+saveRDS(final, "Rdata/validations_luciferase_final_table.rds")
