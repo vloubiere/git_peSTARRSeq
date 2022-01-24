@@ -2,17 +2,14 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import
-if(!exists("dat"))
-{
-  dat <- readRDS("Rdata/final_results_table.rds")
-  dat <- dat[L!=R]
-  # Filter for minimum N
-  dat[, check:= .SD[, rep(.N>100, .N), .(group_L, group_R)]$V1, vllib]
-  dat <- dat[(check), !"check"]
-}
+dat <- readRDS("Rdata/final_results_table.rds")
+dat <- dat[L!=R]
+# Filter for minimum N
+dat[, check:= .SD[, rep(.N>100, .N), .(group_L, group_R)]$V1, vllib]
+dat <- dat[(check), !"check"]
 
 # PLOT
-pdf("pdf/aggregate_activity/aggregate_activity_additivity.pdf",
+pdf("pdf/analyses/balloons_plots_aggregate_activity_additivity.pdf",
     height = 4.5,
     width = 14.5)
 par(mfrow= c(1, 3))
