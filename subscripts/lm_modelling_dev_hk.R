@@ -8,21 +8,84 @@ library(ggplot2)
 library(repr)
 require(glmnet)
 
-rename_motif_cols <- function(old)
-{
-  uniq_names <- data.table(motif= vl_Dmel_motifs_DB_full$motif,
-                           uniq_name= make.unique(gsub("[.]|/|-", "_", vl_Dmel_motifs_DB_full$motif_name), sep = "_"))
-  new_vars <- uniq_names[gsub("_L$|_R$", "", old), uniq_name, on= "motif"]
-  new_vars[grepl("_L$|_R$", old)] <- paste0(new_vars, substr(old, nchar(old)-1, nchar(old)))
-  return(new_vars)
-}
-
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
 dat <- readRDS("Rdata/final_results_table.rds")
 # Restrict to "smaller" and cleaner twist 12
-dat <- dat[library=="T12"]
+dat <- dat[vllib %in% c("vllib016", "vllib015")][group_L!="control" & group_R!="control"]
+# dat <- dat[vllib=="vllib016"][group_L!="control" & group_R!="control"]
+
+# subgroups
+set.seed(1)
+dat[, subset_L:= sample(c("train", "test"), .N, replace = T, prob = c(1.5, 1)), L]
+set.seed(2)
+dat[, subset_R:= sample(c("train", "test"), .N, replace = T, prob = c(1.5, 1)), R]
+length(which(dat$subset_L=="test" & dat$subset_R=="test"))/nrow(dat)
+dat[, subset:= ifelse(subset_L=="test" & subset_R=="test", "test", "train")]
+dat[, col:= colorRampPalette(unlist(.BY))(3)[2], .(col_L, col_R)]
+setkeyv(dat, "subset")
+
+data <- dat[, .(CP, subset, log2FoldChange, sapply(.SD, scale)), .SDcols= c("median_L", "median_R")]
+.lm <- lm(log2FoldChange~CP+median_L*median_R,
+          data["train"])
+
+# Prediction
+predict_train <- predict(.lm)
+predict_test <- predict(.lm,
+                        newdata = data["test"])
+# Evaluation
+eval_train <- vl_model_eval(observed = data["train", log2FoldChange],
+                            predicted = predict_train)
+setnames(eval_train, function(x) paste0(x, "_train"))
+eval_test <- vl_model_eval(observed = data["test", log2FoldChange],
+                           predicted = predict_test)
+setnames(eval_test, function(x) paste0(x, "_test"))
+eval_train
+eval_test
+
+
+obs <- data$log2FoldChange
+exp <- predict(.lm, newdata= data)
+
+# pdf("test/test_scatterplots.pdf")
+par(mfrow= c(2,3),
+    las= 1,
+    pch= 16)
+plot(obs,
+     exp,
+     col= adjustcolor(dat$col, 0.5),
+     cex= 0.5)
+abline(0, 1)
+legend("topleft", 
+       paste0("PCC= ", 
+              round(cor.test(obs, exp)$estimate, 2), 
+              "\nR2= ", 
+              round(vl_model_eval(obs,
+                                  exp)$Rsquare, 2)),
+       bty= "n")
+legend("bottomright", 
+       paste0("PCC= ", 
+              round(cor.test(obs, exp)$estimate, 2), 
+              "\nR2= ", 
+              round(vl_model_eval(obs,
+                                  exp)$Rsquare, 2)),
+       bty= "n")
+
+
+
+
+plot(data$log2FoldChange,
+     data$log2FoldChange-predict(.lm, newdata= data),
+     col= adjustcolor(dat$col, 0.5),
+     pch= 16,
+     cex= 0.7)
+abline(h= 0)
+dev.off()
+
+
+
+
 setkeyv(dat, c("CP", "spacer", "group_L", "group_R"))
 # Select dependent & predictor variables
 obj <- rbindlist(list(dev= dat[.("DSCP", "SCR1_300")],
@@ -38,6 +101,14 @@ setnames(feat$top_motifs,
          new_sel_motifs)
 obj <- feat$add_feature(DT= obj, 
                         feature = feat$top_motifs[, c("ID", new_sel_motifs), with= F])
+
+
+
+
+
+
+
+
 
 #---------------------------------------------#
 # Modelling

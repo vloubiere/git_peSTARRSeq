@@ -1,4 +1,6 @@
+setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
+require(readxl)
 
 #------------------------------------------------------------#
 # 1- Import and format data
@@ -25,7 +27,7 @@ colnames(rep) <- c("row", "col", "tech_replicate")
 scheme <- merge(scheme, rep)
 scheme <- scheme[, .SD[, .(row, col, 
                            replicate= .GRP), 
-                       .(tech_replicate, 
+                       .(tech_replicate,
                          date, 
                          plate)], 
                  Sample_ID]
@@ -72,12 +74,10 @@ final[, log2FoldChange_luc:= log2FoldChange_luc-center]
 final[, log2FoldChange_luc_all:= .(.(dat[.BY, log2(luc_norm), on=c("L", "R")]-center)), .(L, R)]
 # add features
 feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
-final[feat, c("group_L", "col_L"):= .(group, col), on= "L==ID"]
-final[feat, c("group_R", "col_R"):= .(group, col), on= "R==ID"]
+final <- feat$add_feature(final, feat$lib)
 # Add STARR
-STARR <- fread("db/final_tables_exp_model/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.txt")
-final[STARR, log2FoldChange_STARR:= i.log2FoldChange, on= c("L", "R")]
-final[STARR, additive_STARR:= i.additive, on= c("L", "R")]
+STARR <- fread("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.txt")
+final <- merge(final, STARR, by= c("L", "R"), all.x = T)
 # Add leftright/add act for barplot
 final[, mean_luc_L:= mean(log2FoldChange_luc[group_R=="control"], na.rm= T), L]
 final[, mean_luc_R:= mean(log2FoldChange_luc[group_L=="control"], na.rm= T), R]

@@ -41,25 +41,25 @@ mc.cores = getDTthreads())
 # Alignment
 # Align each fastq file and produces SAM ouptut
 #--------------------------------------------------------------#
-meta[, {
-  if(file.exists(sam))
-    print(paste0(sam, " -->> ALREADY EXISTS")) else
-    {
-      subread_index <- switch(library, 
-                              "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
-                              "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
-      align(index = subread_index,
-            readfile1 = fq1,
-            readfile2 = fq2,
-            output_format = "SAM",
-            output_file = sam,
-            maxMismatches = 3,
-            unique = T,
-            nTrim5 = 3,
-            nthreads = getDTthreads())
-      print(paste0(sam, " -->> DONE"))
-    }
-}, .(fq1, fq2, sam, library)]
+# meta[, {
+#   if(file.exists(sam))
+#     print(paste0(sam, " -->> ALREADY EXISTS")) else
+#     {
+#       subread_index <- switch(library, 
+#                               "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
+#                               "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
+#       align(index = subread_index,
+#             readfile1 = fq1,
+#             readfile2 = fq2,
+#             output_format = "SAM",
+#             output_file = sam,
+#             maxMismatches = 3,
+#             unique = T,
+#             nTrim5 = 3,
+#             nthreads = getDTthreads())
+#       print(paste0(sam, " -->> DONE"))
+#     }
+# }, .(fq1, fq2, sam, library)]
 
 #--------------------------------------------------------------#
 # Primary counts
@@ -191,16 +191,32 @@ if(any(meta$DESeq2))
         res <- na.omit(res)
         # Compute FC for each rep and then log2
         res[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
+        # Check if individual enhancer is active
+        control_pairs_log2FC <- res[grepl("control", L) & grepl("control", R), log2FoldChange]
+        res[, act_wilcox_L:= {
+          .c <- log2FoldChange[grepl("control", R)]
+          if(length(.c)>5)
+            wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
+              as.numeric(NA)
+        }, L]
+        res[, act_wilcox_R:= {
+          .c <- log2FoldChange[grepl("control", L)]
+          if(length(.c)>5)
+            wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
+          as.numeric(NA)
+        }, R]
         # Subtract basal activity (center controls on 0)
-        res[, log2FoldChange:= log2FoldChange-mean(res[grepl("control", L) & grepl("control", R), log2FoldChange])]
+        res[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
         # Compute expected
         median_L <- res[grepl("control", R) , .(check= .N>5, median_L= median(log2FoldChange)), L][(check)]
         res[median_L, median_L:= i.median_L, on= "L"]
         median_R <- res[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange)), R][(check)]
         res[median_R, median_R:= i.median_R, on= "R"]
+        # Expected
         res[, additive:= log2(2^median_L+2^median_R)]
+        res[, multiplicative:= median_L+median_R]
         # SAVE
-        res <- na.omit(res[, .(L, R, log2FoldChange, median_L, median_R, additive)])
+        res <- na.omit(res[, .(L, R, log2FoldChange, median_L, median_R, act_wilcox_L, act_wilcox_R, additive, multiplicative)])
         fwrite(res, FC_file)
         print(paste0(FC_file, "  -->> DONE"))
       }

@@ -9,14 +9,8 @@ dat[, vllib:= factor(vllib, levels= sort(unique(dat$vllib)))]
 dat[, library:= factor(library, c("T8", "T12"))]
 dat$FC_file <- NULL
 dat$spacer_size <- NULL
-# Add extra columns
-dat[, additive:= log2(2^median_L+2^median_R)]
-dat[, diff:= log2FoldChange-additive]
-dat[, active:= ifelse(median_L>1 & median_R>1, T, F)]
-
-# Add features
-feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
-dat <- feat$add_feature(DT= dat, feature = feat$lib)
+dat[, class_L:= ifelse(act_wilcox_L<0.05 & median_L>=1, "active", "inactive")]
+dat[, class_R:= ifelse(act_wilcox_R<0.05 & median_R>=1, "active", "inactive")]
 
 # Clean
 saveRDS(dat, "Rdata/final_results_table.rds")

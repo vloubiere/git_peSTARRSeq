@@ -2,15 +2,6 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(readxl)
 require(data.table)
 
-# PATHS
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/fastq/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/sam/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/merged_counts/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", showWarnings = F)
-dir.create("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/", showWarnings = F)
-
 #--------------------------------------------------------------#
 # Update exp data
 # Fetch dropbox folder containing my metadata and update local files
@@ -45,26 +36,27 @@ meta[, c("summary_counts", "pairs_counts", "spike_counts", "switched_counts"):= 
     paste0(dir, "_merged_spikein_counts.txt"),
     paste0(dir, "_merged_switched_counts.txt"))
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
-meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/final_tables_exp_model/", 
+meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
                                 group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
 #-------------------------------------------------------------#
 # File removal?
 #-------------------------------------------------------------#
-pattern <- "vllib015|vllib016|vllib017|vllib018|vllib019|vllib020|vllib021|vllib022"
+pattern <- "vllib023|vllib024|vllib025|vllib026|vllib027|vllib028"
 files <- list.files("db/fastq/", pattern, full.names = T)
-files <- c(files, list.files("db/sam/", pattern, full.names = T))
-files <- c(files, list.files("db/umi_counts/", pattern, full.names = T))
-files <- c(files, list.files("db/merged_counts/", pattern, full.names = T))
-files <- c(files, list.files("db/final_tables_exp_model/", pattern, full.names = T))
+files <- list.files("db/sam/", pattern, full.names = T)
+files <- list.files("db/umi_counts/", pattern, full.names = T)
+files <- list.files("db/merged_counts/", pattern, full.names = T)
+files <- list.files("db/FC_tables/", pattern, full.names = T)
 
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
 cols <- c("fq1", "fq2", "sam", "sam_summary", "umi_counts", "umi_summary", 
           "summary_counts", "pairs_counts", "spike_counts", "switched_counts", "FC_file")
-meta$check_exists <- meta[, apply(.SD, 1, function(x) all(file.exists(x[!is.na(x)]))), .SDcols= cols]
+meta[, check_exists:= all(file.exists(na.omit(unlist(.SD)))), .(group, DESeq2), .SDcols= cols]
+meta <- meta[!(check_exists)]
 meta[, {
   if(any(!check_exists))
   {
@@ -88,7 +80,7 @@ meta[, {
     }else{
       bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
                         "-C 4", # N cpus
-                        "-m 8", # memory
+                        "-m 16", # memory
                         paste("-n", group), #name
                         "-T '08:00:00'", #name
                         "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
