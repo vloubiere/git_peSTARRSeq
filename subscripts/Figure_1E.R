@@ -1,39 +1,28 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+require(data.table)
+require(vlfunctions)
 
-# Import STARR-Seq data
-dat <- readRDS("Rdata/validations_luciferase_final_table.rds")
-dat[, inferred:= is.na(log2FoldChange)]
-dat[is.na(log2FoldChange), c("log2FoldChange", "act_wilcox_L", "act_wilcox_R"):= .(0, 1, 1)]
-dat[, col:= fcase(group_L=="control" & group_R=="control", "lightgrey",
-                  act_wilcox_L>=0.001 & group_R=="control", "royalblue2",
-                  act_wilcox_L<0.001 & group_R=="control", "royalblue2",
-                  group_L=="control" & act_wilcox_R<0.001, "royalblue2",
-                  act_wilcox_L<0.001 & act_wilcox_R<0.001, "#74C27A")]
-.lm <- lm(log2FoldChange_luc~log2FoldChange,
-          dat)
+#-----------------------------------------------#
+# Import data
+#-----------------------------------------------#
+lib <- readRDS("Rdata/final_results_table.rds")
+feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
+dat <- lib[vllib=="vllib002"]
+dat <- dat[class %in% c("ctl./ctl.", "ctl./enh.", "enh./ctl.", "enh./enh.")]
+dat[, class:= droplevels(class)]
 
-#----------------------------------------------#
-# PLOT
-#----------------------------------------------#
-# PCC ---------------#
-pdf("pdf/draft/Figure_1E.pdf", 4.5, 4.5)
-par(las= 1,
-    mar= c(5.1, 4.1, 2.1, 2.1))
-plot(dat[, .(log2FoldChange, log2FoldChange_luc)],
-     col= dat$col, 
-     pch= 19,
-     xlab= "pe-STARR-Seq activity (log2)",
-     ylab= "Normalized luciferase activity (log2)")
-segments(dat$log2FoldChange,
-         dat$log2FoldChange_luc-dat$sd_luc,
-         dat$log2FoldChange,
-         dat$log2FoldChange_luc+dat$sd_luc,
-         col= dat$col)
-dat[(inferred), points(log2FoldChange, log2FoldChange_luc)]
-abline(.lm, lty=2)
-legend("topleft", 
-       legend = paste("R²=", round(summary(.lm)$r.squared, 2)), 
-       lty= 2, 
-       bty= "n")
+pdf("pdf/draft/Figure_1E.pdf", width = 3, height = 4.5)
+par(las= 2, mar= c(6,4,1,1))
+vl_boxplot(log2FoldChange~class,
+           dat,
+           violin= T, 
+           compute_pval = list(c(1,2), c(1,3), c(2,4), c(3,4)),
+           violcol = dat[!is.na(col), col[1], keyby= class]$V1,
+           ylab= "Activity (log2)", 
+           ylab.line = 2, 
+           wilcox.alternative = "less", 
+           pval_adj= 0.06)
+abline(h= 0, lty= 2)
 dev.off()
+
 

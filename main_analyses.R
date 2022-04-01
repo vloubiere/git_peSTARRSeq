@@ -18,10 +18,22 @@ if(F)
   # Observed vs additive
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_1B.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_1C.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_1D.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_1CD.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_1E.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_1FG.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/Figure_2A.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2D.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2E.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2F.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/Figure_3AB.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_3C.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_3D.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/Figure_4A.R")
   
   file.edit("git_peSTARRSeq/subscripts/activity_aggregate.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_DSCP_large_screen.R")

@@ -5,82 +5,59 @@ require(readxl)
 #------------------------------------------------------------#
 # 1- Import and format data
 #------------------------------------------------------------#
-# Plate schemes
-scheme <- data.table(file= list.files("db/luciferase/peSTARRSeq_validations/", "scheme", recursive = T, full.names = T))
-scheme[, c("date", "plate") := tstrsplit(basename(file), "_|[.]", keep= c(1,3)), file]
-scheme <- scheme[, melt(fread(file, 
-                              header = T, 
-                              colClasses = "character", 
-                              na.strings = "", 
-                              fill= T), 
-                        id.vars = "rownames", 
-                        value.name = "Sample_ID"), (scheme)]
-colnames(scheme)[4:5] <- c("row", "col")
-# Add technical replicates
-rep <- fread("db/luciferase/peSTARRSeq_validations/validations_luciferase_plates_replicates_grid.csv", 
-             header = T, 
-             colClasses = "character", 
-             na.strings = "", 
-             fill= T)
-rep <- melt(rep, id.vars = "rownames")
-colnames(rep) <- c("row", "col", "tech_replicate")
-scheme <- merge(scheme, rep)
-scheme <- scheme[, .SD[, .(row, col, 
-                           replicate= .GRP), 
-                       .(tech_replicate,
-                         date, 
-                         plate)], 
-                 Sample_ID]
-scheme <- scheme[, !"tech_replicate"]
+dat <- data.table(Sample_ID_file= list.files("db/luciferase/peSTARRSeq_validations/", "scheme", recursive = T, full.names = T))
+dat[, c("date", "plate") := tstrsplit(basename(Sample_ID_file), "_|[.]", keep= c(1,3)), Sample_ID_file]
+dat[, tech_rep_file:= "db/luciferase/peSTARRSeq_validations/validations_luciferase_plates_replicates_grid.csv"]
+dat[, luc_file:= list.files("db/luciferase/peSTARRSeq_validations/", 
+                            pattern = paste0(date, ".*", plate, ".*lum1.csv$"),
+                            recursive = T, 
+                            full.names = T), .(date, plate)]
+dat[, ren_file:= list.files("db/luciferase/peSTARRSeq_validations/", 
+                            pattern = paste0(date, ".*", plate, ".*lum2.csv$"),
+                            recursive = T, 
+                            full.names = T), .(date, plate)]
+cols <- grep("file$", names(dat), value= T)
+dat[, gsub("_file$", "", cols):= lapply(.SD, function(x){
+  .c <- fread(x, 
+              header = T, 
+              colClasses = "character",
+              na.strings = as.character(NA), 
+              fill= T)
+  .c <- .c[, 1:25, with= F]
+  setnames(.c, 1, "row")
+  cols <- names(.c)[-1]
+  if(!grepl("_scheme_", x))
+    .c[, (cols):= lapply(.SD, as.numeric), .SDcols= cols]
+  .(melt(.c, id.vars = "row")[[3]])
+}), (dat), .SDcols= cols]
+dat <- dat[, lapply(.SD, unlist), .(plate, date), .SDcols= c("Sample_ID", "tech_rep", "luc", "ren")]
 
+#------------------------------------------------------------#
+# 2- Compute enrichment
+#------------------------------------------------------------#
+dat <- dat[ren>2500]
+dat[, N_tech_rep:= .N, .(Sample_ID, plate, date)]
+dat <- dat[N_tech_rep>2]
+dat <- dat[, .(norm= mean(luc/ren)), .(Sample_ID, plate, date)]
+dat[, N_bio_rep:= .N, Sample_ID]
+dat <- dat[N_bio_rep>2, .(Sample_ID, norm)]
+
+#------------------------------------------------------------#
+# 3- Final table processed similarly to peSTARRSeq
+#------------------------------------------------------------#
 # ID/sample correspondance
-pl <- as.data.table(read_xlsx("../../exp_data/vl_plasmids.xlsx"))[Experiment=="peSTARRSeq_validations"]
-pl[, Sample_ID:= gsub(".* (.*)$", "\\1", labbook)]
-scheme[pl, c("L", "R"):= tstrsplit(i.contains, "__SCR1__"), on= "Sample_ID"]
+samples <- as.data.table(read_xlsx("../../exp_data/vl_plasmids.xlsx"))[Experiment=="peSTARRSeq_validations"]
+samples[, Sample_ID:= gsub(".* (.*)$", "\\1", labbook)]
+dat[samples, c("L", "R"):= tstrsplit(i.contains, "__SCR1__"), on= "Sample_ID"]
+# Log2 FoldChange
+dat <- dat[, .(log2FoldChange= mean(log2(norm)),
+               sd= sd(log2(norm))), .(L, R)]
+# center on negative controls
+dat[, log2FoldChange:= log2FoldChange-mean(dat[grepl("control", L) & grepl("control", R), log2FoldChange])]
+# Compute individual act
+dat[, mean_L:= mean(log2FoldChange[grepl("control", R)]), L]
+dat[, mean_R:= mean(log2FoldChange[grepl("control", L)]), R]
+dat[, additive:= log2(2^mean_L+2^mean_R)]
+dat <- na.omit(dat)
 
-#------------------------------------------------------------#
-# 2- Import luciferase data
-#------------------------------------------------------------#
-luc <- data.table(file= list.files("db/luciferase/peSTARRSeq_validations/", 
-                                   pattern = "peSTARRvalid", 
-                                   recursive = T, 
-                                   full.names = T))
-luc[, c("date", "plate", "lum") := tstrsplit(basename(file), "_|[.]", keep= c(1,3,4)), file]
-luc <- luc[, melt(fread(file, header = T)[, 1:25], id.vars = "V1"), (luc)]
-colnames(luc)[5:6] <- c("row", "col")
-luc <- dcast(luc, date+plate+row+col~lum)
-colnames(luc)[5:6] <- c("luc", "ren")
-
-#------------------------------------------------------------#
-# 3- Merge and process
-#------------------------------------------------------------#
-merged <- merge(scheme, luc, by= c("date", "plate", "row", "col"))
-# Cutoffs rennilla and N tech replicates
-dat <- merged[ren>7500]
-dat[, check := .N>=3 & !is.na(Sample_ID), Sample_ID]
-dat <- dat[(check), !"check"]
-# Mean replicates
-dat <- dat[, .(luc_norm= mean(luc/ren)), .(Sample_ID, L, R, bio_replicate= replicate)]
-
-#------------------------------------------------------------#
-# 4- Process similarly to STARR-Seq norm and merge with STARR-Seq
-#------------------------------------------------------------#
-# log2FC and sd
-final <- dat[, .(log2FoldChange_luc= mean(log2(luc_norm), na.rm= T), 
-                 sd_luc= sd(log2(luc_norm), na.rm= T)), .(L, R)]
-# Center on negative controls
-center <- mean(final[grepl("control", L) & grepl("control", R), log2FoldChange_luc])
-final[, log2FoldChange_luc:= log2FoldChange_luc-center]
-final[, log2FoldChange_luc_all:= .(.(dat[.BY, log2(luc_norm), on=c("L", "R")]-center)), .(L, R)]
-# add features
-feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
-final <- feat$add_feature(final, feat$lib)
-# Add STARR
-STARR <- fread("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.txt")
-final <- merge(final, STARR, by= c("L", "R"), all.x = T)
-# Add leftright/add act for barplot
-final[, mean_luc_L:= mean(log2FoldChange_luc[group_R=="control"], na.rm= T), L]
-final[, mean_luc_R:= mean(log2FoldChange_luc[group_L=="control"], na.rm= T), R]
-final[, additive_luc:= log2(2^mean_luc_L+2^mean_luc_R)]
-
-saveRDS(final, "Rdata/validations_luciferase_final_table.rds")
+saveRDS(dat, "Rdata/validations_luciferase_final_table.rds")
