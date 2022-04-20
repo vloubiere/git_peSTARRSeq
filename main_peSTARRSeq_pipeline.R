@@ -13,6 +13,10 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
   file.edit("git_peSTARRSeq/subscripts/multi_screen_models.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R")
+  file.edit("git_peSTARRSeq/subscripts/density_reads_position.R")
+  
   #----------- QC -----------#
   source("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
   source("git_peSTARRSeq/subscripts/sequencing_saturation.R")

@@ -9,12 +9,13 @@ dat <- readRDS("Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
 
 pdf("pdf/draft/Figure_2D.pdf",
     width= 6.5,
-    height = 4.5)
+    height = 5)
 par(mgp= c(1.5,0.35,0))
 for(side in c("mot_enr_L", "mot_enr_R"))
 {
-  switch(side=="mot_enr_L", par(mar= c(3,17,2,6)),
-         side=="mot_enr_R", par(mar= c(10,17,2,6)))
+  if(side=="mot_enr_L")
+    par(mar= c(7,17,2,6)) else if(side=="mot_enr_R")
+      par(mar= c(3,17,2,6))
   # Extract data
   enr <- dat[[side]]$enr[padj<fcase(side=="mot_enr_L", 0.001,
                                     side=="mot_enr_R", 0.01)]
@@ -22,15 +23,19 @@ for(side in c("mot_enr_L", "mot_enr_R"))
       c("motif_cluster_name", "motif_name", "pwm"):= .(i.Motif_cluster_name, i.motif_name, pwms_perc),
       on= "variable==uniqName_noSpecialChar"]
   enr <- enr[, .SD[which.max(abs(log2OR))], motif_cluster_name]
-  setnames(enr, c("variable", "motif_cluster_name"), c("uniq_name", "variable"))
-  enr <- enr[order(abs(log2OR))<20]
+  setnames(enr, 
+           c("variable", "motif_cluster_name"), 
+           c("uniq_name", "variable"))
   setorderv(enr, "log2OR", -1)
+  enr[, check:= fcase(log2OR>0, .I<=10, 
+                      log2OR<0, .N-.I<=10)]
+  enr <- enr[(check), !"check"]
   
   # Plot
   bar <- plot(enr, 
               axes= F, 
-              xlab= "Cluster 2 / Cluster 1 odd Ratio (log2)", 
-              xlim= c(-2,2), 
+              xlab= "Strong / Weak odd Ratio (log2)", 
+              xlim= c(-2.5,2.5), 
               col= c("#00AEEF", "#EE2A7B"))
   axis(1, 
        at= c(-1,0,1),
@@ -70,8 +75,8 @@ for(side in c("mot_enr_L", "mot_enr_R"))
        col= adjustcolor(c("grey70", "grey20"), 0.7))
   text(c(-1, 1),
        par("usr")[4]+strheight("M")*1.25,
-       c("Enriched\nin cluster 1", 
-         "Enriched\nin cluster 2"),
+       c("Enriched\nin Weak", 
+         "Enriched\nin Strong"),
        xpd= T,
        cex= 0.8)
 }

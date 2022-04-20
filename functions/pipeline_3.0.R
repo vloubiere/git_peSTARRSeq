@@ -9,8 +9,10 @@ require(Biostrings)
 require(seqinr)
 require(Rsubread)
 require(readxl)
+require(stringdist)
 
 meta <- fread(commandArgs(trailingOnly=TRUE)[1])
+# meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
 print("Sample:")
 print(meta)
 libs <- as.data.table(read_excel("/groups/stark/vloubiere/exp_data/vl_libraries.xlsx"))
@@ -41,25 +43,27 @@ mc.cores = getDTthreads())
 # Alignment
 # Align each fastq file and produces SAM ouptut
 #--------------------------------------------------------------#
-# meta[, {
-#   if(file.exists(sam))
-#     print(paste0(sam, " -->> ALREADY EXISTS")) else
-#     {
-#       subread_index <- switch(library, 
-#                               "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
-#                               "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
-#       align(index = subread_index,
-#             readfile1 = fq1,
-#             readfile2 = fq2,
-#             output_format = "SAM",
-#             output_file = sam,
-#             maxMismatches = 3,
-#             unique = T,
-#             nTrim5 = 3,
-#             nthreads = getDTthreads())
-#       print(paste0(sam, " -->> DONE"))
-#     }
-# }, .(fq1, fq2, sam, library)]
+meta[, {
+  if(file.exists(bam))
+    print(paste0(bam, " -->> ALREADY EXISTS")) else
+    {
+      subread_index <- switch(library,
+                              "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
+                              "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
+      align(index = subread_index,
+            readfile1 = fq1,
+            readfile2 = fq2,
+            type = "dna",
+            output_format = "BAM",
+            output_file = bam,
+            maxMismatches = 3,
+            unique = T,
+            nTrim5 = 3,
+            nthreads = getDTthreads())
+      print(paste0(bam, " -->> DONE"))
+    }
+}, .(fq1, fq2, bam, library)]
+
 
 #--------------------------------------------------------------#
 # Primary counts
@@ -67,36 +71,32 @@ mc.cores = getDTthreads())
 #--------------------------------------------------------------#
 meta[, {
   if(file.exists(umi_counts))
-    print(paste0(umi_counts, " -->> ALREADY EXISTS")) else 
+    print(paste0(umi_counts, " -->> ALREADY EXISTS")) else
     {
-      .c <- fread(sam,
-                  skip = switch(library, "T8"= 1006, "T12"= 395),
-                  header= F,
+      .c <- fread(cmd= paste("module load  build-env/2020; module load samtools/1.9-foss-2018b; samtools view -@", getDTthreads()-1, bam),
                   fill= T,
-                  select = c(1,3,4,7,8))
-      # Keep pairs with two mates are aligned
-      .c <- .c[V3!="*" & V7!="*"]
-      # Select firt read
-      .c <- .c[, .SD[1], V1]
-      # Keep pairs with reads on opposite enh ends
-      if(type=="pe-STARR-Seq")
-        .c <- .c[(V8-V4)>230]
-      if(type=="rev-pe-STARR-Seq")
-        .c <- .c[(V4-V8)>230]
-      # Extract UMI
-      .c <- .c[, .(L= V3, R= V7, UMI= gsub(".*_([A-Z]{10}).*", "\\1", V1))]
+                  select = 1:5, 
+                  col.names = c("ID", "FLAG", "seq", "pos", "mapq"))
+      .c <- merge(.c[FLAG %in% c(97, 99) & mapq>=20, .(ID, seq, pos)],
+                  .c[FLAG %in% c(145, 147) & mapq>=20, .(ID, seq, pos)], 
+                  by= "ID",
+                  suffixes= c("_L", "_R"))
       # Compute total reads
-      stat <- data.table(total_reads= nrow(.c))
-      # When red 1 and 2 are frome the same enhancer, read 2 seqnems is "="
-      .c[R=="=", R:= L]
-      # Compute collapsed reads
-      stat[, umi_collapsed_reads:= nrow(unique(.c))]
+      stat <- rbindlist(list(L= .c[(filter_pos_L), .(pos= paste0(sort(unique(pos_L)), collapse= ",")), .(gp= gp_L)], 
+                             R= .c[(filter_pos_R), .(pos= paste0(sort(unique(pos_R)), collapse= ",")), .(gp= gp_R)]), 
+                        idcol = T)
+      .c <- .c[filter_pos_L & filter_pos_R, .(L= seq_L,
+                                              R= seq_R,
+                                              UMI= gsub(".*_([A-Z]{10}).*", "\\1", ID))]
+      stat <- rbindlist(list(stat,
+                             data.table(.id= "total_reads", value= nrow(.c))), 
+                        fill= T)
       # SAVE
       fwrite(.c, umi_counts)
       fwrite(stat, umi_summary)
       print(paste0(umi_counts, " -->>DONE"))
     }
-}, .(sam, umi_counts, umi_summary, type, library)]
+}, .(bam, umi_counts, umi_summary, type, library)]
 
 #--------------------------------------------------------------#
 # Merged counts
@@ -104,121 +104,160 @@ meta[, {
 # +UMI collapsing with 1nt difference
 # +annotation based on library
 #--------------------------------------------------------------#
-meta[, {
-  if(all(file.exists(c(summary_counts, pairs_counts, spike_counts, switched_counts))))
-    print(paste0("All merged counts files -->> ALREADY EXISTS")) else
-    {
-      print(paste0("Start ", pairs_counts))
-      # Import all counts file / cdition
-      .c <- lapply(umi_counts, fread)
-      .c <- rbindlist(.c)
-      # Count UMIs and order
-      .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
-      setorderv(.c, "umi_N", order = -1)
-      # Remove problematic UMIs
-      .c <- .c[!agrepl("GGGGGGGGGG", UMI)]
-      # Identify UMIs that might require collapsing
-      .c[, done:= T]
-      for(i in 0:9) 
-        .c[(done), done:= ifelse(.N>1, F, T), .(L, R, sub(paste0("(.{", i, "})."), "\\1", UMI))]
-      # Advanced UMI collapsing (>1 diff)
-      while(any(!.c$done))
-      {
-        .c[!(done), c("UMI", "done") := {
-          idx <- agrepl(UMI[1], UMI)
-          .(ifelse(idx, UMI[1], UMI), idx)
-        }, .(L, R)]
-      }
-      # Final collapsing
-      .c <- unique(.c[, .(L, R, UMI)])
-      .c <- .c[, .(umi_counts= .N), .(L, R)]
-      # Compute patterns to identify library pairs
-      .ex <- libs[lib_ID %in% c(vllib, Spike_in)]
-      .ex <- .ex[, .(L_pattern= strsplit(sub_lib_L, ";")[[1]],
-                     R_pattern= strsplit(sub_lib_R, ";")[[1]]),(.ex)]
-      .ex <- .ex[, CJ(L_pattern= strsplit(L, ",")[[1]],
-                      R_pattern= strsplit(R, ",")[[1]]), .(lib_ID, L= L_pattern, R= R_pattern)]
-      .ex[, c("L_pattern", "R_pattern"):= .(paste0("_", L_pattern, "_"),
-                                            paste0("_", R_pattern, "_"))]
-      .ex$L <- NULL
-      .ex$R <- NULL
-      .ex[, Spike:= ifelse(lib_ID==Spike_in & !is.na(Spike_in), T, F)]
-      # Check if pair exists and is spike in
-      .ex[, {
-        .c[grepl(L_pattern, L) & grepl(R_pattern, R), type:= ifelse(Spike, "spike-in", "pair")]
-      }, .(L_pattern, R_pattern, Spike)]
-      .c[is.na(type), type:= "switched"]
-      # Generate read summary
-      sum_files <- data.table(file= sam_summary)
-      sum_files[, mapped:= fread(file)[V1=="Mapped_fragments", V2], file]
-      .summary <- sum_files[, .(mapped= sum(mapped), collapsed= sum(.c$umi_counts))]
-      fwrite(.summary, summary_counts)
-      # SAVE
-      fwrite(.c[type=="pair", !"type"], pairs_counts)
-      fwrite(.c[type=="spike-in", !"type"], spike_counts)
-      fwrite(.c[type=="switched", !"type"], switched_counts)
-      print(paste0(pairs_counts, " -->> DONE"))
-    }
-}, .(vllib, Spike_in, summary_counts, pairs_counts, spike_counts, switched_counts)]
+# meta[, {
+#   if(all(file.exists(c(summary_counts, pairs_counts, spike_counts, switched_counts))))
+#     print(paste0("All merged counts files -->> ALREADY EXISTS")) else
+#     {
+#       print(paste0("Start ", pairs_counts))
+#       # Import all counts file / cdition
+#       .c <- lapply(umi_counts, fread)
+#       .c <- rbindlist(.c)
+#       # Count UMIs and order
+#       .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
+#       setorderv(.c, "umi_N", order = -1)
+#       # Advanced UMI collapsing (>1 diff)
+#       .c[, UMI:= {
+#         if(.N>1)
+#         {
+#           res <- rep(as.character(NA), .N)
+#           while(anyNA(res))
+#           {
+#             check <- is.na(res)
+#             check[check] <- stringdist(UMI[check][1], 
+#                                        UMI[check], 
+#                                        method="hamming", 
+#                                        nthread= getDTthreads()-1)<=1
+#             res[check] <- UMI[check][1]
+#           }
+#           res
+#         }else
+#           UMI
+#       }, .(L, R)]
+#       # Final collapsing
+#       .c <- unique(.c[, .(L, R, UMI)])
+#       .c <- .c[, .(umi_counts= .N), .(L, R)]
+#       # Compute patterns to identify library pairs
+#       .ex <- libs[lib_ID %in% c(vllib, Spike_in)]
+#       .ex <- .ex[, .(L_pattern= strsplit(sub_lib_L, ";")[[1]],
+#                      R_pattern= strsplit(sub_lib_R, ";")[[1]]),(.ex)]
+#       .ex <- .ex[, CJ(L_pattern= strsplit(L, ",")[[1]],
+#                       R_pattern= strsplit(R, ",")[[1]]), .(lib_ID, L= L_pattern, R= R_pattern)]
+#       .ex[, c("L_pattern", "R_pattern"):= .(paste0("_", L_pattern, "_"),
+#                                             paste0("_", R_pattern, "_"))]
+#       .ex$L <- NULL
+#       .ex$R <- NULL
+#       .ex[, Spike:= ifelse(lib_ID==Spike_in & !is.na(Spike_in), T, F)]
+#       # Check if pair exists and is spike in
+#       .ex[, {
+#         .c[grepl(L_pattern, L) & grepl(R_pattern, R), type:= ifelse(Spike, "spike-in", "pair")]
+#       }, .(L_pattern, R_pattern, Spike)]
+#       .c[is.na(type), type:= "switched"]
+#       # Generate read summary
+#       sum_files <- data.table(file= sam_summary)
+#       sum_files[, mapped:= fread(file)[V1=="Mapped_fragments", V2], file]
+#       .summary <- sum_files[, .(mapped= sum(mapped), collapsed= sum(.c$umi_counts))]
+#       fwrite(.summary, summary_counts)
+#       # SAVE
+#       fwrite(.c[type=="pair", !"type"], pairs_counts)
+#       fwrite(.c[type=="spike-in", !"type"], spike_counts)
+#       fwrite(.c[type=="switched", !"type"], switched_counts)
+#       print(paste0(pairs_counts, " -->> DONE"))
+#     }
+# }, .(vllib, Spike_in, summary_counts, pairs_counts, spike_counts, switched_counts)]
 
 #--------------------------------------------------------------#
 # Method using counts norm (Tolerates one rep)
 #--------------------------------------------------------------#
-if(any(meta$DESeq2))
-{
-  meta[, {
-    if(file.exists(FC_file))
-      print(paste0(FC_file, "  -->> ALREADY EXISTS")) else
-      {
-        # Import counts
-        dat <- unique(data.table(file= pairs_counts, 
-                                 rep= DESeq2_pseudo_rep,
-                                 cdition))
-        dat[cdition=="screen", cdition:= paste0(cdition, "_rep", rep)]
-        dat <- dat[, fread(file), (dat)]
-        # Collapse input counts and screen reps
-        dat <- dat[, .(umi_counts= sum(umi_counts)), .(cdition, L, R)]
-        # Filter
-        dat[, check_counts:= sum(umi_counts)>5, .(L, R)]
-        dat <- dat[(check_counts), !"check_counts"]
-        # dat <- dat[L!=R] # COULD BE USEFUL (SAFER?)!!!!!!!!!!!!
-        # Normalize
-        dat[, norm:= (umi_counts+1)/sum(umi_counts)*1e6, cdition]
-        # Cast before FC computation
-        res <- dcast(dat,
-                     L+R~cdition,
-                     value.var= "norm")
-        res <- na.omit(res)
-        # Compute FC for each rep and then log2
-        res[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
-        # Check if individual enhancer is active
-        control_pairs_log2FC <- res[grepl("control", L) & grepl("control", R), log2FoldChange]
-        res[, act_wilcox_L:= {
-          .c <- log2FoldChange[grepl("control", R)]
-          if(length(.c)>5)
-            wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
-              as.numeric(NA)
-        }, L]
-        res[, act_wilcox_R:= {
-          .c <- log2FoldChange[grepl("control", L)]
-          if(length(.c)>5)
-            wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
-          as.numeric(NA)
-        }, R]
-        # Subtract basal activity (center controls on 0)
-        res[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
-        # Compute expected
-        median_L <- res[grepl("control", R) , .(check= .N>5, median_L= median(log2FoldChange)), L][(check)]
-        res[median_L, median_L:= i.median_L, on= "L"]
-        median_R <- res[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange)), R][(check)]
-        res[median_R, median_R:= i.median_R, on= "R"]
-        # Expected
-        res[, additive:= log2(2^median_L+2^median_R)]
-        res[, multiplicative:= median_L+median_R]
-        # SAVE
-        res <- na.omit(res[, .(L, R, log2FoldChange, median_L, median_R, act_wilcox_L, act_wilcox_R, additive, multiplicative)])
-        fwrite(res, FC_file)
-        print(paste0(FC_file, "  -->> DONE"))
-      }
-  }, FC_file]
-}
+# if(any(meta$DESeq2))
+# {
+#   meta[, {
+#     if(file.exists(FC_file))
+#       print(paste0(FC_file, "  -->> ALREADY EXISTS")) else
+#       {
+#         res <- dcast(.SD,
+#                      L+R~cdition+rep,
+#                      value.var= "value",
+#                      fill= 0,
+#                      sep = "__")
+#         
+#         sampleTable <- data.table(rn= setdiff(names(res), c("L", "R")))
+#         sampleTable[, c("cdition", "rep"):= tstrsplit(rn, "__")]
+#         sampleTable <- data.frame(sampleTable, 
+#                                   row.names = "rn")
+#         
+#         # DF
+#         res[, rn:= paste0(L, "__", R)]
+#         DF <- data.frame(res[, !c("L", "R")], 
+#                          row.names = "rn")
+#         DF <- DF[rowSums(DF)>20,]
+#         dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
+#                                               colData= sampleTable,
+#                                               design= ~rep+cdition)
+#         sizeFactors(dds)= DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[grep("control.*__control.*", rownames(DF)),]))
+#         
+#         res <- DESeq2::DESeq(dds)
+#         
+#         # Differential expression
+#         FC <- as.data.frame(DESeq2::results(res, contrast= c("cdition", "screen", "input")), keep.rownames= "rn")
+#         FC <- as.data.table(FC, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
+#         
+#         # Compute expected
+#         median_L <- FC[grepl("control", R), .(check= .N>5, median_L= median(log2FoldChange, na.rm = T)), L][(check)]
+#         FC[median_L, median_L:= i.median_L, on= "L"]
+#         median_R <- FC[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange, na.rm = T)), R][(check)]
+#         FC[median_R, median_R:= i.median_R, on= "R"]
+#         FC[, additive:= log2(2^median_L+2^median_R)]
+#         FC[, multiplicative:= median_L+median_R]
+#         
+#         # Import counts
+#         dat <- unique(data.table(file= pairs_counts, 
+#                                  rep= DESeq2_pseudo_rep,
+#                                  cdition))
+#         dat[cdition=="screen", cdition:= paste0(cdition, "_rep", rep)]
+#         dat <- dat[, fread(file), (dat)]
+#         # Collapse input counts and screen reps
+#         dat <- dat[, .(umi_counts= sum(umi_counts)), .(cdition, L, R)]
+#         # Filter
+#         dat[, check_counts:= sum(umi_counts)>5, .(L, R)]
+#         # Cast counts
+#         res <- dcast(dat,
+#                      L+R~cdition,
+#                      value.var= "umi_counts",
+#                      fill= 0)
+#         cols <- setdiff(names(res), c("L", "R"))
+#         res[, check:= rowSums(.SD), .SDcols= cols]
+#         res <- res[check>10, !"check"]
+#         # Normalize and compute FC
+#         res[, (cols):= lapply(.SD, function(x) (x+1)/sum(x)*1e6), .SDcols= cols]
+#         res[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
+#         # Check if individual enhancer is active
+#         control_pairs_log2FC <- res[grepl("control", L) & grepl("control", R), log2FoldChange]
+#         res[, act_wilcox_L:= {
+#           .c <- log2FoldChange[grepl("control", R)]
+#           if(length(.c)>5)
+#             wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
+#               as.numeric(NA)
+#         }, L]
+#         res[, act_wilcox_R:= {
+#           .c <- log2FoldChange[grepl("control", L)]
+#           if(length(.c)>5)
+#             wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
+#           as.numeric(NA)
+#         }, R]
+#         # Subtract basal activity (center controls on 0)
+#         res[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
+#         # Compute expected
+#         median_L <- res[grepl("control", R) , .(check= .N>5, median_L= median(log2FoldChange)), L][(check)]
+#         res[median_L, median_L:= i.median_L, on= "L"]
+#         median_R <- res[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange)), R][(check)]
+#         res[median_R, median_R:= i.median_R, on= "R"]
+#         # Expected
+#         res[, additive:= log2(2^median_L+2^median_R)]
+#         res[, multiplicative:= median_L+median_R]
+#         # SAVE
+#         res <- na.omit(res[, .(L, R, log2FoldChange, median_L, median_R, act_wilcox_L, act_wilcox_R, additive, multiplicative)])
+#         fwrite(res, FC_file)
+#         print(paste0(FC_file, "  -->> DONE"))
+#       }
+#   }, FC_file]
+# }

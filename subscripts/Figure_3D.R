@@ -12,18 +12,18 @@ enr_L[vl_Dmel_motifs_DB_full,
     c("motif_cluster_name", "motif_name", "pwm"):= .(i.Motif_cluster_name, i.motif_name, pwms_perc),
     on= "variable==uniqName_noSpecialChar"]
 sel <- enr_L[!is.na(log2OR), .(variable= variable[which.max(abs(log2OR))]), motif_cluster_name]
-enr_L <- enr_L[variable %in% sel$variable]
+enr_L <- enr_L[variable %in% sel$variable & !is.na(log2OR)]
 setnames(enr_L, 
          c("variable", "motif_cluster_name"), 
          c("uniq_name", "variable"))
-enr_L[variable=="Ebox/CACGTG/SREBP", variable:= "Ebox/SREBP"]
+enr_L[, cl:= factor(cl, c("strong", "intermediate", "weak"))]
 #----------#
 enr_R <- dat$mot_enr_R$enr
 enr_R[vl_Dmel_motifs_DB_full, 
       c("motif_cluster_name", "motif_name", "pwm"):= .(i.Motif_cluster_name, i.motif_name, pwms_perc),
       on= "variable==uniqName_noSpecialChar"]
 sel <- enr_R[!is.na(log2OR), .(variable= variable[which.max(abs(log2OR))]), motif_cluster_name]
-enr_R <- enr_R[variable %in% sel$variable]
+enr_R <- enr_R[variable %in% sel$variable & !is.na(log2OR)]
 setnames(enr_R, 
          c("variable", "motif_cluster_name"), 
          c("uniq_name", "variable"))
@@ -49,7 +49,7 @@ layout(matrix(1:2,
        heights = c(1,4))
 # Left enhancer
 par(las= 2,
-    mar= c(1.5,28.7,2,5.7))
+    mar= c(2,28.7,2,5.7))
 vl_boxplot(act_L,
            violin= T, 
            violcol= adjustcolor(Cc(sapply(act_L, median, na.rm= T)), 0.7),
@@ -62,7 +62,7 @@ abline(h= 0,
        lty= 2)
 # Enrichment
 par(las= 2,
-    mar= c(10,30,0,7))
+    mar= c(1,30,5,7))
 res <- plot(enr_L,
             padj_cutoff= 0.001,
             N_top= 10,
@@ -106,7 +106,7 @@ mtext("3' enhancer",
 abline(h= 0, 
        lty= 2)
 # Enrichment
-par(mar= c(23,32,0,7))
+par(mar= c(18,32,0,7))
 res <- plot(enr_R,
             padj_cutoff= 0.001,
             N_top= 10,

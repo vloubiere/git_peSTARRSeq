@@ -21,9 +21,10 @@ counts_L <- as.data.table(cl$mot_enr_L$counts[, motifs[.id=="L", variable]])
 setnames(counts_L, function(x) paste0("motif_", x, "_L"))
 counts_R <- as.data.table(cl$mot_enr_R$counts[, motifs[.id=="R", variable]])
 setnames(counts_R, function(x) paste0("motif_", x, "_R"))
-dat <- cbind(screen,
-             counts_L[match(screen$L, cl$rows$name),],
-             counts_R[match(screen$R, cl$cols$name),])
+dat <- screen[L %in% cl$rows$name & R %in% cl$cols$name]
+dat <- cbind(dat,
+             counts_L[match(dat$L, cl$rows$name),],
+             counts_R[match(dat$R, cl$cols$name),])
 
 # Sample for CV
 set.seed(1)
@@ -76,20 +77,20 @@ legend("topleft",
        paste0("CV R²= ", round(rsq$Rsquare, 2)), 
        bty= "n")
 abline(0, 1, lty= 2)
-par(mar= c(5,-0.1,4,4)+0.1)
+par(mar= c(5.1,0,3.6,4.1))
 bar <- barplot(af$PctExp, 
-        beside = T, 
-        las= 1,
-        xlab= "% explained\nvariance",
-        border= NA,
-        horiz= T,
-        axes= F)
+               beside = T, 
+               las= 1,
+               xlab= "% explained\nvariance",
+               border= NA,
+               horiz= T,
+               axes= F)
 axis(1, at= c(0, 30), labels = c(0, 30))
 text(af$PctExp, 
      bar[,1],
      af$name,
      pos= 4,
      xpd= T,
-     cex= 0.6, 
+     cex= 0.5, 
      offset= 0.25)
 dev.off()

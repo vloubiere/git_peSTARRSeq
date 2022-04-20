@@ -32,15 +32,15 @@ hk_diff <- split(.m[, .(value2, col)], .m[, .(group_L, group_R)])
 hk_diff <- hk_diff[c("hk.hk", "hk.dev", "dev.hk", "dev.dev")]
 
 pdf("pdf/draft/Figure_3AB.pdf", 
-    height = 5.5,
-    width= 5.6)
+    height = 5,
+    width= 5)
 par(las= 1,
     mar= c(5.1,4.1,0,0))
 layout(matrix(c(2,4,1,3), ncol = 2, byrow = T), 
        widths = c(2,0.7),
        heights = c(0.62,2))
-yl <- c(-2,8.5)
-xl <- c(-2,12)
+yl <- c(-2,9)
+xl <- c(-2,11.5)
 plot(dat$log2FoldChange_dev,
      dat$log2FoldChange_hk, 
      xlab= "Activity dCP (log2)",
@@ -78,7 +78,7 @@ abline(h= 0, lty= 2)
 plot.new()
 par(las= 1,
     mar= c(5.1,4.1,0,0))
-yl <- c(-5,4)
+yl <- c(-5,4.4)
 xl <- c(-4,5)
 plot(dat$diff_dev,
      dat$diff_hk, 

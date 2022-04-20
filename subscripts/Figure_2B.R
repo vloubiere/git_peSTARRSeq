@@ -11,6 +11,7 @@ feat <- readRDS("Rdata/uniq_enh_feat/lib_genomic_dat.rds")
 dat[, diff:= log2FoldChange-additive]
 
 mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
+mat <- mat[apply(mat, 1, function(x) sum(is.na(x))<=250),apply(mat, 2, function(x) sum(is.na(x))<=250)]
 cl <- vl_heatmap(mat, 
                  cutree_rows = 2, 
                  cutree_cols = 2,
@@ -21,6 +22,8 @@ cl <- vl_heatmap(mat,
                  show_colnames = F,
                  auto_margins = F,
                  plot= F)
+cl$rows[, cl:= fcase(cl==1, "strong", cl==2, "weak")]
+cl$cols[, cl:= fcase(cl==2, "strong", cl==1, "weak")]
 cl$rows[unique(dat[,.(name=L, median_L)]), ind_act:= median_L, on= "name"]
 ind_L <- cl$rows[(order), ind_act]
 cl$cols[unique(dat[,.(name=R, median_R)]), ind_act:= median_R, on= "name"]
@@ -28,13 +31,13 @@ ind_R <- cl$cols[(order), ind_act]
 # Add motif enrichment
 cl$mot_enr_L$seq <- lib[cl$rows$name, oligo_full_sequence, on= "ID_vl"]
 cl$mot_enr_L$counts <- vl_motif_counts(cl$mot_enr_L$seq)
-cl$mot_enr_L$enr <- vl_motif_enrich(cl$mot_enr_L$counts[cl$rows$cl==2,],
-                                    cl$mot_enr_L$counts[cl$rows$cl==1,],
+cl$mot_enr_L$enr <- vl_motif_enrich(cl$mot_enr_L$counts[cl$rows$cl=="strong",],
+                                    cl$mot_enr_L$counts[cl$rows$cl=="weak",],
                                     plot= F)
 cl$mot_enr_R$seq <- lib[cl$cols$name, oligo_full_sequence, on= "ID_vl"]
 cl$mot_enr_R$counts <- vl_motif_counts(cl$mot_enr_R$seq)
-cl$mot_enr_R$enr <- vl_motif_enrich(cl$mot_enr_R$counts[cl$cols$cl==2,],
-                                    cl$mot_enr_R$counts[cl$cols$cl==1,],
+cl$mot_enr_R$enr <- vl_motif_enrich(cl$mot_enr_R$counts[cl$cols$cl=="strong",],
+                                    cl$mot_enr_R$counts[cl$cols$cl=="weak",],
                                     plot= F)
 saveRDS(cl, "Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
 
@@ -83,7 +86,7 @@ rect(xleft = par("usr")[1]-strwidth("M")*2,
      col= adjustcolor(c("grey20", "grey70"), 0.7))
 text(x = par("usr")[1]-strwidth("M")*1.25,
      y = clr_pos-diff(c(1, clr_pos))/2,
-     c("5' cluster 2", "5' cluster 1"),
+     c("5' Weak", "5' Strong"),
      xpd= T,
      srt= 90,
      col= c("white", "black"))
@@ -121,19 +124,19 @@ text(par("usr")[1],
      pos= 2, 
      offset= 1.25,
      cex= 0.7)
-clc_pos <- cumsum(rev(table(cl$cols$cl)))
+clc_pos <- cumsum(table(cl$cols$cl))
 rect(xleft = c(1, clc_pos[-length(clc_pos)]),
      ybottom = par("usr")[3]-strheight("M")*2,
      xright = clc_pos,
      ytop = par("usr")[3]-strheight("M")*0.5,
      xpd= T,
      border= NA,
-     col= adjustcolor(c("grey20", "grey70"), 0.7))
+     col= adjustcolor(c("grey70", "grey20"), 0.7))
 text(x = clc_pos-diff(c(1, clc_pos))/2,
      y = par("usr")[3]-strheight("M")*1.25,
-     c("3' cluster 2", "3' cluster 1"),
+     c("3' Strong", "3' Weak"),
      xpd= T,
-     col= c("white", "black"))
+     col= c("black", "white"))
 text(mean(par("usr")[c(1,2)]),
      grconvertY(0.5, "line", "user"),
      "3' enhancer",

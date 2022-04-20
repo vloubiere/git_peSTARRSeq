@@ -34,7 +34,12 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_3D.R")
   
   file.edit("git_peSTARRSeq/subscripts/Figure_4A.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_4B.R")
   
+  file.edit("git_peSTARRSeq/subscripts/Sup_sequencing_depth_vs_robustness.R")
+  #-------------------------#
+  # Tests
+  #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/activity_aggregate.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_DSCP_large_screen.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_screen.R")
@@ -42,10 +47,6 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_inactive_pairs.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_DHS_peaks.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_DSCP_screen.R")
-  
-  #-------------------------#
-  # Tests
-  #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/lasso_modelling_dev_hk.R")
   file.edit("git_peSTARRSeq/subscripts/lm_modelling_dev_hk.R")
   file.edit("git_peSTARRSeq/subscripts/randomForest_dev_hk.R")

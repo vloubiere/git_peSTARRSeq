@@ -23,8 +23,8 @@ if(any(meta[, .N, output_prefix]$N>1))
 meta[, fq_prefix:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/fastq/", output_prefix)]
 meta[, fq1:= paste0(fq_prefix, "_1.fq.gz")]
 meta[, fq2:= paste0(fq_prefix, "_2.fq.gz")]
-meta[, sam:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/sam/", output_prefix, ".sam")]
-meta[, sam_summary:= gsub(".sam$", ".sam.summary", sam)]
+meta[, bam:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/bam/", output_prefix, ".bam")]
+meta[, bam_summary:= gsub(".bam$", ".bam.summary", bam)]
 meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", output_prefix, ".txt")]
 meta[, umi_summary:= gsub(".txt$", "_summary.txt", umi_counts)]
 meta[, c("summary_counts", "pairs_counts", "spike_counts", "switched_counts"):= {
@@ -45,7 +45,7 @@ fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 #-------------------------------------------------------------#
 pattern <- "vllib023|vllib024|vllib025|vllib026|vllib027|vllib028"
 files <- list.files("db/fastq/", pattern, full.names = T)
-files <- list.files("db/sam/", pattern, full.names = T)
+files <- list.files("db/bam/", pattern, full.names = T)
 files <- list.files("db/umi_counts/", pattern, full.names = T)
 files <- list.files("db/merged_counts/", pattern, full.names = T)
 files <- list.files("db/FC_tables/", pattern, full.names = T)
@@ -53,47 +53,45 @@ files <- list.files("db/FC_tables/", pattern, full.names = T)
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
-cols <- c("fq1", "fq2", "sam", "sam_summary", "umi_counts", "umi_summary", 
+cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "umi_summary", 
           "summary_counts", "pairs_counts", "spike_counts", "switched_counts", "FC_file")
+# meta <- meta[vllib=="vllib015" & DESeq2] # Example
 meta[, check_exists:= all(file.exists(na.omit(unlist(.SD)))), .(group, DESeq2), .SDcols= cols]
 meta <- meta[!(check_exists)]
 meta[, {
-  if(any(!check_exists))
+  # Save as a .R script
+  tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
+  fwrite(cbind(.SD, DESeq2, group), tmp)
+  # Bsub
+  Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
+                normalizePath("git_peSTARRSeq/functions/pipeline_3.0.R"),
+                tmp)
+  if(DESeq2).  u
   {
-    # Save as a .R script
-    tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
-    fwrite(cbind(.SD, DESeq2, group), tmp)
-    # Bsub
-    Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
-                  normalizePath("git_peSTARRSeq/functions/pipeline_3.0.R"),
-                  tmp)
-    if(DESeq2)
-    {
-      bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
-                        "-C 12", # N cpus
-                        "-m 32", # memory
-                        paste("-n", group), #name
-                        "-T '2-00:00:00'", #name
-                        "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
-                        "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde 
-      
-    }else{
-      bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
-                        "-C 4", # N cpus
-                        "-m 16", # memory
-                        paste("-n", group), #name
-                        "-T '08:00:00'", #name
-                        "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
-                        "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde
-    }
-    # Wrap and Submit
-    bsub_cmd <- paste0(bsub_cmd, " \"", Rcmd, "\"")
-    Sys.unsetenv("SBATCH_RESERVATION")
-    Sys.unsetenv("SBATCH_WCKEY")
-    job_ID <- system(bsub_cmd, intern = T)
-    # Return bsub ID
-    unlist(job_ID[2])
+    bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
+                      "-C 12", # N cpus
+                      "-m 32", # memory
+                      paste("-n", group), #name
+                      "-T '2-00:00:00'", #name
+                      "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
+                      "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde 
+    
+  }else{
+    bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
+                      "-C 4", # N cpus
+                      "-m 16", # memory
+                      paste("-n", group), #name
+                      "-T '08:00:00'", #name
+                      "-o /groups/stark/vloubiere/projects/pe_STARRSeq/logs/", #stdo
+                      "-e /groups/stark/vloubiere/projects/pe_STARRSeq/logs/") #stde
   }
+  # Wrap and Submit
+  bsub_cmd <- paste0(bsub_cmd, " \"", Rcmd, "\"")
+  Sys.unsetenv("SBATCH_RESERVATION")
+  Sys.unsetenv("SBATCH_WCKEY")
+  job_ID <- system(bsub_cmd, intern = T)
+  # Return bsub ID
+  unlist(job_ID[2])
   print("Submitted!")
 }, .(group, DESeq2)]
 

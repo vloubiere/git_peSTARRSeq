@@ -14,13 +14,13 @@ dat <- merge(luc,
              by= c("L", "R"),
              suffixes= c("_luc", "_STARR"),
              all.x= T)
-dat[, STARR_NA:= is.na(log2FoldChange_STARR)]
-dat[is.na(log2FoldChange_STARR), log2FoldChange_STARR:= 0]
+dat <- na.omit(dat)
 dat[, "class":= fcase(class %in% c(NA, "ctl./ctl.", "inact./ctl.", "ctl./inact.", "inact./inact."), "inact./inact.",
-                      class %in% c("ctl./enh.", "inact./enh.", "enh./ctl.", "enh./inact."), "inact./enh.|enh./inact.",
+                      class %in% c("ctl./enh.", "inact./enh."), "inact./enh.",
+                      class %in% c("enh./ctl.", "enh./inact."), "enh./inact.",
                       class=="enh./enh.", "enh./enh.")]
-dat[, class:= factor(class, c("inact./inact.", "inact./enh.|enh./inact.", "enh./enh."))]
-Cc <- c(adjustcolor("lightgrey", 0.5), "#436EEE80", "#74C27A80")
+dat[, class:= factor(class, c("inact./inact.", "enh./inact.", "inact./enh.", "enh./enh."))]
+Cc <- c(adjustcolor("lightgrey", 0.5), "#436EEE80", adjustcolor("purple", 0.5), "#74C27A80")
 dat[, col:= Cc[.GRP], keyby= class]
 dat <- dat[!is.na(log2FoldChange_luc)]
 dat[, class:= droplevels(class)]
@@ -47,27 +47,22 @@ dat[, {
            log2FoldChange_STARR,
            log2FoldChange_luc+sd,
            col= col)
-  points(log2FoldChange_STARR[STARR_NA], 
-       log2FoldChange_luc[STARR_NA],
-       pch= 4,
-       cex= 0.5)
 }]
 abline(.lm, lty=2)
-legend("bottomright",
+legend("topleft",
        legend = c(paste0("R²= ", round(summary(.lm)$r.squared, 2), 
                          " (PCC= ", round(cor.test(dat$log2FoldChange_STARR, dat$log2FoldChange_luc)$estimate, 2), ")"),
-                  "NA pe-STARR-Seq",
                   levels(leg$class)),
        bty= "n",
-       col= c("black", "black", Cc),
+       col= c("black", Cc),
        lty= c(2,0,0,0,0),
-       pch= c(NA,4,19,19,19),
+       pch= c(NA,19,19,19,19),
        cex= 0.65)
 vl_boxplot(log2FoldChange_luc~class,
            dat, 
            violin= T,
            las= 2, 
-           compute_pval= list(c(1,2), c(2,3), c(1,3)),
+           compute_pval= list(c(1,2), c(2,4), c(3,4)),
            violcol= Cc,
            ylab= "Normalized luciferase activity (log2)", 
            ylab.line = 2)

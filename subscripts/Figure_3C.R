@@ -25,6 +25,11 @@ cl <- vl_heatmap(mat,
                  show_colnames = F,
                  auto_margins = F,
                  plot= F)
+cl$rows[, cl:= as.character(cl)]
+cl$rows[, cl:= switch(cl, 
+                      "1"= "intermediate",
+                      "2"= "strong",
+                      "3"= "weak"), cl]
 cl$rows[unique(dat[,.(name=L, median_L)]), ind_act:= median_L, on= "name"]
 ind_L <- cl$rows[(order), ind_act]
 cl$cols[unique(dat[,.(name=R, median_R)]), ind_act:= median_R, on= "name"]

@@ -8,11 +8,14 @@ require(vlfunctions)
 lib <- readRDS("Rdata/final_results_table.rds")
 feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
 dat <- lib[vllib=="vllib002"]
-dat <- dat[class %in% c("ctl./ctl.", "ctl./enh.", "enh./ctl.", "enh./enh.")]
+dat <- dat[class %in% c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh.")]
 dat[, class:= droplevels(class)]
 
-pdf("pdf/draft/Figure_1E.pdf", width = 3, height = 4.5)
-par(las= 2, mar= c(6,4,1,1))
+pdf("pdf/draft/Figure_1E.pdf", 
+    width = 3, 
+    height = 4.5)
+par(las= 2, 
+    mar= c(6,4,1,1))
 vl_boxplot(log2FoldChange~class,
            dat,
            violin= T, 

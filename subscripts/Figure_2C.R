@@ -7,8 +7,8 @@ require(vlfunctions)
 #-----------------------------------------------#
 cl <- readRDS("Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
 dat <- melt(as.data.table(cl$x, keep.rownames = "L"), id.vars= "L", variable.name = "R")
-dat[cl$rows, cl_L:= paste0("5' cluster ", i.cl), on= "L==name"]
-dat[cl$cols, cl_R:= paste0("3' cluster ", i.cl), on= "R==name"]
+dat[cl$rows, cl_L:= paste0("5' ", i.cl), on= "L==name"]
+dat[cl$cols, cl_R:= paste0("3' ", i.cl), on= "R==name"]
 dat[, cl:= paste0(cl_L, "\n", cl_R)]
 Cc <- circlize::colorRamp2(seq(-3,3, length.out= 20),
                            vl_palette_blueWhiteRed(20))
