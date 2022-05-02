@@ -2,9 +2,15 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(diagram)
 require(bezier)
 require(plotrix)
+require(vlfunctions)
 
-pdf("pdf/draft/Figure_1AB.pdf", width = 4.5, height = 4.5)
-par(mar= c(0,0,0,0), xaxt= "n", yaxt= "n", lend= 3, lwd= 2)
+pdf("pdf/draft/Figure_1AB.pdf", width = 3, height = 3)
+par(mar= c(0,0,0,0), 
+    xaxt= "n", 
+    yaxt= "n", 
+    lend= 3, 
+    lwd= 1.3,
+    cex= 0.66)
 
 # Plot init
 plot.new()
@@ -24,19 +30,19 @@ polygon(c(0.15,0.175,0.15),
         col= "black")
 
 # Boxes
-rect(0.05, 0.775, 0.15, 0.825, col= "white", lwd= 1)
-text(0.1, 0.8, "CP", font= 2)
-rect(0.75, 0.775, 0.9, 0.825, col= "white", lwd= 1)
-text(0.825, 0.8, "pA site", font= 2)
+rect(0.05, 0.775, 0.15, 0.825, col= "white")
+text(0.1, 0.8, "CP")
+rect(0.75, 0.775, 0.9, 0.825, col= "white")
+text(0.825, 0.8, "pA site")
 
 # Enhancer pairs
-Cc <- adjustcolor(vl_palette_categ2(7), 0.7)
+Cc <- adjustcolor(vl_palette_few_categ(7), 0.7)
 pos <- seq(0, 0.1, length.out= length(Cc))
 for(i in seq(pos))
 {
-  segments(0.35, c(0.8-pos[i]), 0.45, c(0.8-pos[i]), col= Cc[i], lwd= 4)
+  segments(0.35, c(0.8-pos[i]), 0.45, c(0.8-pos[i]), col= Cc[i], lwd= 3)
   segments(0.45, c(0.8-pos[i]), 0.55, c(0.8-pos[i]))
-  segments(0.55, c(0.8-pos[i]), 0.65, c(0.8-pos[i]), col= rev(Cc)[i], lwd= 4)
+  segments(0.55, c(0.8-pos[i]), 0.65, c(0.8-pos[i]), col= rev(Cc)[i], lwd= 3)
 }
 text(0.4, 0.805, "5'seq", pos= 3, offset= 0.25)
 text(0.6, 0.805, "3'seq", pos= 3, offset= 0.25)
@@ -94,15 +100,14 @@ text(0.98, 0.55, "3'seq", pos= 2, offset= -0.5)
 # Curved arrows enhancers to promoter
 t <- seq(0, 1, length= 100)
 p <- matrix(c(0.1765,0.865, 0.25,0.925, 0.365,0.86), nrow=3, ncol=2, byrow=TRUE)
-lines(bezier(t=t, p=p), lwd= 2)
+lines(bezier(t=t, p=p))
 p <- matrix(c(0.18,0.8675, 0.3,0.975, 0.55,0.86), nrow=3, ncol=2, byrow=TRUE)
-lines(bezier(t=t, p=p), lwd= 2)
+lines(bezier(t=t, p=p))
 polygon(c(0.17, 0.179, 0.187)-0.0025,
         c(0.86, 0.876, 0.867)-0.0025, border= NA, col= "black")
 
 # Arrow plasmid to RNAs
 segments(0.22,0.6,0.3,0.6)
-lines(bezier(t=t, p=p), lwd= 2)
 polygon(c(0.3, 0.32, 0.3),
         c(0.6075, 0.6, 0.5925), border= NA, col= "black")
 
@@ -112,12 +117,12 @@ polygon(c(0.74, 0.76, 0.74),
         c(0.6075, 0.6, 0.5925), border= NA, col= "black")
 
 # Arrows sequencing
-segments(0.79, 0.61, 0.82, 0.61, lwd= 2)
+segments(0.79, 0.61, 0.82, 0.61)
 polygon(c(0.82, 0.82, 0.835),
         c(0.6075, 0.615, 0.6075),
         col= "black",
         border= NA)
-segments(0.95, 0.59, 0.98, 0.59, lwd= 2)
+segments(0.95, 0.59, 0.98, 0.59)
 polygon(c(0.95, 0.95, 0.935),
         c(0.5925, 0.585, 0.5925),
         col= "black",
@@ -127,29 +132,29 @@ polygon(c(0.95, 0.95, 0.935),
 pos <- seq(0, 0.07, length.out= 5)
 for(i in seq(pos))
 {
-  segments(0.05, c(0.3-pos[i]), 0.12, c(0.3-pos[i]), col= adjustcolor("limegreen", 0.8), lwd= 4)
+  segments(0.05, c(0.3-pos[i]), 0.12, c(0.3-pos[i]), col= adjustcolor("limegreen", 0.7), lwd= 3)
   segments(0.12, c(0.3-pos[i]), 0.19, c(0.3-pos[i]))
-  segments(0.19, c(0.3-pos[i]), 0.26, c(0.3-pos[i]), col= grey.colors(8)[-1][i], lwd= 4)
+  segments(0.19, c(0.3-pos[i]), 0.26, c(0.3-pos[i]), col= grey.colors(8)[-1][i], lwd= 3)
 }
 rect(0.18, 0.32, 0.27, 0.21, lty= 3, lwd= 0.5)
 text(0.225, 0.21, "control\nsequences", pos= 1, cex= 0.7, offset= 0.4)
-text(0.155, 0.32, "5' individual\nactivity", pos= 3, offset= 0.5, col= adjustcolor("limegreen", 0.8))
+text(0.155, 0.32, "5' individual\nactivity", pos= 3, offset= 0.5, col= adjustcolor("limegreen", 0.7))
 
 # 3' indidividual acitvities
 for(i in seq(pos))
 {
-  segments(0.4, c(0.3-pos[i]), 0.47, c(0.3-pos[i]), col= grey.colors(8)[-1][i], lwd= 4)
+  segments(0.4, c(0.3-pos[i]), 0.47, c(0.3-pos[i]), col= grey.colors(8)[-1][i], lwd= 3)
   segments(0.47, c(0.3-pos[i]), 0.54, c(0.3-pos[i]))
-  segments(0.54, c(0.3-pos[i]), 0.61, c(0.3-pos[i]), col= adjustcolor("darkgoldenrod1", 0.8), lwd= 4)
+  segments(0.54, c(0.3-pos[i]), 0.61, c(0.3-pos[i]), col= adjustcolor("darkgoldenrod1", 0.7), lwd= 3)
 }
 rect(0.39, 0.32, 0.48, 0.21, lty= 3, lwd= 0.5)
 text(0.435, 0.21, "control\nsequences", pos= 1, cex= 0.7, offset= 0.4)
-text(0.505, 0.32, "3' individual\nactivity", pos= 3, offset= 0.5, col= adjustcolor("darkgoldenrod1", 0.8))
+text(0.505, 0.32, "3' individual\nactivity", pos= 3, offset= 0.5, col= adjustcolor("darkgoldenrod1", 0.7))
 
 # Paired activity
-segments(0.77, 0.3, 0.84, 0.3, col= adjustcolor("limegreen", 0.5), lwd= 4)
+segments(0.77, 0.3, 0.84, 0.3, col= adjustcolor("limegreen", 0.7), lwd= 3)
 segments(0.84, 0.3, 0.91, 0.3)
-segments(0.91, 0.3, 0.98, 0.3, col= adjustcolor("darkgoldenrod1", 0.5), lwd= 4)
+segments(0.91, 0.3, 0.98, 0.3, col= adjustcolor("darkgoldenrod1", 0.7), lwd= 3)
 text(0.875, 0.32, "5'/3' combined\nactitivy", pos= 3, offset= 0.5)
 
 #------------------------------------------------#
@@ -168,22 +173,19 @@ polygon(c(0.45,0.475,0.45),
         col= "black")
 
 # Boxes
-rect(0.35, 0.025, 0.45, 0.075, col= "white", lwd= 1)
-text(0.4, 0.05, "CP", font= 2)
-rect(0.45, 0.025, 0.65, 0.075, col= "white", lwd= 1)
-text(0.55, 0.05, "luciferase", font= 2)
+rect(0.35, 0.025, 0.45, 0.075, col= "white")
+text(0.4, 0.05, "CP")
+rect(0.45, 0.025, 0.65, 0.075, col= "white")
+text(0.55, 0.05, "luciferase")
 
 # Enhancer pairs
-Cc <- adjustcolor(vl_palette_categ2(3), 0.7)
+Cc <- adjustcolor(vl_palette_few_categ(3), 0.7)
 pos <- seq(0, 0.043, length.out= length(Cc))
 for(i in seq(pos))
 {
-  segments(0.06, c(0.05-pos[i]), 0.13, c(0.05-pos[i]), col= Cc[i], lwd= 4)
+  segments(0.06, c(0.05-pos[i]), 0.13, c(0.05-pos[i]), col= Cc[i], lwd= 3)
   segments(0.13, c(0.05-pos[i]), 0.22, c(0.05-pos[i]))
-  segments(0.22, c(0.05-pos[i]), 0.29, c(0.05-pos[i]), col= rev(Cc)[i], lwd= 4)
+  segments(0.22, c(0.05-pos[i]), 0.29, c(0.05-pos[i]), col= rev(Cc)[i], lwd= 3)
 }
-text(0.4, 0.805, "5'seq", pos= 3, offset= 0.25)
-text(0.6, 0.805, "3'seq", pos= 3, offset= 0.25)
-text(0.5, 0.805, "spacer", pos= 3, offset= 0.25, cex= 0.7)
 
 dev.off()

@@ -2,95 +2,86 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-# Import
-feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
-screen <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class== "enh./enh."]
-screen[, diff:= log2FoldChange-additive]
-screen <- feat$add_feature(screen, feat$lib)
-cl <- readRDS("Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
-motifs <- rbindlist(list(L= cl$mot_enr_L$enr,
-                         R= cl$mot_enr_R$enr), 
-                    idcol = T)
-motifs[vl_Dmel_motifs_DB_full, motif_cluster:= i.Motif_cluster_name, on= "variable==uniqName_noSpecialChar"]
-motifs <- motifs[order(abs(log2OR), decreasing = T)]
-motifs <- motifs[padj<0.001, .SD[1], .(.id, motif_cluster)]
-motifs <- unique(motifs[, .(.id, motif_cluster, variable)])
+#-----------------------------------------------#
+# Import data
+#-----------------------------------------------#
+dat <- readRDS("Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
 
-# Build data
-counts_L <- as.data.table(cl$mot_enr_L$counts[, motifs[.id=="L", variable]])
-setnames(counts_L, function(x) paste0("motif_", x, "_L"))
-counts_R <- as.data.table(cl$mot_enr_R$counts[, motifs[.id=="R", variable]])
-setnames(counts_R, function(x) paste0("motif_", x, "_R"))
-dat <- screen[L %in% cl$rows$name & R %in% cl$cols$name]
-dat <- cbind(dat,
-             counts_L[match(dat$L, cl$rows$name),],
-             counts_R[match(dat$R, cl$cols$name),])
+pdf("pdf/draft/Figure_2E.pdf",
+    width= 4,
+    height = 3)
+par(mgp= c(1.5,0.35,0),
+    cex= 0.66)
+for(side in c("mot_enr_L", "mot_enr_R"))
+{
+  if(side=="mot_enr_L")
+    par(mar= c(7,16,2,6)) else if(side=="mot_enr_R")
+      par(mar= c(2.75,16,1.75,6))
+  # Extract data
+  enr <- dat[[side]]$enr[padj<fcase(side=="mot_enr_L", 0.001,
+                                    side=="mot_enr_R", 0.01)]
+  # Extract BA motif cluster names
+  enr[vl_Dmel_motifs_DB_full, 
+      c("motif_cluster_name", "motif_name", "pwm"):= .(i.Motif_cluster_name, i.motif_name, pwms_perc),
+      on= "variable==uniqName_noSpecialChar"]
+  # For each cluster, keep top enriched motif
+  enr <- enr[, .SD[which.max(abs(log2OR))], motif_cluster_name]
+  setnames(enr, 
+           c("variable", "motif_cluster_name"), 
+           c("uniq_name", "variable"))
+  setorderv(enr, "log2OR", -1)
+  # Keep top N enrichments
+  enr[, check:= fcase(log2OR>0, .I<=10,
+                      log2OR<0, (.N-.I+1)<=10)]
+  enr <- enr[(check), !"check"]
 
-# Sample for CV
-set.seed(1)
-sel_L <- dat[, 1-.N/dat[,.N], L][, sample(L, round(.N/10), prob = V1)]
-set.seed(1)
-sel_R <- dat[, 1-.N/dat[,.N], R][, sample(R, round(.N/10), prob = V1)]
-dat[, set:= ifelse(L %in% sel_L | R %in% sel_R, "test", "train")]
-
-# Train linear model
-mot <- grep("^motif_", names(dat), value= T)
-form <- paste0("log2FoldChange~median_L*median_R+", paste0(mot, collapse= "+"))
-model <- lm(formula = as.formula(form), 
-            data= dat[set=="train"])
-
-# Predict and CV
-rsq <- vl_model_eval(observed = dat[set=="test", log2FoldChange], 
-                     predicted = predict(model, new= dat[set=="test"]))
-pred <- predict(model, new= dat)
-
-# Compute percentage of explained variance
-af <- anova(model)
-af$PctExp <- af$"Sum Sq"/sum(af$"Sum Sq")*100
-af <- as.data.table(af, keep.rownames = "variable")
-setorderv(af, "PctExp", 1)
-af[, name:= ifelse(grepl("^motif", variable),
-                   gsub("^motif_|_L$|_R$", "", variable),
-                   variable)]
-af[motifs, name:= paste0(i.motif_cluster, 
-                         fcase(grepl("median|Residuals", variable), "",
-                               grepl("_L$", variable), "_5'",
-                               grepl("_R$", variable), "_3'",
-                               default= "")), on= "name==variable"]
-af[, name:= gsub("median_L", "median_5'", name)]                               
-af[, name:= gsub("median_R", "median_3'", name)]        
-
-#---------------------------------------#
-# PLOT
-#---------------------------------------#
-pdf("pdf/draft/Figure_2E.pdf", 
-    height = 4.5, 
-    width = 5.6)
-layout(matrix(c(1,2), nrow= 1), 
-       widths = c(1,0.4))
-smoothScatter(pred, 
-              dat$log2FoldChange,
-              xlab= "Linear model prediction (log2)",
-              ylab= "Observed (log2)",
-              las= 1)
-legend("topleft", 
-       paste0("CV R²= ", round(rsq$Rsquare, 2)), 
-       bty= "n")
-abline(0, 1, lty= 2)
-par(mar= c(5.1,0,3.6,4.1))
-bar <- barplot(af$PctExp, 
-               beside = T, 
-               las= 1,
-               xlab= "% explained\nvariance",
-               border= NA,
-               horiz= T,
-               axes= F)
-axis(1, at= c(0, 30), labels = c(0, 30))
-text(af$PctExp, 
-     bar[,1],
-     af$name,
-     pos= 4,
-     xpd= T,
-     cex= 0.5, 
-     offset= 0.25)
+  ##### Plot #####
+  bar <- plot(enr, 
+              axes= F, 
+              xlab= "A / B odd Ratio (log2)", 
+              xlim= c(-3,3), 
+              col= c("#00AEEF", "#EE2A7B"))
+  axis(1, 
+       at= c(-3,0,3),
+       labels = c(-3,0,3), 
+       tck=-0.02)
+  # Plot PWMs
+  enr[bar, bar:= i.bar, on= "variable"]
+  enr[, top:= bar+0.4]
+  enr[, width:= strwidth("M")*0.8*ncol(as.matrix(pwm[[1]])), variable]
+  enr[, right:= par("usr")[1]-max(strwidth(paste0("M", variable)))]
+  enr[, left:= right-width, variable]
+  enr[, height:= 0.8]
+  enr[, {
+    vl_seqlogo(as.matrix(pwm[[1]]),
+               xleft = left,
+               ytop = top,
+               width = width,
+               height= height)
+    segments(left,
+             top-height,
+             left+width,
+             top-height,
+             lwd= 0.25,
+             xpd= T,
+             col= "grey")
+  }, .(variable, top, left, width, height)]
+  # Plot clusters rectangles
+  rleft <- c(par("usr")[1], 0)
+  rright <- c(0, par("usr")[2])
+  rect(rleft,
+       par("usr")[4],
+       rright,
+       par("usr")[4]+strheight("M")*2.5,
+       xpd= T,
+       lwd= 0.25,
+       col= adjustcolor(c("grey60", "grey90"), 0.7))
+  abline(v= 0, 
+         lwd= 0.25)
+  text(sapply(list(rleft, rright), mean),
+       par("usr")[4]+strheight("M")*1.25,
+       c("Cluster B", 
+         "Cluster A"),
+       xpd= T)
+}
 dev.off()

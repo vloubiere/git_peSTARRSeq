@@ -77,26 +77,31 @@ meta[, {
                   fill= T,
                   select = 1:5, 
                   col.names = c("ID", "FLAG", "seq", "pos", "mapq"))
-      .c <- merge(.c[FLAG %in% c(97, 99) & mapq>=20, .(ID, seq, pos)],
-                  .c[FLAG %in% c(145, 147) & mapq>=20, .(ID, seq, pos)], 
-                  by= "ID",
-                  suffixes= c("_L", "_R"))
-      # Compute total reads
-      stat <- rbindlist(list(L= .c[(filter_pos_L), .(pos= paste0(sort(unique(pos_L)), collapse= ",")), .(gp= gp_L)], 
-                             R= .c[(filter_pos_R), .(pos= paste0(sort(unique(pos_R)), collapse= ",")), .(gp= gp_R)]), 
-                        idcol = T)
-      .c <- .c[filter_pos_L & filter_pos_R, .(L= seq_L,
-                                              R= seq_R,
-                                              UMI= gsub(".*_([A-Z]{10}).*", "\\1", ID))]
-      stat <- rbindlist(list(stat,
-                             data.table(.id= "total_reads", value= nrow(.c))), 
-                        fill= T)
+      # Extract good reads
+      if(type=="rev-pe-STARR-Seq")
+      {
+        .c <- merge(.c[FLAG %in% c(81, 83) & mapq>=20, .(ID, seq, pos)],
+                    .c[FLAG %in% c(161, 163) & mapq>=20, .(ID, seq, pos)], 
+                    by= "ID",
+                    suffixes= c("_L", "_R"))
+      }else
+      {
+        .c <- merge(.c[FLAG %in% c(97, 99) & mapq>=20, .(ID, seq, pos)],
+                    .c[FLAG %in% c(145, 147) & mapq>=20, .(ID, seq, pos)], 
+                    by= "ID",
+                    suffixes= c("_L", "_R"))
+      }
+      # Clean
+      .c <- .c[, .(L= seq_L,
+                   pos_L,
+                   R= seq_R,
+                   pos_R,
+                   UMI= gsub(".*_([A-Z]{10}).*", "\\1", ID))]
       # SAVE
       fwrite(.c, umi_counts)
-      fwrite(stat, umi_summary)
       print(paste0(umi_counts, " -->>DONE"))
     }
-}, .(bam, umi_counts, umi_summary, type, library)]
+}, .(bam, umi_counts, type, library)]
 
 #--------------------------------------------------------------#
 # Merged counts
@@ -104,160 +109,171 @@ meta[, {
 # +UMI collapsing with 1nt difference
 # +annotation based on library
 #--------------------------------------------------------------#
-# meta[, {
-#   if(all(file.exists(c(summary_counts, pairs_counts, spike_counts, switched_counts))))
-#     print(paste0("All merged counts files -->> ALREADY EXISTS")) else
-#     {
-#       print(paste0("Start ", pairs_counts))
-#       # Import all counts file / cdition
-#       .c <- lapply(umi_counts, fread)
-#       .c <- rbindlist(.c)
-#       # Count UMIs and order
-#       .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
-#       setorderv(.c, "umi_N", order = -1)
-#       # Advanced UMI collapsing (>1 diff)
-#       .c[, UMI:= {
-#         if(.N>1)
-#         {
-#           res <- rep(as.character(NA), .N)
-#           while(anyNA(res))
-#           {
-#             check <- is.na(res)
-#             check[check] <- stringdist(UMI[check][1], 
-#                                        UMI[check], 
-#                                        method="hamming", 
-#                                        nthread= getDTthreads()-1)<=1
-#             res[check] <- UMI[check][1]
-#           }
-#           res
-#         }else
-#           UMI
-#       }, .(L, R)]
-#       # Final collapsing
-#       .c <- unique(.c[, .(L, R, UMI)])
-#       .c <- .c[, .(umi_counts= .N), .(L, R)]
-#       # Compute patterns to identify library pairs
-#       .ex <- libs[lib_ID %in% c(vllib, Spike_in)]
-#       .ex <- .ex[, .(L_pattern= strsplit(sub_lib_L, ";")[[1]],
-#                      R_pattern= strsplit(sub_lib_R, ";")[[1]]),(.ex)]
-#       .ex <- .ex[, CJ(L_pattern= strsplit(L, ",")[[1]],
-#                       R_pattern= strsplit(R, ",")[[1]]), .(lib_ID, L= L_pattern, R= R_pattern)]
-#       .ex[, c("L_pattern", "R_pattern"):= .(paste0("_", L_pattern, "_"),
-#                                             paste0("_", R_pattern, "_"))]
-#       .ex$L <- NULL
-#       .ex$R <- NULL
-#       .ex[, Spike:= ifelse(lib_ID==Spike_in & !is.na(Spike_in), T, F)]
-#       # Check if pair exists and is spike in
-#       .ex[, {
-#         .c[grepl(L_pattern, L) & grepl(R_pattern, R), type:= ifelse(Spike, "spike-in", "pair")]
-#       }, .(L_pattern, R_pattern, Spike)]
-#       .c[is.na(type), type:= "switched"]
-#       # Generate read summary
-#       sum_files <- data.table(file= sam_summary)
-#       sum_files[, mapped:= fread(file)[V1=="Mapped_fragments", V2], file]
-#       .summary <- sum_files[, .(mapped= sum(mapped), collapsed= sum(.c$umi_counts))]
-#       fwrite(.summary, summary_counts)
-#       # SAVE
-#       fwrite(.c[type=="pair", !"type"], pairs_counts)
-#       fwrite(.c[type=="spike-in", !"type"], spike_counts)
-#       fwrite(.c[type=="switched", !"type"], switched_counts)
-#       print(paste0(pairs_counts, " -->> DONE"))
-#     }
-# }, .(vllib, Spike_in, summary_counts, pairs_counts, spike_counts, switched_counts)]
+meta[, {
+  if(!file.exists(pairs_counts))
+  {
+    print(paste0("Start ", pairs_counts))
+    # Import all counts file / cdition
+    .c <- lapply(umi_counts, fread)
+    .c <- rbindlist(.c)
+    # Filter correct pairs
+    .c <- .c[grepl(paste0("_", gsub(",", "_|_", libs[lib_ID==vllib, sub_lib_L]), "_"), L) 
+             & grepl(paste0("_", gsub(",", "_|_", libs[lib_ID==vllib, sub_lib_R]), "_"), R)]
+    if(vllib=="vllib006")
+    {
+      .c <- .c[between(pos_L, 260, 264, incbounds = T) 
+               & between(pos_R, 4, 7, incbounds = T)]
+    }else if(vllib=="vllib002")
+    {
+      .c <- .c[pos_L==5 & pos_R %in% c(260, 264)]
+    }else if(vllib %in% c("vllib013", "vllib014"))
+    {
+      .c <- .c[between(pos_L, 4, 7, incbounds = T) 
+               & between(pos_R, 260, 263, incbounds = T)] 
+    }else if(vllib %in% c("vllib015", 
+                          "vllib016", 
+                          "vllib017", 
+                          "vllib018", 
+                          "vllib019", 
+                          "vllib020", 
+                          "vllib021", 
+                          "vllib022", 
+                          "vllib023", 
+                          "vllib024", 
+                          "vllib025", 
+                          "vllib026", 
+                          "vllib027", 
+                          "vllib028"))
+    {
+      .c <- .c[between(pos_L, 4, 7, incbounds = T) 
+               & between(pos_R, 261, 265, incbounds = T)] 
+    }else
+    {
+      .c <- .c[0]
+    }
+    # Count UMIs and order
+    .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
+    setorderv(.c, "umi_N", order = -1)
+    # Advanced UMI collapsing (>1 diff)
+    .c[, UMI:= {
+      if(.N>1)
+      {
+        res <- rep(as.character(NA), .N)
+        while(anyNA(res))
+        {
+          check <- is.na(res)
+          check[check] <- stringdist(UMI[check][1],
+                                     UMI[check],
+                                     method="hamming",
+                                     nthread= getDTthreads()-1)<=1
+          res[check] <- UMI[check][1]
+        }
+        res
+      }else
+        UMI
+    }, .(L, R)]
+    # Final collapsing
+    .c <- unique(.c[, .(L, R, UMI)])
+    .c <- .c[, .(umi_counts= .N), .(L, R)]
+    # SAVE
+    fwrite(.c, pairs_counts)
+  }
+  print(paste0(pairs_counts, " -->> DONE"))
+}, .(vllib, pairs_counts)]
 
 #--------------------------------------------------------------#
 # Method using counts norm (Tolerates one rep)
 #--------------------------------------------------------------#
-# if(any(meta$DESeq2))
-# {
-#   meta[, {
-#     if(file.exists(FC_file))
-#       print(paste0(FC_file, "  -->> ALREADY EXISTS")) else
-#       {
-#         res <- dcast(.SD,
-#                      L+R~cdition+rep,
-#                      value.var= "value",
-#                      fill= 0,
-#                      sep = "__")
-#         
-#         sampleTable <- data.table(rn= setdiff(names(res), c("L", "R")))
-#         sampleTable[, c("cdition", "rep"):= tstrsplit(rn, "__")]
-#         sampleTable <- data.frame(sampleTable, 
-#                                   row.names = "rn")
-#         
-#         # DF
-#         res[, rn:= paste0(L, "__", R)]
-#         DF <- data.frame(res[, !c("L", "R")], 
-#                          row.names = "rn")
-#         DF <- DF[rowSums(DF)>20,]
-#         dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
-#                                               colData= sampleTable,
-#                                               design= ~rep+cdition)
-#         sizeFactors(dds)= DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[grep("control.*__control.*", rownames(DF)),]))
-#         
-#         res <- DESeq2::DESeq(dds)
-#         
-#         # Differential expression
-#         FC <- as.data.frame(DESeq2::results(res, contrast= c("cdition", "screen", "input")), keep.rownames= "rn")
-#         FC <- as.data.table(FC, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
-#         
-#         # Compute expected
-#         median_L <- FC[grepl("control", R), .(check= .N>5, median_L= median(log2FoldChange, na.rm = T)), L][(check)]
-#         FC[median_L, median_L:= i.median_L, on= "L"]
-#         median_R <- FC[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange, na.rm = T)), R][(check)]
-#         FC[median_R, median_R:= i.median_R, on= "R"]
-#         FC[, additive:= log2(2^median_L+2^median_R)]
-#         FC[, multiplicative:= median_L+median_R]
-#         
-#         # Import counts
-#         dat <- unique(data.table(file= pairs_counts, 
-#                                  rep= DESeq2_pseudo_rep,
-#                                  cdition))
-#         dat[cdition=="screen", cdition:= paste0(cdition, "_rep", rep)]
-#         dat <- dat[, fread(file), (dat)]
-#         # Collapse input counts and screen reps
-#         dat <- dat[, .(umi_counts= sum(umi_counts)), .(cdition, L, R)]
-#         # Filter
-#         dat[, check_counts:= sum(umi_counts)>5, .(L, R)]
-#         # Cast counts
-#         res <- dcast(dat,
-#                      L+R~cdition,
-#                      value.var= "umi_counts",
-#                      fill= 0)
-#         cols <- setdiff(names(res), c("L", "R"))
-#         res[, check:= rowSums(.SD), .SDcols= cols]
-#         res <- res[check>10, !"check"]
-#         # Normalize and compute FC
-#         res[, (cols):= lapply(.SD, function(x) (x+1)/sum(x)*1e6), .SDcols= cols]
-#         res[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
-#         # Check if individual enhancer is active
-#         control_pairs_log2FC <- res[grepl("control", L) & grepl("control", R), log2FoldChange]
-#         res[, act_wilcox_L:= {
-#           .c <- log2FoldChange[grepl("control", R)]
-#           if(length(.c)>5)
-#             wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
-#               as.numeric(NA)
-#         }, L]
-#         res[, act_wilcox_R:= {
-#           .c <- log2FoldChange[grepl("control", L)]
-#           if(length(.c)>5)
-#             wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
-#           as.numeric(NA)
-#         }, R]
-#         # Subtract basal activity (center controls on 0)
-#         res[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
-#         # Compute expected
-#         median_L <- res[grepl("control", R) , .(check= .N>5, median_L= median(log2FoldChange)), L][(check)]
-#         res[median_L, median_L:= i.median_L, on= "L"]
-#         median_R <- res[grepl("control", L) , .(check= .N>5, median_R= median(log2FoldChange)), R][(check)]
-#         res[median_R, median_R:= i.median_R, on= "R"]
-#         # Expected
-#         res[, additive:= log2(2^median_L+2^median_R)]
-#         res[, multiplicative:= median_L+median_R]
-#         # SAVE
-#         res <- na.omit(res[, .(L, R, log2FoldChange, median_L, median_R, act_wilcox_L, act_wilcox_R, additive, multiplicative)])
-#         fwrite(res, FC_file)
-#         print(paste0(FC_file, "  -->> DONE"))
-#       }
-#   }, FC_file]
-# }
+if(any(meta$DESeq2))
+{
+  meta[, {
+    # Import counts
+    dat <- SJ(file= pairs_counts, 
+              cdition= cdition, 
+              rep= DESeq2_pseudo_rep)
+    setkeyv(dat, c("cdition", "rep"))
+    dat <- dat[, fread(file), (dat)]
+    counts <- dcast(dat, 
+                    L+R~cdition+rep, 
+                    value.var = "umi_counts", 
+                    fun.aggregate = sum, 
+                    sep= "_rep")
+    # Remove homotypic pairs and cutoff low counts
+    counts <- counts[L!=R & rowSums(counts[, !c("L", "R")])>20]
+    
+    ####### DESeq2 ########
+    if(!file.exists(FC_file_DESeq) & 
+       all(c("input_rep1", "input_rep2", "screen_rep1", "screen_rep2") %in% names(counts)))
+      {
+        # Format sampleTable
+        sampleTable <- SJ(name= setdiff(names(counts), c("L","R")))
+        sampleTable <- data.frame(sampleTable[, c("cdition", "rep"):= tstrsplit(name, "_rep")], 
+                                  row.names = "name")
+        # Format DF
+        DF <- counts[, name:= paste0(L, "__", R)][, !c("L", "R")]
+        DF <- data.frame(DF, 
+                         row.names = "name")
+        # DESeq
+        dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
+                                              colData= sampleTable,
+                                              design= ~rep+cdition)
+        sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[grep("control.*__control.*", rownames(DF)),]))
+        dds <- DESeq2::DESeq(dds)
+
+        # Differential expression
+        FC <- as.data.frame(DESeq2::results(dds, contrast= c("cdition", "screen", "input")))
+        FC <- as.data.table(FC, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
+
+        # Compute expected
+        FC[, median_L:= .SD[grepl("^control", R), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], L]
+        FC[, median_R:= .SD[grepl("^control", L), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], R]
+        FC[, additive:= log2(2^median_L+2^median_R)]
+        FC[, multiplicative:= median_L+median_R]
+        
+        # SAVE
+        saveRDS(dds, dds_file)
+        fwrite(FC, FC_file_DESeq, sep= "\t", na = NA)
+        print(paste0(FC_file_DESeq, "  -->> DONE"))
+    }
+    
+    ####### Ratios ########
+    if(!file.exists(FC_file_ratio))
+    {
+      # Format counts
+      norm <- copy(counts)
+      inputs <- grep("^input", names(norm), value = T)
+      norm[, input:= rowSums(.SD), .SDcols= inputs]
+      norm <- norm[, !(inputs), with= F]
+      # Pseudocount normalized counts
+      cols <- grep("^screen|^input$", names(norm), value= T)
+      norm[, (cols):= lapply(.SD, function(x) (x+0.5)/sum(x+0.5)*1e6), .SDcols= cols]
+      # FoldChange
+      norm[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
+      # Check if individual enhancer is active
+      control_pairs_log2FC <- norm[grepl("control", L) & grepl("control", R), log2FoldChange]
+      norm[, act_wilcox_L:= {
+        .c <- log2FoldChange[grepl("control", R)]
+        if(length(.c)>5)
+          wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
+            as.numeric(NA)
+      }, L]
+      norm[, act_wilcox_R:= {
+        .c <- log2FoldChange[grepl("control", L)]
+        if(length(.c)>5)
+          wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
+            as.numeric(NA)
+      }, R]
+      # Subtract basal activity (center controls on 0)
+      norm[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
+      # Compute expected
+      norm[, median_L:= .SD[grepl("^control", R), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], L]
+      norm[, median_R:= .SD[grepl("^control", L), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], R]
+      norm[, additive:= log2(2^median_L+2^median_R)]
+      norm[, multiplicative:= median_L+median_R]
+      # SAVE
+      norm <- na.omit(norm[, .(L, R, log2FoldChange, median_L, median_R, act_wilcox_L, act_wilcox_R, additive, multiplicative)])
+      fwrite(norm, FC_file_ratio, na = NA, sep= "\t")
+      print(paste0(FC_file_ratio, "  -->> DONE"))
+    }
+  }, .(FC_file_DESeq, dds_file, FC_file_ratio)]
+}

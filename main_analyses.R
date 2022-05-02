@@ -32,6 +32,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_3AB.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3D.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_3E.R")
   
   file.edit("git_peSTARRSeq/subscripts/Figure_4A.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4B.R")

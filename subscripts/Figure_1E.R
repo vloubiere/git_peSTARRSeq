@@ -12,10 +12,12 @@ dat <- dat[class %in% c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh.")]
 dat[, class:= droplevels(class)]
 
 pdf("pdf/draft/Figure_1E.pdf", 
-    width = 3, 
-    height = 4.5)
+    width = 2, 
+    height = 3)
 par(las= 2, 
-    mar= c(6,4,1,1))
+    mar= c(3.5,3,0.5,2),
+    tcl= -0.2,
+    mgp= c(1.5, 0.5, 0))
 vl_boxplot(log2FoldChange~class,
            dat,
            violin= T, 
@@ -24,8 +26,9 @@ vl_boxplot(log2FoldChange~class,
            ylab= "Activity (log2)", 
            ylab.line = 2, 
            wilcox.alternative = "less", 
-           pval_adj= 0.06)
-abline(h= 0, lty= 2)
+           pval_offset= 0.05, 
+           tilt.names= T,
+           ylim= c(-5, 15))
+abline(h= 0, 
+       lty= 2)
 dev.off()
-
-

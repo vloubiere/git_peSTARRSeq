@@ -25,19 +25,19 @@ meta[, fq1:= paste0(fq_prefix, "_1.fq.gz")]
 meta[, fq2:= paste0(fq_prefix, "_2.fq.gz")]
 meta[, bam:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/bam/", output_prefix, ".bam")]
 meta[, bam_summary:= gsub(".bam$", ".bam.summary", bam)]
-meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", output_prefix, ".txt")]
-meta[, umi_summary:= gsub(".txt$", "_summary.txt", umi_counts)]
-meta[, c("summary_counts", "pairs_counts", "spike_counts", "switched_counts"):= {
+meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", output_prefix, ".txt.gz")]
+meta[, pairs_counts:= {
   dir <- paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/merged_counts/", group)
   if(DESeq2)
     dir <- paste0(dir, "_", cdition, "_rep", DESeq2_pseudo_rep)
-  .(paste0(dir, "_summary.txt"),
-    paste0(dir, "_merged_pair_counts.txt"),
-    paste0(dir, "_merged_spikein_counts.txt"),
-    paste0(dir, "_merged_switched_counts.txt"))
+  paste0(dir, "_merged_pair_counts.txt")
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
-meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
-                                group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
+meta[(DESeq2), FC_file_DESeq:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/DESeq2/", 
+                                      group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
+meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/DESeq2/", 
+                                 group, ".dds"), .(group, cdition, DESeq2)]
+meta[(DESeq2), FC_file_ratio:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/ratio/", 
+                                      group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
 #-------------------------------------------------------------#
@@ -53,8 +53,7 @@ files <- list.files("db/FC_tables/", pattern, full.names = T)
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
-cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "umi_summary", 
-          "summary_counts", "pairs_counts", "spike_counts", "switched_counts", "FC_file")
+cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "pairs_counts", "FC_file_DESeq", "dds_file", "FC_file_ratio")
 # meta <- meta[vllib=="vllib015" & DESeq2] # Example
 meta[, check_exists:= all(file.exists(na.omit(unlist(.SD)))), .(group, DESeq2), .SDcols= cols]
 meta <- meta[!(check_exists)]
@@ -66,7 +65,7 @@ meta[, {
   Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
                 normalizePath("git_peSTARRSeq/functions/pipeline_3.0.R"),
                 tmp)
-  if(DESeq2).  u
+  if(DESeq2)
   {
     bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
                       "-C 12", # N cpus

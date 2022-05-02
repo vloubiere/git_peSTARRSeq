@@ -12,18 +12,22 @@ dat[, diff:= log2FoldChange-additive]
 
 mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
 mat <- mat[apply(mat, 1, function(x) sum(is.na(x))<=250),apply(mat, 2, function(x) sum(is.na(x))<=250)]
-cl <- vl_heatmap(mat, 
+cl <- vl_heatmap(mat,
                  cutree_rows = 2, 
                  cutree_cols = 2,
-                 breaks = seq(-3,3, length.out= 20), 
-                 col = vl_palette_blueWhiteRed(20),
+                 breaks = seq(-3, 3, length.out= 30), 
+                 col = vl_palette_blueWhiteRed(30, rep_white = 5),
                  legend_title = "Obs./Add. (log2)", 
                  show_rownames = F,
                  show_colnames = F,
                  auto_margins = F,
                  plot= F)
-cl$rows[, cl:= fcase(cl==1, "strong", cl==2, "weak")]
-cl$cols[, cl:= fcase(cl==2, "strong", cl==1, "weak")]
+cl$rows[, cl:= as.character(cl)]
+cl$rows[cl==1, c("cl", "col"):= .("A", "grey90")]
+cl$rows[cl==2, c("cl", "col"):= .("B", "grey60")]
+cl$cols[, cl:= as.character(cl)]
+cl$cols[cl==1, c("cl", "col"):= .("A", "grey90")]
+cl$cols[cl==2, c("cl", "col"):= .("B", "grey60")]
 cl$rows[unique(dat[,.(name=L, median_L)]), ind_act:= median_L, on= "name"]
 ind_L <- cl$rows[(order), ind_act]
 cl$cols[unique(dat[,.(name=R, median_R)]), ind_act:= median_R, on= "name"]
@@ -31,28 +35,31 @@ ind_R <- cl$cols[(order), ind_act]
 # Add motif enrichment
 cl$mot_enr_L$seq <- lib[cl$rows$name, oligo_full_sequence, on= "ID_vl"]
 cl$mot_enr_L$counts <- vl_motif_counts(cl$mot_enr_L$seq)
-cl$mot_enr_L$enr <- vl_motif_enrich(cl$mot_enr_L$counts[cl$rows$cl=="strong",],
-                                    cl$mot_enr_L$counts[cl$rows$cl=="weak",],
+cl$mot_enr_L$counts <- cl$mot_enr_L$counts[, apply(cl$mot_enr_L$counts, 2, function(x) sum(x>0))>20]
+cl$mot_enr_L$enr <- vl_motif_enrich(cl$mot_enr_L$counts[cl$rows$cl=="A",],
+                                    cl$mot_enr_L$counts[cl$rows$cl=="B",],
                                     plot= F)
 cl$mot_enr_R$seq <- lib[cl$cols$name, oligo_full_sequence, on= "ID_vl"]
 cl$mot_enr_R$counts <- vl_motif_counts(cl$mot_enr_R$seq)
-cl$mot_enr_R$enr <- vl_motif_enrich(cl$mot_enr_R$counts[cl$cols$cl=="strong",],
-                                    cl$mot_enr_R$counts[cl$cols$cl=="weak",],
+cl$mot_enr_R$counts <- cl$mot_enr_R$counts[, apply(cl$mot_enr_R$counts, 2, function(x) sum(x>0))>20]
+cl$mot_enr_R$enr <- vl_motif_enrich(cl$mot_enr_R$counts[cl$cols$cl=="A",],
+                                    cl$mot_enr_R$counts[cl$cols$cl=="B",],
                                     plot= F)
 saveRDS(cl, "Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
 
 pdf("pdf/draft/Figure_2B.pdf", 
-    width= 10, 
-    height = 9)
-par(mar= c(6.5,6.5,3,10),
-    mgp= c(3,0.15,0))
+    width= 8, 
+    height = 7)
+par(mar= c(3.5,3.5,3,10),
+    mgp= c(3,0.15,0),
+    tcl= -0.2)
 
 # Heatmap
 plot(cl)
 
 # Left individual activities
-right <- par("usr")[1]-strwidth("M")*2.5
-width <- right-grconvertX(1.5, "line", "user")
+right <- par("usr")[1]-strwidth("M", cex= 0.5)
+width <- right-grconvertX(1, "line", "user")
 rect(right-(ind_L/max(ind_L)*width), 
      rev(seq(ind_L))+0.5, 
      right, 
@@ -60,36 +67,21 @@ rect(right-(ind_L/max(ind_L)*width),
      border= NA, 
      xpd= T, 
      col= adjustcolor("#0C3A0E", 0.7))
-ticks <- axisTicks(c(0,max(ind_L)), log= F)
+ticks <- axisTicks(c(0, max(ind_L)), log= F)
 at <- right-(ticks/max(ind_L)*width)
 axis(3, 
-     at = at, 
-     labels = ticks,
+     at = range(at), 
+     labels = range(ticks),
      xpd= T, 
      line= 0.25, 
-     cex.axis= 0.5,
-     tck= -0.005)
+     cex.axis= 0.5)
 text(mean(at),
      par("usr")[4],
      "5' Individual\nact. (log2)",
      xpd= T, 
      pos= 3, 
-     offset= 1.5,
+     offset= 1.25,
      cex= 0.7)
-clr_pos <- cumsum(rev(table(cl$rows$cl)))
-rect(xleft = par("usr")[1]-strwidth("M")*2,
-     ybottom = c(1, clr_pos[-length(clr_pos)]),
-     xright = par("usr")[1]-strwidth("M")*0.5,
-     ytop = clr_pos,
-     xpd= T,
-     border= NA,
-     col= adjustcolor(c("grey20", "grey70"), 0.7))
-text(x = par("usr")[1]-strwidth("M")*1.25,
-     y = clr_pos-diff(c(1, clr_pos))/2,
-     c("5' Weak", "5' Strong"),
-     xpd= T,
-     srt= 90,
-     col= c("white", "black"))
 text(grconvertX(0.5, "line", "user"),
      mean(par("usr")[c(3,4)]),
      "5' enhancer",
@@ -98,8 +90,8 @@ text(grconvertX(0.5, "line", "user"),
 
 # Right individual activities
 par(mgp= c(3,0.35,0))
-bottom <- grconvertY(1.5, "line", "user")
-height <- par("usr")[3]-strheight("M")*2.5-bottom
+bottom <- grconvertY(1, "line", "user")
+height <- par("usr")[3]-strheight("M")*0.5-bottom
 rect(seq(ind_R)+0.5,
      bottom+(ind_R/max(ind_R)*height), 
      seq(ind_R)-0.5,
@@ -107,36 +99,22 @@ rect(seq(ind_R)+0.5,
      border= NA, 
      xpd= T, 
      col= adjustcolor("#0C3A0E", 0.7))
-ticks <- axisTicks(c(0,max(ind_R)), log= F)
+ticks <- axisTicks(c(0, max(ind_R)), log= F)
 at <- bottom+(ticks/max(ind_R)*height)
 axis(2, 
-     at = at, 
-     labels = ticks,
+     at = range(at), 
+     labels = range(ticks),
      xpd= T, 
      line= 0.25, 
      cex.axis= 0.5,
-     las= 2,
-     tck= -0.005)
+     las= 2)
 text(par("usr")[1],
      mean(at),
      "3' Individual\nact. (log2)",
      xpd= T,
      pos= 2, 
-     offset= 1.25,
+     offset= 0.5,
      cex= 0.7)
-clc_pos <- cumsum(table(cl$cols$cl))
-rect(xleft = c(1, clc_pos[-length(clc_pos)]),
-     ybottom = par("usr")[3]-strheight("M")*2,
-     xright = clc_pos,
-     ytop = par("usr")[3]-strheight("M")*0.5,
-     xpd= T,
-     border= NA,
-     col= adjustcolor(c("grey70", "grey20"), 0.7))
-text(x = clc_pos-diff(c(1, clc_pos))/2,
-     y = par("usr")[3]-strheight("M")*1.25,
-     c("3' Strong", "3' Weak"),
-     xpd= T,
-     col= c("black", "white"))
 text(mean(par("usr")[c(1,2)]),
      grconvertY(0.5, "line", "user"),
      "3' enhancer",

@@ -15,10 +15,10 @@ dat[, diff:= log2FoldChange-additive]
 
 mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
 cl <- vl_heatmap(mat, 
-                 cutree_rows = 3, 
+                 cutree_rows = 2, 
                  cutree_cols = 2,
-                 breaks = seq(-3,3, length.out= 20), 
-                 col = vl_palette_blueWhiteRed(20),
+                 breaks = seq(-3, 3, length.out= 30), 
+                 col = vl_palette_blueWhiteRed(30, rep_white = 5),
                  legend_title = "Obs./Add. (log2)",
                  clustering_method = "ward.D",
                  show_rownames = F,
@@ -26,30 +26,29 @@ cl <- vl_heatmap(mat,
                  auto_margins = F,
                  plot= F)
 cl$rows[, cl:= as.character(cl)]
-cl$rows[, cl:= switch(cl, 
-                      "1"= "intermediate",
-                      "2"= "strong",
-                      "3"= "weak"), cl]
+cl$rows[cl==1, c("cl", "col"):= .("A", "grey90")]
+cl$rows[cl==2, c("cl", "col"):= .("B", "grey60")]
 cl$rows[unique(dat[,.(name=L, median_L)]), ind_act:= median_L, on= "name"]
 ind_L <- cl$rows[(order), ind_act]
+cl$cols[, cl:= as.character(cl)]
+cl$cols[cl==1, c("cl", "col"):= .("A", "grey90")]
+cl$cols[cl==2, c("cl", "col"):= .("B", "grey60")]
 cl$cols[unique(dat[,.(name=R, median_R)]), ind_act:= median_R, on= "name"]
 ind_R <- cl$cols[(order), ind_act]
 # Add motif enrichment
-cl$mot_enr_L$seq <- c(lib[cl$rows$name, oligo_full_sequence, on= "ID"],
-                      lib[grepl("^control", ID), oligo_full_sequence])
-cl$mot_enr_L$counts <- vl_motif_counts(cl$mot_enr_L$seq)
-cl$mot_enr_L$enr <- vl_motif_cl_enrich(cl$mot_enr_L$counts,
-                                       c(cl$rows$cl, rep("ctl", length(grep("^control", lib$ID)))),
-                                       control_cl = "ctl",
-                                       plot= F)
-cl$mot_enr_R$seq <- c(lib[cl$cols$name, oligo_full_sequence, on= "ID"],
-                      lib[grepl("^control", ID), oligo_full_sequence])
-cl$mot_enr_R$counts <- vl_motif_counts(cl$mot_enr_R$seq)
-cl$mot_enr_R$enr <- vl_motif_cl_enrich(cl$mot_enr_R$counts,
-                                       c(cl$cols$cl, rep("ctl", length(grep("^control", lib$ID)))),
-                                       control_cl = "ctl",
-                                       plot= F)
-saveRDS(cl, "Rdata/vllib016_clustering_additive_scores_draft_figure.rds")
+cl$rows[lib, seq:= i.oligo_full_sequence, on= "name==ID"]
+cl$cols[lib, seq:= i.oligo_full_sequence, on= "name==ID"]
+sequences <- data.table(rbind(cl$rows[, .(cl= paste0("5' ", cl), seq)],
+                              cl$cols[, .(cl= paste0("3' ", cl), seq)],
+                              lib[grepl("^control", ID), .(cl= "control", seq= oligo_full_sequence)]))
+cl$mot$counts <- vl_motif_counts(sequences$seq)
+cl$mot$counts <- cl$mot$counts[, apply(cl$mot$counts, 2, function(x) sum(x, na.rm= T)>10)]
+cl$mot$enr <- vl_motif_cl_enrich(cl$mot$counts,
+                                 cl_IDs = sequences$cl, 
+                                 control_cl = "control",
+                                 plot= F)
+saveRDS(cl,
+        "Rdata/vllib016_clustering_additive_scores_draft_figure.rds")
 
 pdf("pdf/draft/Figure_3C.pdf", 
     width= 10, 
@@ -144,4 +143,10 @@ text(mean(par("usr")[c(1,2)]),
      grconvertY(0.5, "line", "user"),
      "3' enhancer",
      xpd= T)
+legend(par("usr")[2], 
+       par("usr")[3]-strheight("M")*0.5, 
+       fill= c("#74C27A", "tomato"), 
+       legend= c("Developmental", "Housekeeping"), 
+       xpd= T,
+       bty= "n")
 dev.off()

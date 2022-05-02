@@ -14,8 +14,9 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
   file.edit("git_peSTARRSeq/subscripts/multi_screen_models.R")
   
-  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R")
+  file.edit("git_peSTARRSeq/functions/Benchmarking_UMI_collapsing.R")
   file.edit("git_peSTARRSeq/subscripts/density_reads_position.R")
+  file.edit("git_peSTARRSeq/functions/Compare_DESeq2_ratio.R")
   
   #----------- QC -----------#
   source("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
