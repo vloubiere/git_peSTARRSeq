@@ -20,7 +20,7 @@ pl[, class:= fcase(class=="inactive", "inactive",
 PCC <- dcast(pl, enh+group~side, value.var = "act")
 setorderv(PCC, "group", -1)
 .lm <- lm(PCC[, .(Left, Right)])
-categ <- as.matrix(dcast(pl, class~side+group), 1)
+categ <- as.matrix(dcast(pl, class~side+group, fun.aggregate = length), 1)
 Cc <- adjustcolor(c("cornflowerblue", "gold", "tomato", "red"), 0.5)
 
 #------------------------------------------------------#
@@ -84,19 +84,18 @@ text(bar,
      srt= 45,
      offset= -0.15)
 seg.y <- par("usr")[1]-strheight("M")*9
-segments(-1.05, 
-         -180,
-         -0.15, 
-         -240,
+segments(grconvertX(0.15556, "nfc", "user"), 
+         grconvertY(0.06833, "nfc", "user"),
+         grconvertX(0.2155, "nfc", "user"), 
+         grconvertY(0.01333, "nfc", "user"),
          xpd= T)
-segments(-1.05+diff(bar[c(1,3)]), 
-         -180,
-         -0.15+diff(bar[c(1,3)]), 
-         -240,
+segments(grconvertX(0.15556, "nfc", "user")+diff(bar[c(1,3)]), 
+         grconvertY(0.06833, "nfc", "user"),
+         grconvertX(0.2155, "nfc", "user")+diff(bar[c(1,3)]), 
+         grconvertY(0.01333, "nfc", "user"),
          xpd= T)
-text(-0.25+c(0, diff(bar[c(1,3)])),
-     -250,
-     pos= 2,
+text(grconvertX(0.15556, "nfc", "user")+c(0, diff(bar[c(1,3)])),
+     mean(grconvertY(0.01333, "nfc", "user")),
      labels = c("5'", "3'"),
      xpd= T)
 leg <- legend(par("usr")[2], 
@@ -116,3 +115,4 @@ text(leg$rect$left,
      xpd= T,
      cex= 0.8)
 dev.off()
+file.show("pdf/draft/Figure_1CD.pdf")

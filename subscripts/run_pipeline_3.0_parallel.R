@@ -32,11 +32,9 @@ meta[, pairs_counts:= {
     dir <- paste0(dir, "_", cdition, "_rep", DESeq2_pseudo_rep)
   paste0(dir, "_merged_pair_counts.txt")
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
-meta[(DESeq2), FC_file_DESeq:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/DESeq2/", 
-                                      group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
-meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/DESeq2/", 
+meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
                                  group, ".dds"), .(group, cdition, DESeq2)]
-meta[(DESeq2), FC_file_ratio:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/ratio/", 
+meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
                                       group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
@@ -53,7 +51,7 @@ files <- list.files("db/FC_tables/", pattern, full.names = T)
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
-cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "pairs_counts", "FC_file_DESeq", "dds_file", "FC_file_ratio")
+cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "pairs_counts", "FC_file", "dds_file")
 # meta <- meta[vllib=="vllib015" & DESeq2] # Example
 meta[, check_exists:= all(file.exists(na.omit(unlist(.SD)))), .(group, DESeq2), .SDcols= cols]
 meta <- meta[!(check_exists)]

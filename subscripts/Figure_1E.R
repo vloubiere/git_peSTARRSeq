@@ -32,3 +32,4 @@ vl_boxplot(log2FoldChange~class,
 abline(h= 0, 
        lty= 2)
 dev.off()
+file.show("pdf/draft/Figure_1E.pdf")

@@ -15,7 +15,7 @@ dat[, diff:= log2FoldChange-additive]
 
 mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
 cl <- vl_heatmap(mat, 
-                 cutree_rows = 2, 
+                 cutree_rows = 3, 
                  cutree_cols = 2,
                  breaks = seq(-3, 3, length.out= 30), 
                  col = vl_palette_blueWhiteRed(30, rep_white = 5),
@@ -27,7 +27,8 @@ cl <- vl_heatmap(mat,
                  plot= F)
 cl$rows[, cl:= as.character(cl)]
 cl$rows[cl==1, c("cl", "col"):= .("A", "grey90")]
-cl$rows[cl==2, c("cl", "col"):= .("B", "grey60")]
+cl$rows[cl==3, c("cl", "col"):= .("B", "grey65")]
+cl$rows[cl==2, c("cl", "col"):= .("C", "grey40")]
 cl$rows[unique(dat[,.(name=L, median_L)]), ind_act:= median_L, on= "name"]
 ind_L <- cl$rows[(order), ind_act]
 cl$cols[, cl:= as.character(cl)]

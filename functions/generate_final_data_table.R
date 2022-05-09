@@ -3,14 +3,19 @@ require(data.table)
 
 # Import dat
 dat <- fread("Rdata/metadata_processed.txt")[(DESeq2)]
-dat <- dat[, fread(FC_file_ratio), .(vllib, library, CP, spacer, spacer_size, FC_file_ratio)]
+dat <- merge(unique(dat[, .(vllib, library, CP, spacer, spacer_size, FC_file)]),
+             rbindlist(sapply(unique(dat$FC_file), fread), fill= T, idcol = "FC_file"),
+             by= "FC_file")
+dat <- dat[!is.na(log2FoldChange) & !is.na(median_L) & !is.na(median_R)]
 dat[, spacer:= paste0(spacer, "_", spacer_size), .(spacer, spacer_size)]
 dat[, vllib:= factor(vllib, levels= sort(unique(dat$vllib)))]
 dat[, library:= factor(library, c("T8", "T12"))]
-dat$FC_file_ratio <- NULL
+dat$FC_file <- NULL
 dat$spacer_size <- NULL
 dat[, class_L:= ifelse(act_wilcox_L<0.001 & median_L>log2(1.5), "active", "inactive")]
+dat[is.na(class_L), class_L:= "inactive"]
 dat[, class_R:= ifelse(act_wilcox_R<0.001 & median_R>log2(1.5), "active", "inactive")]
+dat[is.na(class_R), class_R:= "inactive"]
 dat[, class:= fcase(grepl("control", L), "ctl.", 
                     class_L=="active", "enh.",
                     class_L=="inactive", "inact.")]

@@ -14,7 +14,9 @@ dat[, diff:= log2FoldChange-additive]
 dat[cl$rows, cl_L:= i.cl, on= "L==name"]
 dat[cl$cols, cl_R:= i.cl, on= "R==name"]
 dat[, cl:= paste0("5'", cl_L, "-3'", cl_R)]
-
+dat[, ord:= median(diff), cl]
+setorderv(dat, "ord", -1)
+dat[, cl:= factor(cl, unique(dat[, cl]))]
 Cc <- circlize::colorRamp2(cl$breaks,
                            cl$col)
 

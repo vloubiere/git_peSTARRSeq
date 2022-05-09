@@ -16,7 +16,7 @@ dat[cl$cols, `3' cluster`:= cl, on= "R==name"]
 
 pdf("pdf/draft/Figure_2D.pdf", 
     height = 3, 
-    width = 1.5)
+    width = 1.75)
 par(mgp= c(1.5, 0.5, 0),
     mar= c(3.3,2.5,0.7,0.25),
     tcl= -0.2,
@@ -31,25 +31,18 @@ box <- vl_boxplot(x,
                   boxwex = 0.3, 
                   las= 1,
                   xlim= c(0.75, 4.25), 
+                  box.lty = 0,
                   tilt.names = T)
-set.seed(2)
-jit <- jitter(rep(0, nrow(dat)), factor = 4)
-segments(rep(c(1.25,3.25), lengths(x[c(1,3)])), 
+segments(rep(c(1,3), lengths(x[c(1,3)])), 
          unlist(x[c(1,3)]), 
-         rep(c(1.75,3.75), lengths(x[c(2,4)])),
+         rep(c(2,4), lengths(x[c(2,4)])),
          unlist(x[c(2,4)]),
          col= "grey40", 
          lwd= 0.5)
-points(rep(c(1.25,3.25), lengths(x[c(1,3)])), 
-       unlist(x[c(1,3)]),
-       col= adjustcolor("lightgrey", 0.9), 
-       pch= 16,
-       cex= 0.3)
-points(rep(c(1.75,3.75), lengths(x[c(2,4)])), 
-       unlist(x[c(2,4)]),
-       col= adjustcolor("lightgrey", 0.9), 
-       pch= 16,
-       cex= 0.3)
+vl_boxplot(x,
+           xaxt= "n",
+           yaxt= "n",
+           add= T)
 text(c(1.5, 3.5), 
      box$pval$y, 
      c("A/A", "Others"),

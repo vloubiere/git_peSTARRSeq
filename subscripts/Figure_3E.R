@@ -26,10 +26,10 @@ Cc <- circlize::colorRamp2(seq(-3,3, length.out= 20),
 # PLOT
 #----------------------------#
 pdf("pdf/draft/Figure_3E.pdf",
-    width= 5,
+    width= 5.5,
     height = 6)
 par(las= 2,
-    mar= c(3,17,0,5))
+    mar= c(3,17,0,6))
 res <- plot.vl_enr_cl(simp,
                       padj_cutoff= 1e-5,
                       col= c("#00AEEF", "#EE2A7B"),

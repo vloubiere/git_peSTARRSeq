@@ -15,7 +15,7 @@ par(mgp= c(1.5,0.35,0),
 for(side in c("mot_enr_L", "mot_enr_R"))
 {
   if(side=="mot_enr_L")
-    par(mar= c(7,16,2,6)) else if(side=="mot_enr_R")
+    par(mar= c(7,14,2,6)) else if(side=="mot_enr_R")
       par(mar= c(2.75,16,1.75,6))
   # Extract data
   enr <- dat[[side]]$enr[padj<fcase(side=="mot_enr_L", 0.001,
@@ -76,6 +76,14 @@ for(side in c("mot_enr_L", "mot_enr_R"))
        xpd= T,
        lwd= 0.25,
        col= adjustcolor(c("grey60", "grey90"), 0.7))
+  text(rleft[1], 
+       par("usr")[4]+strheight("M")*1.25,
+       switch(side, 
+              "mot_enr_L"= "5' enhancer",
+              "mot_enr_R"= "3' enhancer"),
+       pos= 2,
+       xpd= T,
+       cex= 2)
   abline(v= 0, 
          lwd= 0.25)
   text(sapply(list(rleft, rright), mean),

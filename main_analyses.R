@@ -37,6 +37,8 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_4A.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4B.R")
   
+  file.edit("git_peSTARRSeq/subscripts/gene_activity_prediction.R")
+  file.edit("git_peSTARRSeq/subscripts/Sup_Figure_intron_spacers.R")
   file.edit("git_peSTARRSeq/subscripts/Sup_sequencing_depth_vs_robustness.R")
   #-------------------------#
   # Tests

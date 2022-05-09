@@ -13,6 +13,7 @@ require(stringdist)
 
 meta <- fread(commandArgs(trailingOnly=TRUE)[1])
 # meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
+# meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
 print("Sample:")
 print(meta)
 libs <- as.data.table(read_excel("/groups/stark/vloubiere/exp_data/vl_libraries.xlsx"))
@@ -187,70 +188,39 @@ meta[, {
 if(any(meta$DESeq2))
 {
   meta[, {
-    # Import counts
-    dat <- SJ(file= pairs_counts, 
-              cdition= cdition, 
-              rep= DESeq2_pseudo_rep)
-    setkeyv(dat, c("cdition", "rep"))
-    dat <- dat[, fread(file), (dat)]
-    counts <- dcast(dat, 
-                    L+R~cdition+rep, 
-                    value.var = "umi_counts", 
-                    fun.aggregate = sum, 
-                    sep= "_rep")
-    # Remove homotypic pairs and cutoff low counts
-    counts <- counts[L!=R & rowSums(counts[, !c("L", "R")])>20]
-    
-    ####### DESeq2 ########
-    if(!file.exists(FC_file_DESeq) & 
-       all(c("input_rep1", "input_rep2", "screen_rep1", "screen_rep2") %in% names(counts)))
-      {
-        # Format sampleTable
-        sampleTable <- SJ(name= setdiff(names(counts), c("L","R")))
-        sampleTable <- data.frame(sampleTable[, c("cdition", "rep"):= tstrsplit(name, "_rep")], 
-                                  row.names = "name")
-        # Format DF
-        DF <- counts[, name:= paste0(L, "__", R)][, !c("L", "R")]
-        DF <- data.frame(DF, 
-                         row.names = "name")
-        # DESeq
-        dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
-                                              colData= sampleTable,
-                                              design= ~rep+cdition)
-        sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[grep("control.*__control.*", rownames(DF)),]))
-        dds <- DESeq2::DESeq(dds)
-
-        # Differential expression
-        FC <- as.data.frame(DESeq2::results(dds, contrast= c("cdition", "screen", "input")))
-        FC <- as.data.table(FC, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
-
-        # Compute expected
-        FC[, median_L:= .SD[grepl("^control", R), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], L]
-        FC[, median_R:= .SD[grepl("^control", L), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], R]
-        FC[, additive:= log2(2^median_L+2^median_R)]
-        FC[, multiplicative:= median_L+median_R]
-        
-        # SAVE
-        saveRDS(dds, dds_file)
-        fwrite(FC, FC_file_DESeq, sep= "\t", na = NA)
-        print(paste0(FC_file_DESeq, "  -->> DONE"))
-    }
-    
-    ####### Ratios ########
-    if(!file.exists(FC_file_ratio))
+    if(!file.exists(FC_file))
     {
-      # Format counts
+      ####### FC based on ratio ########
+      # Import counts
+      dat <- SJ(file= pairs_counts, 
+                cdition= cdition, 
+                rep= DESeq2_pseudo_rep)
+      setkeyv(dat, c("cdition", "rep"))
+      dat <- dat[, fread(file), (dat)]
+      counts <- dcast(dat, 
+                      L+R~cdition+rep, 
+                      value.var = "umi_counts", 
+                      fun.aggregate = sum, 
+                      sep= "_rep")
+      # Remove homotypic pairs and cutoff low counts
+      counts <- counts[L!=R & rowSums(counts[, !c("L", "R")])>20]
+      # Normalize counts
       norm <- copy(counts)
-      inputs <- grep("^input", names(norm), value = T)
-      norm[, input:= rowSums(.SD), .SDcols= inputs]
-      norm <- norm[, !(inputs), with= F]
-      # Pseudocount normalized counts
-      cols <- grep("^screen|^input$", names(norm), value= T)
-      norm[, (cols):= lapply(.SD, function(x) (x+0.5)/sum(x+0.5)*1e6), .SDcols= cols]
+      inputs <- grep("^input", names(norm), value= T)
+      screens <- grep("^screen", names(norm), value= T)
+      norm[, norm_input:= (rowSums(.SD)+0.5)/sum(rowSums(.SD)+0.5)*1e6, .SDcols= inputs]
+      norm[, paste0("norm_", screens):= lapply(.SD, function(x) (x+0.5)/sum(x+0.5)*1e6), .SDcols= screens]
       # FoldChange
-      norm[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/input)))), .SDcols= patterns("^screen_rep")]
+      norm[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/norm_input)))), .SDcols= patterns("^norm_screen")]
+      # Select suitable control sequences
+      ctl_L <- norm[grepl("control", L) & grepl("control", R), median(log2FoldChange, na.rm= T), L]
+      ctl_L[, c("min", "max"):= as.list(range(boxplot.stats(V1)$stats))]
+      norm[, ctl_L:= L %in% ctl_L[V1>=min && V1<=max, L]]
+      ctl_R <- norm[grepl("control", L) & grepl("control", R), median(log2FoldChange, na.rm= T), R]
+      ctl_R[, c("min", "max"):= as.list(range(boxplot.stats(V1)$stats))]
+      norm[, ctl_R:= R %in% ctl_R[V1>=min && V1<=max, R]]
       # Check if individual enhancer is active
-      control_pairs_log2FC <- norm[grepl("control", L) & grepl("control", R), log2FoldChange]
+      control_pairs_log2FC <- norm[ctl_L & ctl_R, log2FoldChange]
       norm[, act_wilcox_L:= {
         .c <- log2FoldChange[grepl("control", R)]
         if(length(.c)>5)
@@ -266,14 +236,53 @@ if(any(meta$DESeq2))
       # Subtract basal activity (center controls on 0)
       norm[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
       # Compute expected
-      norm[, median_L:= .SD[grepl("^control", R), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], L]
-      norm[, median_R:= .SD[grepl("^control", L), ifelse(.N>5, median(log2FoldChange), as.numeric(NA))], R]
+      norm[, median_L:= .SD[(ctl_R), ifelse(.N>=5, median(log2FoldChange), as.numeric(NA))], L]
+      norm[, median_R:= .SD[(ctl_L), ifelse(.N>=5, median(log2FoldChange), as.numeric(NA))], R]
       norm[, additive:= log2(2^median_L+2^median_R)]
       norm[, multiplicative:= median_L+median_R]
-      # SAVE
-      norm <- na.omit(norm[, .(L, R, log2FoldChange, median_L, median_R, act_wilcox_L, act_wilcox_R, additive, multiplicative)])
-      fwrite(norm, FC_file_ratio, na = NA, sep= "\t")
-      print(paste0(FC_file_ratio, "  -->> DONE"))
     }
-  }, .(FC_file_DESeq, dds_file, FC_file_ratio)]
+    
+    ####### DESeq2 ########
+    if(all(c("input_rep1", "input_rep2", "screen_rep1", "screen_rep2") %in% names(norm)))
+    {
+      counts_cols <- grep("^input|^screen", names(norm), value = T)
+      # Format sampleTable
+      sampleTable <- SJ(name= counts_cols)
+      sampleTable <- data.frame(sampleTable[, c("cdition", "rep"):= tstrsplit(name, "_rep")], 
+                                row.names = "name")
+      # Format DF
+      DF <- norm[, c("L", "R", counts_cols), with= F]
+      DF <- DF[, name:= paste0(L, "__", R)][, !c("L", "R")]
+      DF <- data.frame(DF,
+                       row.names = "name")
+      # DESeq
+      dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
+                                            colData= sampleTable,
+                                            design= ~rep+cdition)
+      controls <- norm[ctl_L & ctl_R, paste0(L, "__", R)]
+      sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[rownames(DF) %in% controls,]))
+      dds <- DESeq2::DESeq(dds)
+      
+      # Differential expression
+      FC <- as.data.frame(DESeq2::results(dds, contrast= c("cdition", "screen", "input")))
+      FC <- as.data.table(FC, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
+      setnames(FC, 
+               c("log2FoldChange", "padj"), 
+               function(x) paste0("DESeq_", x))
+      norm <- merge(norm,
+                    FC,
+                    by= c("L", "R"))
+      
+      # Compute expected
+      norm[, DESeq_median_L:= .SD[(ctl_R), ifelse(.N>=5, median(DESeq_log2FoldChange), as.numeric(NA))], L]
+      norm[, DESeq_median_R:= .SD[(ctl_L), ifelse(.N>=5, median(DESeq_log2FoldChange), as.numeric(NA))], R]
+      norm[, DESeq_additive:= log2(2^DESeq_median_L+2^DESeq_median_R)]
+      norm[, DESeq_multiplicative:= DESeq_median_L+DESeq_median_R]
+      
+      # SAVE
+      saveRDS(dds, dds_file)
+    }
+    # SAVE
+    fwrite(norm, FC_file, na = NA, sep= "\t")
+  }, .(FC_file, dds_file)]
 }

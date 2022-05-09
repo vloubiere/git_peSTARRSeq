@@ -12,9 +12,7 @@ luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
              dat, 
              by= c("L", "R"),
-             suffixes= c("_luc", "_STARR"),
-             all.x= T)
-dat <- na.omit(dat)
+             suffixes= c("_luc", "_STARR"))
 dat[, class:= droplevels(class)]
 leg <- unique(dat[order(class), .(class, col)])
 .lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
@@ -63,9 +61,10 @@ vl_boxplot(log2FoldChange_luc~class,
            dat,
            violin= T,
            compute_pval= list(c(1,2), c(2,4), c(3,4)),
-           violcol= unique(dat$col[order(dat$class)]),
+           violcol= unique(dat[, col, keyby= class]$col),
            ylab= "Normalized luc. activity (log2)",
            tilt.names= T, 
            pval_offset= 0.06,
            ylim= c(-0.5, 8))
 dev.off()
+file.show("pdf/draft/Figure_1FG.pdf")
