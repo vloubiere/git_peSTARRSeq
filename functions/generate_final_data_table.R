@@ -1,5 +1,6 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
+require(vlfunctions)
 
 # Import dat
 dat <- fread("Rdata/metadata_processed.txt")[(DESeq2)]

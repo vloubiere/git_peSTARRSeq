@@ -8,15 +8,15 @@ require(vlfunctions)
 dat <- readRDS("Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
 
 pdf("pdf/draft/Figure_2E.pdf",
-    width= 4,
+    width= 4.4,
     height = 3)
 par(mgp= c(1.5,0.35,0),
     cex= 0.66)
 for(side in c("mot_enr_L", "mot_enr_R"))
 {
   if(side=="mot_enr_L")
-    par(mar= c(7,14,2,6)) else if(side=="mot_enr_R")
-      par(mar= c(2.75,16,1.75,6))
+    par(mar= c(7,19,2,6)) else if(side=="mot_enr_R")
+      par(mar= c(2.75,19,1.75,6))
   # Extract data
   enr <- dat[[side]]$enr[padj<fcase(side=="mot_enr_L", 0.001,
                                     side=="mot_enr_R", 0.01)]

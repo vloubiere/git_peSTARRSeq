@@ -77,6 +77,7 @@ smoothScatter(pred,
               dat$log2FoldChange,
               xlab= "Linear model prediction (log2)",
               ylab= "Observed (log2)",
+              colramp = colorRampPalette(c("white", "grey90", "grey60", "grey20")),
               las= 1)
 legend("topleft", 
        paste0("CV R²= ", round(rsq$Rsquare, 2)), 
@@ -90,8 +91,7 @@ bar <- barplot(af$PctExp,
                horiz= T,
                axes= F)
 axis(1, at= c(0, 30), labels = c(0, 30))
-title(xlab= "% explained\nvariance",
-      line= 2.5)
+title(xlab= "% exp. var.")
 text(af$PctExp, 
      bar[,1],
      af$name,

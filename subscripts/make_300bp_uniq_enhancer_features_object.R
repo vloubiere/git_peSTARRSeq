@@ -95,11 +95,11 @@ if(!file.exists("Rdata/uniq_enh_feat/hits.rds"))
   rdm <- vl_control_regions_BSgenome(BSgenome = BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3, 
                                      n = 5000, 
                                      width = 299)
-  rdm <-BSgenome::getSeq(BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3, 
-                         rdm$seqnames, 
-                         rdm$start, 
-                         rdm$end, 
-                         as.character= T)
+  rdm <- BSgenome::getSeq(BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3, 
+                          rdm$seqnames, 
+                          rdm$start, 
+                          rdm$end, 
+                          as.character= T)
   hits <- vl_motif_counts(sequences =  c(lib$oligo_full_sequence, rdm))
   setnames(hits, function(x) vl_Dmel_motifs_DB_full[x, uniqName_noSpecialChar, on= "motif"])
   saveRDS(hits, 

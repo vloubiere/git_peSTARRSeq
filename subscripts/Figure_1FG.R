@@ -7,10 +7,10 @@ require(vlfunctions)
 #-----------------------------------------------#
 lib <- readRDS("Rdata/final_results_table.rds")
 feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
-dat <- lib[vllib=="vllib002"]
+STARR <- lib[vllib=="vllib002"]
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
-             dat, 
+             STARR, 
              by= c("L", "R"),
              suffixes= c("_luc", "_STARR"))
 dat[, class:= droplevels(class)]

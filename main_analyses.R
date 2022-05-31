@@ -24,10 +24,11 @@ if(F)
   
   file.edit("git_peSTARRSeq/subscripts/Figure_2A.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2B.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")  
   file.edit("git_peSTARRSeq/subscripts/Figure_2D.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2E.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2F.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2G.R")
   
   file.edit("git_peSTARRSeq/subscripts/Figure_3AB.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3C.R")
@@ -36,10 +37,24 @@ if(F)
   
   file.edit("git_peSTARRSeq/subscripts/Figure_4A.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4B.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_4C.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_4D.R")
   
+  #-------------------------#
+  # Supplementary figures
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/enh_enh_distance.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_inact_enh_pairs_heatmap.R")
+  
+  #-------------------------#
+  # Exploration
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/hk_vs_dev_differences.R")
   file.edit("git_peSTARRSeq/subscripts/gene_activity_prediction.R")
   file.edit("git_peSTARRSeq/subscripts/Sup_Figure_intron_spacers.R")
   file.edit("git_peSTARRSeq/subscripts/Sup_sequencing_depth_vs_robustness.R")
+  file.edit("git_peSTARRSeq/subscripts/spearman_residuals_marginals.R")
+  
   #-------------------------#
   # Tests
   #-------------------------#

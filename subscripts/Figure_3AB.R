@@ -49,7 +49,7 @@ for(var in c("log2FoldChange", "diff"))
              horizontal= T,
              compute_pval = list(c(1,4)), 
              violin= T,
-             violcol= dat[, col[1], keyby= class]$V1,
+             violcol= adjustcolor(dat[, col[1], keyby= class]$V1, 0.5),
              pval_offset = 0.02,
              las= 1,
              xaxt= "n")
@@ -60,7 +60,7 @@ for(var in c("log2FoldChange", "diff"))
   vl_boxplot(split(y, dat$class),
              compute_pval = list(c(1,4)), 
              violin= T,
-             violcol= dat[, col[1], keyby= class]$V1,
+             violcol= adjustcolor(dat[, col[1], keyby= class]$V1, 0.5),
              pval_offset = 0.02,
              yaxt= "n", 
              tilt.names = T)
@@ -77,7 +77,7 @@ for(var in c("log2FoldChange", "diff"))
        ylab= yl,
        xlim= xlim,
        ylim= ylim,
-       pch= 19,
+       pch= 16,
        col= adjustcolor(dat$col, 0.5),
        cex= 0.5,
        xaxt= "n",
@@ -85,18 +85,22 @@ for(var in c("log2FoldChange", "diff"))
   axis(1,
        axisTicks(xlim, 
                  log= F, 
-                 nint = 4))
+                 nint = 4),
+       lwd= 0,
+       lwd.ticks= 1)
   axis(2,
        axisTicks(ylim, 
                  log= F, 
-                 nint = 4))
+                 nint = 4),
+       lwd= 0,
+       lwd.ticks= 1)
   abline(h= 0, lty= 2)
   abline(v= 0, lty= 2)
   abline(0,1,lty= 2)
   legend("topleft",
-         pch= 19,
+         pch= 16,
          legend= dat[, class[1], keyby= class]$V1,
-         col= dat[, col[1], keyby= class]$V1,
+         col= adjustcolor(dat[, col[1], keyby= class]$V1, 0.8),
          bty= "n",
          cex= 0.7)
   # Transgenes

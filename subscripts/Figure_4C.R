@@ -11,21 +11,21 @@ lib <- readRDS("Rdata/final_results_table.rds")
 #---------------------------------------------#
 # Format
 #---------------------------------------------#
-dat <- lib[vllib %in% c("vllib002", "vllib006")][, diff:= log2FoldChange-additive]
+dat <- lib[vllib %in% c("vllib015", "vllib028")][, diff:= log2FoldChange-additive]
 dat <- dat[class=="enh./enh."
            & grepl("^dev", L)
            & grepl("^dev", R)]
-dat <- dat[, check:= all(c("SCR1_300", "revSPA1_2000") %in% spacer), .(L, R)][(check), !"check"]
-dat[, spacer:= switch(spacer,
-                      "SCR1_300"= "300bp",
-                      "revSPA1_2000"= "2kb"), spacer]
-dat[, spacer:= factor(spacer, c("300bp", "2kb"))]
-ind <- rbind(dat[, .(enh= L, act= median_L, spacer, side= "5'")],
-             dat[, .(enh= R, act= median_R, spacer, side= "3'")])
+dat <- dat[, check:= all(c("DSCP", "devHigh") %in% CP), .(L, R)][(check), !"check"]
+dat[, CP:= switch(CP,
+                      "DSCP"= "Low",
+                      "devHigh"= "High"), CP]
+dat[, CP:= factor(CP, c("Low", "High"))]
+ind <- rbind(dat[, .(enh= L, act= median_L, CP, side= "5'")],
+             dat[, .(enh= R, act= median_R, CP, side= "3'")])
 ind <- unique(ind)
 ind[, side:= factor(side, c("5'", "3'"))]
 
-pdf("pdf/draft/Figure_4B.pdf",
+pdf("pdf/draft/Figure_4C.pdf",
     height= 3,
     width = 4)
 layout(matrix(1:2, ncol= 2),
@@ -34,7 +34,13 @@ par(mar= c(3,3,1,4),
     mgp= c(1.5, 0.5, 0),
     las= 1,
     tcl= -0.2)
-vl_boxplot(act~spacer+side, 
+layout(matrix(1:2, ncol= 2),
+       widths = c(1, 0.4))
+par(mar= c(3,3,1,4),
+    mgp= c(1.5, 0.5, 0),
+    las= 1,
+    tcl= -0.2)
+vl_boxplot(act~CP+side, 
            ind, 
            compute_pval= list(c(1,2), c(3,4)),
            ylab= "Individual activity (log2)",
@@ -61,14 +67,14 @@ text(3.5,
      xpd= T)
 legend(4,
        par("usr")[4],
-       legend = c("300bp spacer",
-                  "2kb spacer"),
+       legend = c("Low basal act.",
+                  "High basal act."),
        fill= adjustcolor(c("#33FF99", "#FFCCFF"), 0.6),
        bty= "n",
        xpd= T,
        cex= 0.7)
 par(mar= c(3,2.5,1,0))
-vl_boxplot(diff~spacer,
+vl_boxplot(diff~CP,
            dat,
            compute_pval= list(c(1,2)), 
            tilt.names= T,

@@ -11,21 +11,25 @@ lib <- readRDS("Rdata/final_results_table.rds")
 #---------------------------------------------#
 # Format
 #---------------------------------------------#
-dat <- lib[vllib %in% c("vllib002", "vllib006")][, diff:= log2FoldChange-additive]
-dat <- dat[class=="enh./enh."
-           & grepl("^dev", L)
-           & grepl("^dev", R)]
-dat <- dat[, check:= all(c("SCR1_300", "revSPA1_2000") %in% spacer), .(L, R)][(check), !"check"]
+dat <- lib[vllib %in% c("vllib015", "vllib017", "vllib023", "vllib018")
+           & class=="enh./enh." 
+           & class=="enh./enh." 
+           & grepl("^dev", L) 
+           & grepl("^dev", R)][, diff:= log2FoldChange-additive]
+dat <- dat[, check:= all(unique(dat$spacer) %in% spacer), .(L, R)][(check)]
 dat[, spacer:= switch(spacer,
-                      "SCR1_300"= "300bp",
-                      "revSPA1_2000"= "2kb"), spacer]
-dat[, spacer:= factor(spacer, c("300bp", "2kb"))]
+                      "SCR1_300"= "no intron",
+                      "intron2_300"= "300bp intron1",
+                      "shortened-intron4_300"= "300bp intron2",
+                      "intron4_2000"= "2kb intron2"), spacer]
+dat[, spacer:= factor(spacer, 
+                      c("no intron",  "300bp intron1", "300bp intron2", "2kb intron2"))]
 ind <- rbind(dat[, .(enh= L, act= median_L, spacer, side= "5'")],
              dat[, .(enh= R, act= median_R, spacer, side= "3'")])
 ind <- unique(ind)
 ind[, side:= factor(side, c("5'", "3'"))]
 
-pdf("pdf/draft/Figure_4B.pdf",
+pdf("pdf/draft/Figure_4D.pdf",
     height= 3,
     width = 4)
 layout(matrix(1:2, ncol= 2),
@@ -39,8 +43,8 @@ vl_boxplot(act~spacer+side,
            compute_pval= list(c(1,2), c(3,4)),
            ylab= "Individual activity (log2)",
            notch= T,
-           xaxt="n",
-           boxcol= adjustcolor(c("#33FF99", "#FFCCFF"), 0.6))
+           boxcol= adjustcolor(c("#33FF99", "#FFCCFF"), 0.6),
+           las= 2)
 segments(1, 
          par("usr")[3], 
          2, 
@@ -61,8 +65,8 @@ text(3.5,
      xpd= T)
 legend(4,
        par("usr")[4],
-       legend = c("300bp spacer",
-                  "2kb spacer"),
+       legend = c("Low basal act.",
+                  "High basal act."),
        fill= adjustcolor(c("#33FF99", "#FFCCFF"), 0.6),
        bty= "n",
        xpd= T,

@@ -18,6 +18,12 @@ pl[, class:= fcase(class=="inactive", "inactive",
                    act<=4, "medium (2-4)",
                    default= "strong (>4)")]
 PCC <- dcast(pl, enh+group~side, value.var = "act")
+PCC[dat, TWIST:= dev_log2FC_TWIST_L, on= "enh==L"]
+PCC[dat, TWIST_col:= fcase(TWIST<=2 | is.na(TWIST), "#4D9221",
+                           TWIST<=6, "#B8E186",
+                           TWIST<=8, "#F1B6DA",
+                           TWIST>8, "#C51B7D")]
+PCC[group=="controls", TWIST_col:= "grey20"]
 setorderv(PCC, "group", -1)
 .lm <- lm(PCC[, .(Left, Right)])
 categ <- as.matrix(dcast(pl, class~side+group, fun.aggregate = length), 1)
@@ -37,7 +43,8 @@ par(mar= c(3.5, 3, 0.5, 0.25),
     tcl= -0.2)
 plot(PCC[, .(Right, Left)],
      pch= 16,
-     col= adjustcolor(PCC[, ifelse(group=="candidates", "grey80", "grey20")], 0.5),
+     cex= 0.5,
+     col= adjustcolor(PCC$TWIST_col, 0.7),
      las= 1,
      xlab= "3' individual activity (log2)",
      ylab= "5' individual activity (log2)",
@@ -49,20 +56,43 @@ axis(1,
 axis(2, 
      lwd= 0,
      lwd.ticks= 1)
+text(par("usr")[1],
+     par("usr")[4]-strheight("M")/1.5,
+     "Candidates",
+     pos= 4, 
+     cex= 0.7,
+     offset= 0.25)
 leg <- legend("topleft",
-              legend = c(paste0("R²= ", round(summary(.lm)$r.squared, 2)," (PCC= ", round(cor.test(PCC$Left, PCC$Right)$estimate, 2), ")"),
-                         "control", "candidate"),
-              pch= c(NA, 16, 16),
-              lty= c(1,0,0),
-              col= c("black", "grey20", "grey80"),
-              bty= "n",
-              cex= 0.8)
-abline(h= 1, lty= 2)
-segments(1,
+              legend = c("",
+                         "strong (>8)",
+                         "medium (6-8)",
+                         "weak (2-6)",
+                         "inact. (<=2)/NA"),
+              pch= c(NA, 16, 16, 16, 16, 16),
+              col= adjustcolor(c(NA,"#C51B7D","#F1B6DA","#B8E186","#4D9221"), 0.8),
+              box.lty= "11",
+              cex= 0.5,
+              seg.len= 1)
+legend(leg$rect$left+leg$rect$w,
+       leg$rect$top,
+       legend = "control",
+       pch= 16,
+       col= adjustcolor("grey20", 0.8),
+       bty= "n",
+       cex= 0.5,
+       seg.len= 1)
+legend("bottomright",
+       legend = paste0("R²= ", round(summary(.lm)$r.squared, 2)," (PCC= ", round(cor.test(PCC$Left, PCC$Right)$estimate, 2), ")"),
+       lty= 1,
+       bty= "n",
+       cex= 0.6,
+       seg.len= 1)
+abline(h= 0, lty= "11")
+segments(0,
          par("usr")[1], 
-         1,
+         0,
          leg$rect$top-leg$rect$h, 
-         lty= 2)
+         lty= "11")
 abline(.lm)
 
 # Barplot
@@ -115,4 +145,4 @@ text(leg$rect$left,
      xpd= T,
      cex= 0.8)
 dev.off()
-file.show("pdf/draft/Figure_1CD.pdf")
+# file.show("pdf/draft/Figure_1CD.pdf")

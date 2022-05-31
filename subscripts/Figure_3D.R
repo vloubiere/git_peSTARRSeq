@@ -24,7 +24,7 @@ Cc <- circlize::colorRamp2(cl$breaks,
 # PLOT
 #----------------------------#
 pdf("pdf/draft/Figure_3D.pdf",
-    height= 3,
+    height= 2.3,
     width= 2)
 par(las= 2,
     mar= c(3.5,3,0.5,1),
@@ -33,7 +33,7 @@ par(las= 2,
 vl_boxplot(split(dat$diff, dat$cl),
            violin= T,
            violcol= adjustcolor(Cc(sapply(split(dat$diff, dat$cl), median, na.rm= T)), 0.7),
-           ylab= "Obs./Exp. Additive (log2)", 
+           ylab= "Obs./Exp. Add. (log2)", 
            tilt.names = T)
 abline(h=0, 
        lty= 2)

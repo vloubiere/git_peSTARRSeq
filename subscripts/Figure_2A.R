@@ -12,11 +12,11 @@ dat <- lib[vllib=="vllib002" & class== "enh./enh."]
 
 pdf("pdf/draft/Figure_2A.pdf", 
     height = 3, 
-    width = 4.4)
+    width = 3.8)
 layout(matrix(1:2, ncol= 2), 
-       widths = c(1,0.5))
+       widths = c(1,0.35))
 par(las= 1,
-    mar= c(3.5,3,0.5,0.25),
+    mar= c(3.5,2.75,0.5,0.1),
     mgp= c(1.5, 0.5, 0),
     tcl= -0.2)
 smoothScatter(dat[, .("Expected additive (log2)"= additive,
@@ -42,7 +42,7 @@ text(par("usr")[2],
      par("usr")[3]+strwidth("M"),
      pos= 2,
      "Sub-additive")
-legend(par("usr")[1], 
+legend(par("usr")[1],
        par("usr")[2]-strwidth("M")*0.9,
        legend= c("Linear model",
                  paste0("(R²= ", round(summary(.lm)$r.square, 2), ")")),

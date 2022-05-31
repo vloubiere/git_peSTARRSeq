@@ -4,13 +4,13 @@ require(bezier)
 require(plotrix)
 require(vlfunctions)
 
-pdf("pdf/draft/Figure_1AB.pdf", width = 3, height = 3)
+pdf("pdf/draft/Figure_1AB.pdf", width = 4, height = 4)
 par(mar= c(0,0,0,0), 
     xaxt= "n", 
     yaxt= "n", 
     lend= 3, 
     lwd= 1.3,
-    cex= 0.66)
+    cex= 1)
 
 # Plot init
 plot.new()
@@ -61,11 +61,11 @@ set.seed(8)
 ppy <- jitter(c(0.6,0.6,0.6,0.65,0.65,0.7,0.7,0.7)-0.1)+0.015
 for(i in seq(ppx))
 {
-  lines(px[1:3]+ppx[i], py[1:3]+ppy[i], col= "red")
+  lines(px[1:3]+ppx[i], py[1:3]+ppy[i], col= "blue")
   lines(px[3:18]+ppx[i], py[3:18]+ppy[i], col= Cc[i])
   lines(px[18:33]+ppx[i], py[18:33]+ppy[i])
   lines(px[33:48]+ppx[i], py[33:48]+ppy[i], col= rev(Cc)[i])
-  lines(px[48:51]+ppx[i], py[48:51]+ppy[i], col= "blue")
+  lines(px[48:51]+ppx[i], py[48:51]+ppy[i], col= "red")
   lines(px[51:100]+ppx[i], py[51:100]+ppy[i])
 }
 

@@ -43,71 +43,56 @@ if(!exists("PROSeq"))
 }
 if(!exists("STARR-Seq"))
   STARR <- fread("Rdata/BA_300bp_TWIST_STARRSeq.txt")
+if(!exists("dev"))
+{
+  dev <- fread("../gw_STARRSeq_bernardo/db/peaks/DSCP_200bp_gw.UMI_cut_merged.peaks.txt")
+  dev <- dev[V8>=2,. (seqnames= V1, start= V2, end= V2, enr= V7)]
+}
+if(!exists("hk"))
+{
+  hk <- fread("../gw_STARRSeq_bernardo/db/peaks/RPS12_600bp_gw_cut_merged.peaks.txt")
+  hk <- hk[V8>=1,. (seqnames= V1, start= V2, end= V2, enr= V7)]
+} 
 if(!exists("RNASeq"))
 {
   RNASeq <- data.table(file= list.files("db/FPKM/", full.names = T))
   RNASeq <- RNASeq[, fread(file), file]
   RNASeq <- RNASeq[, .(RNASeq_log2FPKM= log2(mean(V4)+0.001)), .(FBgn= V1)]
 }
-
-# Enhancer assignment
-if(!exists("assignment"))
+if(!exists("genes"))
 {
-  enh <- unique(gtf[type=="gene" 
-                    & seqnames %in% c("chr2L", "chr2R", "chr3L", "chr3R", "chr4", "chrX", "chrY"), 
-                    .(seqnames, start, end, strand, FBgn= gene_id, symbol= gene_name)])
-  enh[, enh_window_start:= ifelse(strand=="-", 
-                                  end-2000,
-                                  start-2000)]
-  enh[strand=="-" & enh_window_start>end, enh_window_start:= end]
-  enh[, enh_window_end:= ifelse(strand=="-", 
-                                end+2000,
-                                start+2000)]
-  enh[strand=="+" & enh_window_end>end, enh_window_end:= end]
-  setorderv(enh, c("seqnames", "start", "end", "FBgn"))
-  enh[, gene_coor:= paste0(seqnames, ":", start, "-", end, ":", strand)]
-  enh <- enh[, .(gene_coor, 
-                 FBgn, 
-                 symbol, 
-                 seqnames, 
-                 start= enh_window_start, 
-                 end= enh_window_end)]
-  assignment <- vl_closestBed(enh, STARR[, .(seqnames, start, end, ID, 
-                                             hk_log2FoldChange, 
-                                             hk_padj, 
-                                             dev_log2FoldChange, 
-                                             dev_padj, 
-                                             enhancer_group)])
-  assignment <- assignment[dist==0]
-  setnames(assignment, new= function(x) gsub(".a$|.b$", "", x))
+  genes <- unique(gtf[type=="gene" 
+                      & seqnames %in% c("chr2L", "chr2R", "chr3L", "chr3R", "chr4", "chrX", "chrY"), 
+                      .(seqnames, start, end, strand, FBgn= gene_id, symbol= gene_name)])
+  setorderv(genes, c("seqnames", "start", "end"))
+  # genes[, bin:= floor(rleid(FBgn)/100), seqnames]
+  # genes[, bin:= .GRP, .(seqnames, bin)]
 }
+if(!exists("proms"))
+  proms <- vl_resizeBed(genes, center = "start", upstream = 2000, downstream = 2000)
+if(!exists("windows"))
+  windows <- vl_resizeBed(genes, center = "start", upstream = 15000, downstream = genes[, end-start]+5000, ignore.strand = F)[]
 
-# Format data
-dat <- assignment[hk_padj<0.01 & hk_log2FoldChange>1 | dev_padj<0.01 & dev_log2FoldChange>1, N:= .N, FBgn]
-fwrite(fread("../gw_STARRSeq_bernardo/db/peaks/DSCP_200bp_gw.UMI_cut_merged.peaks.txt")[V8>5, .(seqnames=V1, start= V2-250, end= V2+250)],
-       "db/peaks/DSCP_peaks_200bp_STARRSeq_Almeida.bed")
-fwrite(fread("../gw_STARRSeq_bernardo/db/peaks/RpS12_200bp_gw.UMI_cut_merged.peaks.txt")[V8>5, .(seqnames=V1, start= V2-250, end= V2+250)],
-       "db/peaks/RpS12_peaks_200bp_STARRSeq_Almeida.bed")
-genes <- GRanges(dat[N==2, gene_coor])
-genes <- unique(vl_resizeBed(genes, center = "center", upstream = end(genes)-start(genes), downstream = end(genes)-start(genes)))
+# Quantif bins
+dat <- windows[RNASeq, RNASeq_log2FPKM:= RNASeq_log2FPKM, on= "FBgn"]
+dat <- cbind(dat,
+             dev[dat, .(N_enh= .N, sum_enh= log2(sum(enr, na.rm= T))), .EACHI, on= c("seqnames", "start<=end", "end>=start")])
+dat <- dat[N_enh>0 & !is.na(RNASeq_log2FPKM)]
+dat <- dat[N_enh>0 & !is.na(RNASeq_log2FPKM)]
+dat[, bin:= floor(rleid(FBgn)/100), seqnames]
+dat[, bin:= .GRP, .(seqnames, bin)]
+pls <- list(`Num. of enhancers (median)`= dat[, .(median(N_enh), median(RNASeq_log2FPKM)), bin][, !"bin"],
+            `Sum of enhancer strenghts (median of bin) [log2]`= dat[, .(median(sum_enh), median(RNASeq_log2FPKM)), bin][, !"bin"])
 
-vl_screenshot(bed = genes[6:10],
-              tracks = c("../gw_STARRSeq_bernardo/db/bw/DSCP_200bp_gw.UMI_cut_merged.bw",
-                         "../gw_STARRSeq_bernardo/db/bw/RpS12_200bp_gw.UMI_cut_merged.bw", 
-                         "Rdata/BA_300bp_TWIST_STARRSeq.txt"), 
-              genome = "dm3")
-
-
-
-assignment[, bin:= floor(rleid(FBgn)/100)]
-assignment[, length(unique(FBgn)), bin]
-assignment[RNASeq, RNASeq_log2FPKM:= RNASeq_log2FPKM, on= "FBgn"]
-
-number <- assignment[, .(N= length(unique(ID))), .(bin, FBgn, RNASeq_log2FPKM)]
-plot(number[, .(median(N), median(RNASeq_log2FPKM, na.rm = T)), bin][, .(V1, V2)])
-
-
-
-
-
-
+par(mfrow= c(2,2),
+    las= 1)
+for(i in seq(pls))
+{
+  .c <- pls[[i]] 
+  plot(.c,
+       xlab= names(pls)[i],
+       ylab= "RNA-Seq RPKM (log2)")
+  legend("bottomright",
+         legend= paste0("PCC=", round(cor.test(.c$V1, .c$V2)$estimate, 2)),
+         bty= "n")
+}
