@@ -15,7 +15,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_SCREEN.R")
   
   #-------------------------#
-  # Observed vs additive
+  # Draft #1
   #-------------------------#
   file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_1CD.R")
@@ -29,19 +29,28 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_2E.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2F.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2G.R")
-  file.edit("git_peSTARRSeq/subscripts/marginals_PCA_predictors.R")
+  
   file.edit("git_peSTARRSeq/subscripts/model_fitting.R")
+  file.edit("git_peSTARRSeq/subscripts/PCA_LR.R")
+  file.edit("git_peSTARRSeq/subscripts/clustering.R")
+  file.edit("git_peSTARRSeq/subscripts/ordered_heatmaps.R")
+  file.edit("git_peSTARRSeq/subscripts/nls_models.R")
   
   file.edit("git_peSTARRSeq/subscripts/Figure_3AB.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3D.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3E.R")
   
-  
   file.edit("git_peSTARRSeq/subscripts/Figure_4A.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4B.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4D.R")
+  
+  #-------------------------#
+  # Draft #2
+  #-------------------------#
+  file.edit("git_peSTARRSeq/subscripts/hkCP_additivity.R")
+  
   
   #-------------------------#
   # Supplementary figures
@@ -68,8 +77,4 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/randomForest_dev_hk.R")
   file.edit("git_peSTARRSeq/subscripts/feature_selection.R")
   file.edit("git_peSTARRSeq/subscripts/lm_modelling_dev_hk.R")
-  file.edit("git_peSTARRSeq/subscripts/smoothScatters_additivity_dev_vs_hk.R")
-  file.edit("test/tests.R")
-  file.edit("test/tests.R")
-  file.edit("test/tests2.R")
 }

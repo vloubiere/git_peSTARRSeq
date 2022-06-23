@@ -5,47 +5,32 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
 dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class== "enh./enh."]
-feat <- readRDS("Rdata/uniq_enh_feat/lib_genomic_dat.rds")
-dat[, diff:= log2FoldChange-additive]
+model <- readRDS("Rdata/CV_linear_model_vllib002.rds")
+dat[, diff:= log2FoldChange-predict(model, new= dat)]
 
+# Matrix for clustering
 mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
-mat <- mat[apply(mat, 1, function(x) sum(is.na(x))<=250),apply(mat, 2, function(x) sum(is.na(x))<=250)]
+while(sum(is.na(mat))>0.025*length(mat))
+{
+  mat <- mat[-which.max(apply(mat, 1, function(x) sum(is.na(x)))),]
+  mat <- mat[, -which.max(apply(mat, 2, function(x) sum(is.na(x))))]
+}
+
 cl <- vl_heatmap(mat,
-                 cutree_rows = 2, 
-                 cutree_cols = 2,
-                 breaks = seq(-3, 3, length.out= 30), 
-                 col = vl_palette_blueWhiteRed(30, rep_white = 5),
-                 legend_title = "Obs./Add. (log2)", 
+                 breaks = c(-2,-0.25,0.25,2), 
+                 cutree_rows = 4,
+                 cutree_cols = 4,
+                 col= c("cornflowerblue", "white", "white", "tomato"), 
+                 clustering_method = "ward.D2",
+                 legend_title = "Obs./Exp. (log2)", 
                  show_rownames = F,
                  show_colnames = F,
                  auto_margins = F,
                  plot= F)
-cl$rows[, cl:= as.character(cl)]
-cl$rows[cl==1, c("cl", "col"):= .("A", "grey90")]
-cl$rows[cl==2, c("cl", "col"):= .("B", "grey60")]
-cl$cols[, cl:= as.character(cl)]
-cl$cols[cl==1, c("cl", "col"):= .("A", "grey90")]
-cl$cols[cl==2, c("cl", "col"):= .("B", "grey60")]
-cl$rows[unique(dat[,.(name=L, median_L)]), ind_act:= median_L, on= "name"]
-ind_L <- cl$rows[(order), ind_act]
-cl$cols[unique(dat[,.(name=R, median_R)]), ind_act:= median_R, on= "name"]
-ind_R <- cl$cols[(order), ind_act]
-# Add motif enrichment
-cl$mot_enr_L$seq <- lib[cl$rows$name, oligo_full_sequence, on= "ID_vl"]
-cl$mot_enr_L$counts <- vl_motif_counts(cl$mot_enr_L$seq)
-cl$mot_enr_L$counts <- cl$mot_enr_L$counts[, apply(cl$mot_enr_L$counts, 2, function(x) sum(x>0))>20]
-cl$mot_enr_L$enr <- vl_motif_enrich(cl$mot_enr_L$counts[cl$rows$cl=="A",],
-                                    cl$mot_enr_L$counts[cl$rows$cl=="B",],
-                                    plot= F)
-cl$mot_enr_R$seq <- lib[cl$cols$name, oligo_full_sequence, on= "ID_vl"]
-cl$mot_enr_R$counts <- vl_motif_counts(cl$mot_enr_R$seq)
-cl$mot_enr_R$counts <- cl$mot_enr_R$counts[, apply(cl$mot_enr_R$counts, 2, function(x) sum(x>0))>20]
-cl$mot_enr_R$enr <- vl_motif_enrich(cl$mot_enr_R$counts[cl$cols$cl=="A",],
-                                    cl$mot_enr_R$counts[cl$cols$cl=="B",],
-                                    plot= F)
-saveRDS(cl, "Rdata/vllib002_clustering_additive_scores_draft_figure.rds")
+saveRDS(cl, "Rdata/vllib002_clustering_expected_scores_draft_figure.rds")
+ind_L <- dat[cl$rows[(order), name], median_L[1], L, on= "L"]$V1
+ind_R <- dat[cl$cols[(order), name], median_R[1], R, on= "R"]$V1
 
 pdf("pdf/draft/Figure_2B.pdf", 
     width= 8, 
@@ -70,7 +55,7 @@ rect(right-(ind_L/max(ind_L)*width),
 ticks <- axisTicks(c(0, max(ind_L)), log= F)
 at <- right-(ticks/max(ind_L)*width)
 axis(3, 
-     at = range(at), 
+     at = rev(range(at)), 
      labels = range(ticks),
      xpd= T, 
      line= 0.25, 

@@ -1,6 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
+require(rtracklayer)
 
 # IMPORT GENES
 if(!exists("proms"))
@@ -14,8 +15,8 @@ if(!exists("proms"))
   genes[, length:= end-start+1]
   proms <- vl_resizeBed(genes, center = "start", upstream = 0, downstream = 0)
   # Keep only genes expressed in S2
-  # expressed <- readRDS("/groups/stark/pleyer/projects/2021_CP_different_RNAPII_recruitment_strategies/202103_PROseq_complexII_mutatedBCs/analysis/differential_expression/expressedgenes/data/S2_expressedgenes.rds")
-  # proms <- proms[FBgn %in% expressed$TSS$control]
+  expressed <- readRDS("/groups/stark/pleyer/projects/2021_CP_different_RNAPII_recruitment_strategies/202103_PROseq_complexII_mutatedBCs/analysis/differential_expression/expressedgenes/data/S2_expressedgenes.rds")
+  proms <- proms[FBgn %in% expressed$TSS$control]
 }
 
 # IMPORT ENHANCERS
@@ -68,6 +69,14 @@ vl_boxplot(V1~.id.a, test, notch= T)
 # par(las= 1)
 # pl <- vl_GO_clusters(split(GO$FBgn.b, GO$.id.a), plot= F)
 # plot(pl, padj_cutoff = 1e-10)
+
+
+res <- vl_closestBed(enhancers, enhancers)
+res[, dist:= abs(dist)]
+setorderv(res, "dist")
+res <- res[.id.a==.id.b & idx.a!=idx.b]
+test <- res[, mean(dist[3]), .(.id.a, idx.a)]
+vl_boxplot(V1~.id.a, test, outline= F, notch= T)
 
 
 

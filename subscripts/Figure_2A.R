@@ -6,7 +6,6 @@ require(vlfunctions)
 # Import data
 #-----------------------------------------------#
 lib <- readRDS("Rdata/final_results_table.rds")
-feat <- readRDS("Rdata/uniq_enh_feat/lib_genomic_dat.rds")
 dat <- lib[vllib=="vllib002" & class== "enh./enh."]
 .lm <- lm(log2FoldChange~additive, dat)
 
