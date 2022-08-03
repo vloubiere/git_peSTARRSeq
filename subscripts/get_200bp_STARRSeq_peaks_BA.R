@@ -10,7 +10,5 @@ load_peak_function <- function(x, width){
   gr
 }
 
-
-
 peaks_list <- list(dCP_200bp = load_peak_function("DSCP_200bp_gw.UMI_cut_merged.peaks.txt", 201),
                    hkCP_200bp = load_peak_function("RpS12_200bp_gw.UMI_cut_merged.peaks.txt", 201))
