@@ -2,36 +2,12 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-#-----------------------------------------------#
-# Import data
-#-----------------------------------------------#
-dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class== "enh./enh."]
-model <- readRDS("Rdata/CV_linear_model_vllib002.rds")
-dat[, diff:= log2FoldChange-predict(model, new= dat)]
+# Import Clustering object (see clustering_vllib002_lm_residuals_Figure_2B.R)
+cl <- readRDS("Rdata/vllib002_clustering_expected_scores_draft_figure.rds")
+ind_L <- cl$rows$median
+ind_R <- cl$cols$median
 
-# Matrix for clustering
-mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
-while(sum(is.na(mat))>0.025*length(mat))
-{
-  mat <- mat[-which.max(apply(mat, 1, function(x) sum(is.na(x)))),]
-  mat <- mat[, -which.max(apply(mat, 2, function(x) sum(is.na(x))))]
-}
-
-cl <- vl_heatmap(mat,
-                 breaks = c(-2,-0.25,0.25,2), 
-                 cutree_rows = 4,
-                 cutree_cols = 4,
-                 col= c("cornflowerblue", "white", "white", "tomato"), 
-                 clustering_method = "ward.D2",
-                 legend_title = "Obs./Exp. (log2)", 
-                 show_rownames = F,
-                 show_colnames = F,
-                 auto_margins = F,
-                 plot= F)
-saveRDS(cl, "Rdata/vllib002_clustering_expected_scores_draft_figure.rds")
-ind_L <- dat[cl$rows[(order), name], median_L[1], L, on= "L"]$V1
-ind_R <- dat[cl$cols[(order), name], median_R[1], R, on= "R"]$V1
-
+# plot
 pdf("pdf/draft/Figure_2B.pdf", 
     width= 8, 
     height = 7)

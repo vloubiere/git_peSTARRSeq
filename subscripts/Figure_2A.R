@@ -1,108 +1,41 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
+options(scipen= 1)
 require(data.table)
 require(vlfunctions)
 
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-if(!exists("lib"))
-  lib <- readRDS("Rdata/final_results_table.rds")
-dat <- lib[vllib=="vllib002" & class_act== "enh./enh."]
-dat <- dat[sample(nrow(dat), nrow(dat))]
-
-# Train CV linear model
-set.seed(1)
-sel_L <- dat[, 1-.N/dat[,.N], L][, sample(L, round(.N/10), prob = V1)]
-set.seed(1)
-sel_R <- dat[, 1-.N/dat[,.N], R][, sample(R, round(.N/10), prob = V1)]
-dat[, set:= ifelse(L %in% sel_L | R %in% sel_R, "test", "train")]
-# Train linear model
-model <- lm(formula = log2FoldChange~median_L*median_R, 
-            data= dat[set=="train"])
-dat[, predicted:= predict(model, newdata = dat)]
-rsq <- vl_model_eval(observed = dat[set=="test", log2FoldChange], 
-                     predicted = predict(model, new= dat[set=="test"]))
-eq <- vl_model_equation(model, digits = 2)
-eq <- gsub("median_L", "5'", eq)
-eq <- gsub("median_R", "3'", eq)
-eq <- gsub("log2FoldChange ", "Act.", eq)
-eq <- gsub("\\s\\*\\s", "*", eq)
-
+model <- readRDS("Rdata/CV_linear_model_vllib002.rds")
+dat <- model$vllib002_dat
 # Select examples
-# sel <- dat[between(predicted, 4, 8), .(L, R, log2FoldChange, predicted, median_L, median_R)]
-# sel[, diff:= log2FoldChange-predicted]
-# sel <- sel[abs(diff)>=1.5 | between(diff, -0.2, 0.2)]
-# sel <- sel[abs(median_L-median_R)<0.5]
-# sel[, cut:= cut(predicted, seq(4, 8, length.out= 20), include.lowest= T)]
-# sel <- sel[, check:= .N>=2 & any(diff>1.5) & any(diff<(-1.5)), .(cut, L)][(check)]
-# sel <- sel[order(L, diff, decreasing = T)]
-ex <- dat[list(c("dev_strong_B_00302", "dev_strong_B_00302","dev_strong_B_00302"),
+ex <- dat[list("dev_strong_B_00302",
                c("dev_medium_C_00480", "dev_medium_C_00466", "dev_medium_B_00585")), on= c("L", "R")]
 ex[, col:= c("tomato", "limegreen", "cornflowerblue")]
 
-# Examples barplot function
-ex_barplot <- function(dat, L, R, col)
-{
-  par(lwd= 0.1)
-  .c <- SJ(L= L, R= R)
-  for(cdition in c("add", "mult"))
-  {
-    if(cdition=="add")
-    {
-      current <- dat[.c, .(Exp= 2^additive, 
-                           Activity= 2^log2FoldChange,
-                           ind_L= 2^median_L), on= c("L", "R")]
-      yl <- "Activity"
-      names <- c("Additive", "Observed")
-    }else if (cdition=="mult")
-    {
-      current <- dat[.c, .(Exp= multiplicative, 
-                           Activity= log2FoldChange,
-                           ind_L= median_L), on= c("L", "R")]
-      yl <- "Activity (log2)"
-      names <- c("Multiplicative", "Observed")
-    }
-    bar <- barplot(unlist(current[, .(Exp, Activity)]), 
-                   col= c(col, "lightgrey"), 
-                   xaxt= "n",
-                   ylab= yl,
-                   space= 1,
-                   xlim= c(0.25,4))
-    barplot(current[, ind_L], 
-            col= "black",
-            density= 40,
-            add= T,
-            space= 1)
-    text(bar, 
-         par("usr")[3]-strheight("M", cex= 0.5), 
-         names,
-         pos= 2, 
-         offset= -0.25, 
-         xpd= T, 
-         srt= 45, 
-         cex= 0.8)
-  }
-  par(lwd= 1)
-}
-
+#-----------------------------------------------#
 # Plot
+#-----------------------------------------------#
 Cc <- colorRampPalette(c("white", "grey90", "grey60", "grey20"))
-
 pdf("pdf/draft/Figure_2A.pdf",
-    height = 6, 
+    height = 6,
     width = 6)
 layout(matrix(c(1,2,2,2,
-                3,4,5,10,
-                3,6,7,10,
-                3,8,9,10), 
+                3,4,4,11,
+                3,5,8,11,
+                3,6,9,11,
+                3,7,10,11,
+                3,12,13,14), 
               ncol= 4, 
               byrow = T),
        widths = c(1,0.2,0.2,0.6),
-       heights =  c(1,1/3,1/3,1/3))
+       heights =  c(1, 0.122, rep(0.256, 3), 0.11))
+# Smoothscatter add, mult and lm
 par(las= 1,
     mar= c(3,4,2,0.5),
     mgp= c(1.75, 0.5, 0),
-    tcl= -0.2)
+    tcl= -0.2,
+    cex= 1)
 smoothScatter(dat[, .(`Expected additive (log2)`= additive, 
                       `Activity (log2)`= log2FoldChange)],
               main= "Additive",
@@ -122,22 +55,77 @@ ex[, points(predicted,
             log2FoldChange, 
             col= col, 
             pch= 16), .(L, R, col)]
-legend("topleft", 
-       c(eq, 
-         paste0("R²= ", round(rsq$Rsquare, 2))),
-       bty= "n")
+legend(par("usr")[1]-strwidth("M", cex= 0.6),
+       par("usr")[4],
+       c(model$eq, 
+         paste0("R²= ", round(model$rsq$Rsquare, 2))),
+       bty= "n",
+       cex= 0.6)
 
-par(mar= c(3,2.6,0.5,0.1),
-    mgp= c(1.4, 0.5, 0),
+# Examples barplot
+par(mar= c(0,0,0,0),
+    lwd= 0.1)
+plot.new()
+segments(0.3, 
+         seq(0.3, 0.7, length.out=3), 
+         0.9,
+         seq(0.3, 0.7, length.out=3))
+rect(rep(c(0.375, 0.675), each= 3),
+     rep(seq(0.3, 0.7, length.out=3)-0.06, 2),
+     rep(c(0.375, 0.675), each= 3)+0.15,
+     rep(seq(0.3, 0.7, length.out=3)+0.06, 2),
+     density = rep(c(40, NA), each= 3),
+     col= c(rep(NA, 3), ex$col))
+par(mar= c(2,2.6,0.25,0.1),
     cex.axis= 0.6, 
-    cex.lab= 0.7)
-options(scipen= 1)
-ex[, ex_barplot(ex, L, R, col), .(L, R, col)]
+    cex.lab= 0.7,
+    cex= 0.66)
+for(mod in c("Add.", "Mult."))
+{
+  ex[, {
+    y <- log2FoldChange
+    z <- median_L
+    if(mod=="Add.")
+    {
+      x <- 2^additive
+      y <- 2^y
+      z <- 2^z
+      ylab <- "Activity"
+      par(mgp= c(1.4, 0.5, 0))
+    }else if(mod=="Mult.")
+    {
+      x <- multiplicative
+      ylab <- "Multiplicative"
+      par(mgp= c(1, 0.5, 0))
+    }
+    bar <- barplot(c(x, y), 
+                   col= c(col, "lightgrey"),
+                   xaxt= "n",
+                   ylab= "Activity",
+                   space= 1,
+                   xlim= c(0.25,4))
+    barplot(z, 
+            col= "black",
+            density= 40,
+            add= T,
+            space= 1)
+    text(bar, 
+         par("usr")[3]-strheight("M", cex= 0.5), 
+         c(mod, "Obs."),
+         pos= 2, 
+         offset= -0.25, 
+         xpd= T, 
+         srt= 45, 
+         cex= 0.8)
+  }, .(L, R)]
+}
 
-par(mar= c(3,4,2,0.5),
+# Boxplot residuals
+par(mar= c(4,6,2,3),
     mgp= c(1.75, 0.5, 0),
     cex.axis= 1, 
-    cex.lab= 1)
+    cex.lab= 1,
+    lwd= 1)
 vl_boxplot(dat[, .(log2FoldChange-additive,
                    log2FoldChange-multiplicative,
                    log2FoldChange-predicted)],
@@ -149,7 +137,6 @@ text(1:3,
      pos= 2, 
      offset= -0.25, 
      xpd= T, 
-     srt= 45, 
-     cex= 0.8)
+     srt= 45)
 abline(h= 0, lty= 2)
 dev.off()

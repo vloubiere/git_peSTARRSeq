@@ -5,17 +5,15 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("Rdata/final_results_table.rds")
+lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 feat <- readRDS("Rdata/final_300bp_enhancer_features.rds")
-STARR <- lib[vllib=="vllib002"]
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
-             STARR, 
+             lib, 
              by= c("L", "R"),
              suffixes= c("_luc", "_STARR"))
-dat[, class:= droplevels(class)]
-leg <- unique(dat[order(class), .(class, col)])
-.lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
+dat[, class_act:= droplevels(class_act)]
+dat[, col_act:= adjustcolor(col_act, 0.5)]
 
 pdf("pdf/draft/Figure_1FG.pdf", 
     height = 3, 
@@ -31,7 +29,7 @@ dat[, {
        xlab= "pe-STARR-Seq activity (log2)",
        ylab= "Normalized luc. activity (log2)",
        ylim= c(-0.8, 6.6),
-       col= col,
+       col= col_act,
        pch= 16,
        xaxt= "n",
        yaxt= "n")
@@ -39,32 +37,34 @@ dat[, {
            log2FoldChange_luc-sd,
            log2FoldChange_STARR,
            log2FoldChange_luc+sd,
-           col= col)
+           col= col_act)
   axis(1, lwd= 0, lwd.ticks= 1)
   axis(2, lwd= 0, lwd.ticks= 1)
+  leg <- unique(dat[order(class_act), .(class_act, col_act)])
+  leg[, legend("topleft",
+               legend = class_act,
+               bty= "n",
+               col= col_act,
+               pch= 19,
+               cex= 0.7)]
+  .lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
+  abline(.lm, lty=2)
+  legend("bottomright",
+         legend = paste0("R²= ", round(summary(.lm)$r.squared, 2), 
+                         " (PCC= ", round(cor.test(log2FoldChange_STARR, log2FoldChange_luc)$estimate, 2), ")"),
+         bty= "n",
+         lty= 2,
+         cex= 0.7)
+  par(mar= c(3.5, 3.5, 0.5, 0.5))
+  vl_boxplot(log2FoldChange_luc~class_act,
+             .SD,
+             violin= T,
+             compute_pval= list(c(1,2), c(2,4), c(3,4)),
+             violcol= unique(col_act),
+             ylab= "Normalized luc. activity (log2)",
+             tilt.names= T, 
+             pval_offset= 0.06,
+             ylim= c(-0.5, 8))
 }]
-abline(.lm, lty=2)
-legend("topleft",
-       legend = levels(leg$class),
-       bty= "n",
-       col= leg$col,
-       pch= 19,
-       cex= 0.7)
-legend("bottomright",
-       legend = paste0("R²= ", round(summary(.lm)$r.squared, 2), 
-                       " (PCC= ", round(cor.test(dat$log2FoldChange_STARR, dat$log2FoldChange_luc)$estimate, 2), ")"),
-       bty= "n",
-       lty= 2,
-       cex= 0.7)
-par(mar= c(3.5, 3.5, 0.5, 0.5))
-vl_boxplot(log2FoldChange_luc~class,
-           dat,
-           violin= T,
-           compute_pval= list(c(1,2), c(2,4), c(3,4)),
-           violcol= unique(dat[, col, keyby= class]$col),
-           ylab= "Normalized luc. activity (log2)",
-           tilt.names= T, 
-           pval_offset= 0.06,
-           ylim= c(-0.5, 8))
 dev.off()
 file.show("pdf/draft/Figure_1FG.pdf")

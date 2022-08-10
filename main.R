@@ -83,6 +83,7 @@ if(F)
   # Final tables ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancer_features_object.R")
   file.edit("git_peSTARRSeq/subscripts/generate_final_data_table.R")
+  file.edit("git_peSTARRSeq/subscripts/peAddFeatures_function.R")
   
   # Intron impact -----------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_INPUT.R")
@@ -92,14 +93,23 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/get_200bp_STARRSeq_peaks_BA.R") # 200bp STARR-Seq peaks
   file.edit("git_peSTARRSeq/subscripts/get_clusters_motifs_enrichment_BA.R") # DeepSTARR
   
-  # Draft #1 ----------------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_1CD.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_1E.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_1FG.R")
+  # Modelling ---------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
+  file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
   
-  file.edit("git_peSTARRSeq/subscripts/Figure_2A.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B.R")
+  # Clustering --------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B.R") # Clusterd using hclust, see fig2B
+  
+  
+  # Draft #1 ----------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R") # pe-STARR-Seq sketch
+  file.edit("git_peSTARRSeq/subscripts/Figure_1C.R") # Compare w/ TWIST-STARR-Seq
+  file.edit("git_peSTARRSeq/subscripts/Figure_1D.R") # Active enhancers calling
+  file.edit("git_peSTARRSeq/subscripts/Figure_1E.R") # Viiolin plot ctl/ctl, enh/ctl, enh/enh
+  file.edit("git_peSTARRSeq/subscripts/Figure_1FG.R") # Comparison with luciferase
+  
+  file.edit("git_peSTARRSeq/subscripts/Figure_2A.R") # Compare add, mult and lm + examples
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B.R") # Clustering lm residuals
   file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")  
   file.edit("git_peSTARRSeq/subscripts/Figure_2D.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2E.R")
@@ -126,6 +136,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/hkCP_additivity.R")
   
   # Supplementary figures ---------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Sup_Fig_1A.R")
   file.edit("git_peSTARRSeq/subscripts/enh_enh_distance.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_inact_enh_pairs_heatmap.R")
   

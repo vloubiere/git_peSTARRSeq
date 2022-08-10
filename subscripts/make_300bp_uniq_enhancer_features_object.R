@@ -141,6 +141,7 @@ lib <- cbind(lib, counts)
 cols <- grep("motif$", names(lib), value = T, invert = T)
 cols <- c(cols[cols!="oligo_full_sequence"], "oligo_full_sequence")
 setcolorder(lib, cols)
-saveRDS(lib, "Rdata/final_300bp_enhancer_features_w_motifs.rds")
-cols <- cols[-length(cols)]
-saveRDS(lib[, ..cols], "Rdata/final_300bp_enhancer_features_wo_motifs.rds")
+fwrite(lib,
+       "Rdata/final_300bp_enhancer_features.txt", 
+       sep= '\t',
+       na = NA)
