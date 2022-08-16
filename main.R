@@ -69,7 +69,6 @@ if(F)
   # Pipeline 3.0 ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
-  file.edit("git_peSTARRSeq/subscripts/multi_screen_models.R")
   file.edit("git_peSTARRSeq/subscripts/density_reads_position.R")
   # QC ----------------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
@@ -96,10 +95,12 @@ if(F)
   # Modelling ---------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
   file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
+  file.edit("git_peSTARRSeq/subscripts/multi_screen_models.R") # Not used
   
   # Clustering --------------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B.R") # Clusterd using hclust, see fig2B
-  
+  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B_hclust.R") # Clusterd using hclust, see fig2B
+  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B_pca.R") # Clusterd using PCA L and R
+  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B_SOM.R")
   
   # Draft #1 ----------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R") # pe-STARR-Seq sketch
@@ -109,8 +110,9 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_1FG.R") # Comparison with luciferase
   
   file.edit("git_peSTARRSeq/subscripts/Figure_2A.R") # Compare add, mult and lm + examples
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B.R") # Clustering lm residuals
-  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")  
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B_hclust.R") # Clustering residuals using hclust
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B_pca.R") # Clustering lm residuals using PCA
+  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2D.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2E.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_2F.R")
@@ -168,7 +170,6 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_inactive_pairs.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_DHS_peaks.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_DSCP_screen.R")
-  
   
   ########################################################################################
   # Luciferase validations ###############################################################
