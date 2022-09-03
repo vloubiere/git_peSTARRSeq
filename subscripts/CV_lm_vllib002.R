@@ -11,26 +11,33 @@ dat <- lib[sample(nrow(lib), nrow(lib))]
 
 # Define train and test sets
 set.seed(1)
-sel_L <- dat[, 1-.N/dat[,.N], L][, sample(L, round(.N/5), prob = V1)]
+dat[dat[, .(set= sample(5)), L], setL:= i.set, on= "L"]
 set.seed(1)
-sel_R <- dat[, 1-.N/dat[,.N], R][, sample(R, round(.N/5), prob = V1)]
-dat[L %in% sel_L & R %in% sel_R, set:= "test"]
-dat[!(L %in% sel_L) & !(R %in% sel_R), set:= "train"]
+dat[dat[, .(set= sample(5)), R], setR:= i.set, on= "R"]
+dat[, set:= paste0("test", .GRP), .(setL, setR)]
+# Train linear model for each train set and compute predicted values
+dat[, c("predicted", "intercept", "coeff_L", "coeff_R", "coeff_LR", "R2"):= {
+  print(set)
+  cL <- L
+  cR <- R
+  train <- dat[!(L %in% cL) & !(R %in% cR)]
+  model <- lm(formula = log2FoldChange~median_L*median_R,
+              data= train)
+  pred <- predict(model, newdata = .SD)
+  rsq <- vl_model_eval(observed = log2FoldChange, 
+                       predicted = pred)$Rsquare
+  print(vl_model_equation(model))
+  c(list(pred), as.list(model$coefficients), list(rsq))
+}, set]
 
-# Train linear model
-model <- lm(formula = log2FoldChange~median_L*median_R, 
-            data= dat[set=="train"])
-dat[, predicted:= predict(model, 
-                          newdata = dat)]
-rsq <- vl_model_eval(observed = dat[set=="test", log2FoldChange], 
-                     predicted = predict(model, new= dat[set=="test"]))
-eq <- vl_model_equation(model, digits = 2)
-eq <- gsub("median_L", "5'", eq)
-eq <- gsub("median_R", "3'", eq)
-eq <- gsub("log2FoldChange ", "Act.", eq)
-eq <- gsub("\\s\\*\\s", "*", eq)
-saveRDS(list(vllib002_dat= dat,
-             model= model,
-             rsq= rsq,
-             eq= eq), 
+model <- lapply(unique(dat[, .(intercept, coeff_L, coeff_R, coeff_LR, R2)]), mean)
+model <- list(equation= paste0("Activity= ", 
+                               round(model$intercept, 2),
+                               "+",
+                               round(model$coeff_L, 2), "*5'+",
+                               round(model$coeff_R, 2), "*3'",
+                               round(model$coeff_LR, 2), "*5':3'"),
+              R2= model$R2)
+saveRDS(list(pred= dat[, .(L, R, predicted, R2)],
+             model= model), 
         "Rdata/CV_linear_model_vllib002.rds")

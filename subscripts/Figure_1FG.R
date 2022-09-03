@@ -67,4 +67,3 @@ dat[, {
              ylim= c(-0.5, 8))
 }]
 dev.off()
-file.show("pdf/draft/Figure_1FG.pdf")

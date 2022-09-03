@@ -19,9 +19,8 @@ lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 lib[feat, c("set_L", "seq_L"):= .(i.set, i.enh_sequence), on= "L==ID_vl"]
 lib[feat, c("set_R", "seq_R"):= .(i.set, i.enh_sequence), on= "R==ID_vl"]
 # Add residuals from CV lm
-model <- readRDS("Rdata/CV_linear_model_vllib002.rds")$model
-lib[, residuals:= log2FoldChange-predict(model, 
-                                         newdata = lib)]
+model <- readRDS("Rdata/CV_linear_model_vllib002.rds")$pred
+lib[model, residuals:= log2FoldChange-i.predicted, on= c("L", "R")]
 # Keep only the lines for which both enhancers are in the same set
 dat <- lib[set_L==set_R, .(L, R, log2FoldChange, residuals, set= set_L, seq_L= seq_L, seq_R= seq_R, median_L, median_R, norm_input, norm_screen_rep1, norm_screen_rep2)]
 
@@ -44,6 +43,14 @@ if(F)
                col.names = F), set]
   dat[, fwrite(.(residuals),
                paste0("db/for_Bernado/deepSTARR/", set, "_residuals.txt"),
+               quote= F,
+               col.names = F), set]
+  dat[, fwrite(.(median_L),
+               paste0("db/for_Bernado/deepSTARR/", set, "_activity_L.txt"),
+               quote= F,
+               col.names = F), set]
+  dat[, fwrite(.(median_R),
+               paste0("db/for_Bernado/deepSTARR/", set, "_activity_R.txt"),
                quote= F,
                col.names = F), set]
 }

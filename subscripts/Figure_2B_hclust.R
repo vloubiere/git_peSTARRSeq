@@ -2,8 +2,8 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-# Import Clustering object (see clustering_vllib002_lm_residuals_Figure_2B.R)
-cl <- readRDS("Rdata/vllib002_clustering_expected_scores_draft_figure_hclust.rds")
+# Import Clustering object
+cl <- readRDS("Rdata/vllib002_lm_residuals_hclust.rds")
 rows <- cl$rows
 cols <- cl$cols
 

@@ -9,7 +9,7 @@ require(randomForest)
 # Make enhancers unique and recompile features that were used for design 
 #------------------------------------------------------------------------------------------------------------------------------#
 vl8 <- as.data.table(readRDS("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/vl_library_twist008_112019.rds"))
-setnames(vl8, "ID_vl", "ID")
+setnames(vl8, c("ID_vl", "enh_sequence"), c("ID", "enh_seq"))
 vl12 <- as.data.table(readRDS("Rdata/vl_library_twist12_210610.rds"))
 lib <- rbindlist(list(T8= vl8, 
                       T12= vl12), 
@@ -20,7 +20,7 @@ lib <- lib[, .(seqnames,
                strand,
                group, 
                detail, 
-               oligo_full_sequence, 
+               enh_seq, 
                linker_ID, 
                ID)]
 lib <- unique(lib)# Collapse the two libraries (some oligos are shared)
@@ -103,23 +103,25 @@ lib <- merge(lib, closestTss, by= "ID")
 #---------------------------------------------------------------#
 # Chromatin Features
 #---------------------------------------------------------------#
-regions <- vl_resizeBed(lib, 
+regions <- vl_resizeBed(bed= lib, 
                         center = "center", 
                         upstream = 1000, 
                         downstream = 1000, 
                         ignore.strand = T)
-lib[, ATAC:= vl_covBed(regions, "db/bed/GSE119708_ATAC_merged.bed")]
-lib[, K27Ac:= vl_covBed(regions, c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27ac_rep1_uniq.bed",
-                                   "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27ac_rep2_uniq.bed"))]
-lib[, K4me1:= vl_covBed(regions, c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K4me1_rep1_uniq.bed",
-                                   "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K4me1_rep2_uniq.bed"))]
-lib[, K4me3:= vl_covBed(regions, c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_H3K4me3_rep1_uniq.bed",
-                                   "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE81795_H3K4me3_rep2_uniq.bed"))]
-lib[, K27me3:= vl_covBed(regions, "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_H3K27me3_rep1_uniq.bed")]
-lib[, PolII:= vl_covBed(regions, "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41440_RNAPolII_rep1_uniq.bed")]
-lib[, GAF:= vl_covBed(regions, c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_GAF_rep1_uniq.bed",
-                                 "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE40646_GAF_rep2_uniq.bed"))]
-lib[, SUHW:= vl_covBed(regions, "/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE41354_SuHw_rep1_uniq.bed")]
+lib[, ATAC:= vl_bw_coverage(regions, "../available_data_dm3/db/bw/ATAC_merged.bw")]
+lib[, SUHW:= vl_bw_coverage(regions, "../available_data_dm3/db/bw/GSE41354_SuHw_rep1_uniq.bw")]
+lib[, H3K27Ac:= 
+      vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27ac_ChIP_Rep1.bw")+
+      vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27ac_ChIP_Rep2.bw")]
+lib[, H3K4me1:= 
+      vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K4me1_ChIP_Rep1.bw")+
+      vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K4me1_ChIP_Rep2.bw")]
+lib[, K4me3:= 
+      vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE81795/tracks/S2_H3K4me3_Rep1.bw")+
+      vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE81795/tracks/S2_H3K4me3_Rep2.bw")]
+lib[, K27me3:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27me3_ChIP.bw")]
+lib[, PolII:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_PolII_ChIP.bw")]
+lib[, GAF:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE40646_Trl/tracks/S2_Trl_ChIP_Lis.bw")]
 
 #--------------------------------------------------------------------#
 # Deep STARR prediction
@@ -133,13 +135,12 @@ lib <- merge(lib, deep[, .(ID, deep_dev, deep_hk)])
 #------------------------------------------------------------------------------------------------------------------------------#
 # TF motif counts
 #------------------------------------------------------------------------------------------------------------------------------#
-counts <- vl_motif_counts(sequences =  lib$oligo_full_sequence)
+counts <- vl_motif_counts(sequences =  lib$enh_seq)
 counts <- as.data.table(counts)
 setnames(counts, function(x) paste0(x, "_motif"))
 lib <- cbind(lib, counts)
 
 cols <- grep("motif$", names(lib), value = T, invert = T)
-cols <- c(cols[cols!="oligo_full_sequence"], "oligo_full_sequence")
 setcolorder(lib, cols)
 fwrite(lib,
        "Rdata/final_300bp_enhancer_features.txt", 

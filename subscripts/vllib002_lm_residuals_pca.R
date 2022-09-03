@@ -4,8 +4,8 @@ require(vlfunctions)
 
 # Import data
 dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
-model <- readRDS("Rdata/CV_linear_model_vllib002.rds")$model
-dat[, diff:= log2FoldChange-predict(model, new= dat)]
+pred <- readRDS("Rdata/CV_linear_model_vllib002.rds")$pred
+dat[pred, diff:= log2FoldChange-i.predicted, on= c("L", "R")]
 
 # Matrix for clustering
 mat <- as.matrix(dcast(dat, L~R, value.var= "diff"), 1)
@@ -43,6 +43,6 @@ cl <- vl_heatmap(x,
 cl$rows[pcaL, PC1:= PC1, on= "name"]
 cl$cols[pcaR, PC1:= PC1, on= "name"]
 saveRDS(cl, 
-        "Rdata/vllib002_clustering_expected_scores_draft_figure_pca.rds")
+        "Rdata/vllib002_lm_residuals_PCA.rds")
 
 plot(cl)

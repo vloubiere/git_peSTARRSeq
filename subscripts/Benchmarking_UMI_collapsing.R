@@ -5,6 +5,66 @@ require(vlfunctions)
 require(data.table)
 
 ######################################################
+# BERNCHMAK (see original code from Bernardo lower down)
+######################################################
+# Import and sort based on counts
+test <- fread("db/umi_counts/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_1000_F_input_vllib002-spike_0.01_final_rep1__HJFH3BGXF_1_20200403B_20200404.txt.gz")
+set.seed(1)
+test <- test[sample(.N, 1e6)]
+test[, UMI_counts := .N, .(L, R, UMI)]
+test[, pair_counts := .N, .(L, R)]
+setorderv(test, 
+          c("pair_counts", "UMI_counts"), 
+          order = c(-1, -1))
+test[, ID:= paste0(L, "__", R)]
+test[, ID:= factor(ID, unique(ID))]
+
+######------ Stark way -------#######
+t1 <- Sys.time()
+results <- mclapply(split(test$UMI, test$ID),
+                    function(x)
+                    {
+                      names(x) <- x
+                      keep <- vector("numeric", length(x))
+                      names(keep) <- x
+                      while (length(x)>0) {
+                        rmv = which(stringdist(x[1], x, method="hamming", nthread= 1) <= 1)
+                        keep[names(x)[1]] <- length(rmv)
+                        x <- x[-rmv]
+                      }
+                      return(as.data.table(keep, keep.rownames = "UMI"))
+                    })
+results <- rbindlist(results, idcol= T)
+setnames(results, c("ID", "UMI", "counts"))
+t2 <- Sys.time()
+
+######------ My way -------#######
+t3 <- Sys.time()
+test[, collapsed:= .N==1, .(L, R)]
+while(any(!test$collapsed))
+{
+  test[!(collapsed), c("collapsed", "UMI"):= {
+    coll <- stringdist(UMI[1],
+                       UMI,
+                       method="hamming",
+                       nthread= getDTthreads()-1)<=1
+    UMI[coll] <- UMI[1]
+    .(coll, UMI)
+  }, .(L, R)]
+}
+t4 <- Sys.time()
+
+
+# Compare
+paste0("Stark:", t2-t1)
+paste0("VL:", t4-t3)
+
+results[, ID:= factor(ID, levels= levels(test$ID))]
+stark <- results[counts>0][order(ID, UMI), .(ID, UMI)]
+vl <- unique(test[order(ID, UMI), .(ID, UMI)])
+identical(stark, vl)
+
+######################################################
 # BERNARDO
 ######################################################
 # #!/usr/bin/env Rscript
@@ -104,74 +164,3 @@ require(data.table)
 # 
 # sessionInfo()
 #
-######################################################
-# BERNCHMAK
-######################################################
-# Import and sort based on counts
-test <- fread("db/umi_counts/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_1000_F_input_vllib002-spike_0.01_final_rep1__HJFH3BGXF_1_20200403B_20200404.txt")
-# test <- fread("db/umi_counts/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_1000_F_input_vllib002-spike_0.01_failed-seq_rep3__HJHGJBGXF_1_20200501B_20200502.txt")
-# set.seed(1)
-# test <- test[sample(.N, 1e6)]
-test[, UMI_counts := .N, .(L, R, UMI)]
-test[, pair_counts := .N, .(L, R)]
-setorderv(test, 
-          c("pair_counts", "UMI_counts"), 
-          order = c(-1, -1))
-test[, ID:= paste0(L, "__", R)]
-test[, ID:= factor(ID, unique(ID))]
-
-######------ Stark way -------#######
-t1 <- Sys.time()
-results <- mclapply(split(test$UMI, test$ID),
-                    function(x)
-                    {
-                      names(x) <- x
-                      keep <- vector("numeric", length(x))
-                      names(keep) <- x
-                      while (length(x)>0) {
-                        rmv = which(stringdist(x[1], x, method="hamming", nthread= 1) <= 1)
-                        keep[names(x)[1]] <- length(rmv)
-                        x <- x[-rmv]
-                      }
-                      return(as.data.table(keep, keep.rownames = "UMI"))
-                    })
-results <- rbindlist(results, idcol= T)
-setnames(results, c("ID", "UMI", "counts"))
-t2 <- Sys.time()
-
-######------ My way -------#######
-t3 <- Sys.time()
-test[, UMI:= {
-  if(.N>1)
-  {
-    res <- rep(as.character(NA), .N)
-    while(anyNA(res))
-    {
-      check <- is.na(res)
-      # check[check] <- agrepl(UMI[check][1],
-      #                        UMI[check],
-      #                        max.distance= list(all= 1L, deletions= 0L, insertions= 0L, substitution= 1L))      
-      check[check] <- stringdist(UMI[check][1], 
-                                 UMI[check], 
-                                 method="hamming", 
-                                 nthread= getDTthreads()-1)<=1
-      res[check] <- UMI[check][1]
-    }
-    res
-  }else
-    UMI
-}, .(L, R)]
-t4 <- Sys.time()
-
-# Compare
-paste0("Stark:", t2-t1)
-paste0("VL:", t4-t3)
-
-results[, ID:= factor(ID, levels= levels(test$ID))]
-stark <- results[counts>0][order(ID, UMI), .(ID, UMI)]
-vl <- unique(test[order(ID, UMI), .(ID, UMI)])
-identical(stark, vl)
-
-
-
-

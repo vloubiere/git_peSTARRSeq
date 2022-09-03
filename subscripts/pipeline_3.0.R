@@ -13,7 +13,6 @@ require(stringdist)
 
 meta <- fread(commandArgs(trailingOnly=TRUE)[1])
 # meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
-# meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
 print("Sample:")
 print(meta)
 libs <- as.data.table(read_excel("/groups/stark/vloubiere/exp_data/vl_libraries.xlsx"))
@@ -30,13 +29,12 @@ mcmapply(function(b, o, i){
                                              output_prefix = o,
                                              rev_comp_i5 = i)
     system(cmd)
-    print(paste0(fq_files, " -->> DONE!"))
-  }else
-    print(paste0(fq_files, " -->> ALREADY EXISTS!"))
+  }
+  print(paste0(fq_files, " -->> DONE!"))
 },
-b= meta[, BAM_path],
+b= meta$BAM_path,
 o= meta$fq_prefix,
-i= meta[, as.character(reverseComplement(DNAStringSet(gsub(".*-(.*)", "\\1", i5))))],
+i= as.character(reverseComplement(DNAStringSet(gsub(".*-(.*)", "\\1", meta$i5)))),
 mc.preschedule = F,
 mc.cores = getDTthreads())
 
@@ -45,63 +43,45 @@ mc.cores = getDTthreads())
 # Align each fastq file and produces SAM ouptut
 #--------------------------------------------------------------#
 meta[, {
-  if(file.exists(bam))
-    print(paste0(bam, " -->> ALREADY EXISTS")) else
-    {
-      subread_index <- switch(library,
-                              "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
-                              "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
-      align(index = subread_index,
-            readfile1 = fq1,
-            readfile2 = fq2,
-            type = "dna",
-            output_format = "BAM",
-            output_file = bam,
-            maxMismatches = 3,
-            unique = T,
-            nTrim5 = 3,
-            nthreads = getDTthreads())
-      print(paste0(bam, " -->> DONE"))
-    }
+  if(!file.exists(bam))
+  {
+    subread_index <- switch(library,
+                            "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
+                            "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
+    align(index = subread_index,
+          readfile1 = fq1,
+          readfile2 = fq2,
+          type = "dna",
+          output_format = "BAM",
+          output_file = bam,
+          maxMismatches = 3,
+          unique = T,
+          nTrim5 = 3,
+          nthreads = getDTthreads())
+  }
+  print(paste0(bam, " -->> DONE"))
 }, .(fq1, fq2, bam, library)]
-
-
 #--------------------------------------------------------------#
 # Primary counts
 # Takes each sam file and Extract UMI reads
 #--------------------------------------------------------------#
 meta[, {
-  if(file.exists(umi_counts))
-    print(paste0(umi_counts, " -->> ALREADY EXISTS")) else
-    {
-      .c <- fread(cmd= paste("module load  build-env/2020; module load samtools/1.9-foss-2018b; samtools view -@", getDTthreads()-1, bam),
-                  fill= T,
-                  select = 1:5, 
-                  col.names = c("ID", "FLAG", "seq", "pos", "mapq"))
-      # Extract good reads
-      if(type=="rev-pe-STARR-Seq")
-      {
-        .c <- merge(.c[FLAG %in% c(81, 83) & mapq>=20, .(ID, seq, pos)],
-                    .c[FLAG %in% c(161, 163) & mapq>=20, .(ID, seq, pos)], 
-                    by= "ID",
-                    suffixes= c("_L", "_R"))
-      }else
-      {
-        .c <- merge(.c[FLAG %in% c(97, 99) & mapq>=20, .(ID, seq, pos)],
-                    .c[FLAG %in% c(145, 147) & mapq>=20, .(ID, seq, pos)], 
-                    by= "ID",
-                    suffixes= c("_L", "_R"))
-      }
-      # Clean
-      .c <- .c[, .(L= seq_L,
-                   pos_L,
-                   R= seq_R,
-                   pos_R,
-                   UMI= gsub(".*_([A-Z]{10}).*", "\\1", ID))]
-      # SAVE
-      fwrite(.c, umi_counts)
-      print(paste0(umi_counts, " -->>DONE"))
-    }
+  if(!file.exists(umi_counts))
+  {
+    cmd <- paste("module load  build-env/2020; module load samtools/1.9-foss-2018b; module load bedtools/2.27.1-foss-2018b; samtools view -@")
+    cmd <- paste(cmd, getDTthreads()-1, "-b", bam, "| bedtools bamtobed -i stdin -bedpe -mate1")
+    .c <- fread(cmd= cmd)
+    
+    # Extract good reads
+    .c <- .c[V8>=10] # mapq cutoff
+    if(type=="rev-pe-STARR-Seq") # Orientation
+      .c <- .c[V9=="-" & V10=="+" & V2>V6] else
+        .c <- .c[V9=="+" & V10=="-" & V5>V3]
+    .c <- .c[, .(L= V1, R= V4, UMI= gsub(".*_([A-Z]{10}).*", "\\1", V7))] # Extract UMI
+    # SAVE
+    fwrite(.c, umi_counts)
+  }
+  print(paste0(umi_counts, " -->>DONE"))
 }, .(bam, umi_counts, type, library)]
 
 #--------------------------------------------------------------#
@@ -117,62 +97,24 @@ meta[, {
     # Import all counts file / cdition
     .c <- lapply(umi_counts, fread)
     .c <- rbindlist(.c)
-    # Filter correct pairs
+    # Filter pairs containing correct subllib indexes
     .c <- .c[grepl(paste0("_", gsub(",", "_|_", libs[lib_ID==vllib, sub_lib_L]), "_"), L) 
              & grepl(paste0("_", gsub(",", "_|_", libs[lib_ID==vllib, sub_lib_R]), "_"), R)]
-    if(vllib=="vllib006")
-    {
-      .c <- .c[between(pos_L, 260, 264, incbounds = T) 
-               & between(pos_R, 4, 7, incbounds = T)]
-    }else if(vllib=="vllib002")
-    {
-      .c <- .c[pos_L==5 & pos_R %in% c(260, 264)]
-    }else if(vllib %in% c("vllib013", "vllib014"))
-    {
-      .c <- .c[between(pos_L, 4, 7, incbounds = T) 
-               & between(pos_R, 260, 263, incbounds = T)] 
-    }else if(vllib %in% c("vllib015", 
-                          "vllib016", 
-                          "vllib017", 
-                          "vllib018", 
-                          "vllib019", 
-                          "vllib020", 
-                          "vllib021", 
-                          "vllib022", 
-                          "vllib023", 
-                          "vllib024", 
-                          "vllib025", 
-                          "vllib026", 
-                          "vllib027", 
-                          "vllib028"))
-    {
-      .c <- .c[between(pos_L, 4, 7, incbounds = T) 
-               & between(pos_R, 261, 265, incbounds = T)] 
-    }else
-    {
-      .c <- .c[0]
-    }
-    # Count UMIs and order
+    # Advanced UMI collapsing (>1 diff)
     .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
     setorderv(.c, "umi_N", order = -1)
-    # Advanced UMI collapsing (>1 diff)
-    .c[, UMI:= {
-      if(.N>1)
-      {
-        res <- rep(as.character(NA), .N)
-        while(anyNA(res))
-        {
-          check <- is.na(res)
-          check[check] <- stringdist(UMI[check][1],
-                                     UMI[check],
-                                     method="hamming",
-                                     nthread= getDTthreads()-1)<=1
-          res[check] <- UMI[check][1]
-        }
-        res
-      }else
-        UMI
-    }, .(L, R)]
+    .c[, collapsed:= .N==1, .(L, R)]
+    while(any(!.c$collapsed))
+    {
+      .c[!(collapsed), c("collapsed", "UMI"):= {
+        coll <- stringdist(UMI[1],
+                           UMI,
+                           method="hamming",
+                           nthread= getDTthreads()-1)<=1
+        UMI[coll] <- UMI[1]
+        .(coll, UMI)
+      }, .(L, R)]
+    }
     # Final collapsing
     .c <- unique(.c[, .(L, R, UMI)])
     .c <- .c[, .(umi_counts= .N), .(L, R)]

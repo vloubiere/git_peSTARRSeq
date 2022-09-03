@@ -2,16 +2,16 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-# Import Clustering object (see clustering_vllib002_lm_residuals_Figure_2B.R)
-cl <- readRDS("Rdata/vllib002_lm_residuals_PCA.rds")
+# Import Clustering object
+cl <- readRDS("Rdata/vllib002_lm_residuals_SOM.rds")
 rows <- cl$rows
 cols <- cl$cols
 
 # plot
-pdf("pdf/draft/Figure_2B_PCA.pdf", 
+pdf("pdf/draft/Figure_2B.pdf", 
     width= 7.6, 
     height = 7)
-par(mar= c(3.5,3.5,3,7),
+par(mar= c(3,3,3,7),
     mgp= c(3,0.1,0),
     tcl= -0.1,
     las= 1)
@@ -22,9 +22,9 @@ plot(cl)
 # Left individual activities
 left <- grconvertX(0.6, "lines", "user")
 width <- diff(c(left, par("usr")[1]-strwidth("M", cex= 0.6)))
-rows[, rect_left:= (PC1-min(PC1))/diff(range(PC1))]
+rows[, rect_left:= (median-min(median))/diff(range(median))]
 rows[, rect_left:= left+rect_left*width]
-rows[, rect_right:= (0-min(PC1))/diff(range(PC1))]
+rows[, rect_right:= (0-min(median))/diff(range(median))]
 rows[, rect_right:= left+rect_right*width]
 rows[,{
   rect(rect_left,
@@ -34,9 +34,8 @@ rows[,{
        border= NA, 
        xpd= T, 
        col= "grey40")
-  ticks <- axisTicks(range(PC1), log= F)
-  ticks <- c(min(ticks), 0, max(ticks))
-  at <- (ticks-min(PC1))/diff(range(PC1))
+  ticks <- c(0, max(axisTicks(range(median), log= F)))
+  at <- (ticks-min(median))/diff(range(median))
   at <- left+at*width
   axis(3, 
        at = at, 
@@ -52,20 +51,20 @@ rows[,{
            xpd= T)
   text(mean(at),
        par("usr")[4],
-       "PC1",
+       "5' act (log2)",
        xpd= T, 
        pos= 3, 
        offset= 1.25,
-       cex= 0.7)
+       cex= 0.6)
 }]
 
 # Right individual activities
 par(mgp= c(3,0.25,0))
 bottom <- grconvertY(0.6, "lines", "user")
 height <- diff(c(bottom, par("usr")[3]-strheight("M", cex= 0.6)))
-cols[, rect_top:= (PC1-min(PC1))/diff(range(PC1))]
+cols[, rect_top:= (median-min(median))/diff(range(median))]
 cols[, rect_top:= bottom+rect_top*height]
-cols[, rect_bot:= (0-min(PC1))/diff(range(PC1))]
+cols[, rect_bot:= (0-min(median))/diff(range(median))]
 cols[, rect_bot:= bottom+rect_bot*height]
 cols[,{
   rect(x-0.5,
@@ -75,9 +74,8 @@ cols[,{
        border= NA, 
        xpd= T, 
        col= "grey40")
-  ticks <- axisTicks(range(PC1), log= F)
-  ticks <- c(min(ticks), 0, max(ticks))
-  at <- (ticks-min(PC1))/diff(range(PC1))
+  ticks <- c(0, max(axisTicks(range(median), log= F)))
+  at <- (ticks-min(median))/diff(range(median))
   at <- bottom+at*height
   axis(4,
        at = at,
@@ -93,10 +91,10 @@ cols[,{
            xpd= T)
   text(par("usr")[4],
        mean(at),
-       "PC1",
+       "3' act (log2)",
        xpd= T,
        pos= 4,
-       offset= 0.75,
-       cex= 0.7)
+       offset= 0.4,
+       cex= 0.6)
 }]
 dev.off()

@@ -13,7 +13,8 @@ meta <- as.data.table(meta)
 cols <- colnames(meta)
 meta[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
 meta[, output_prefix:= paste0("/", my_ID, "__", gsub(".bam$", "", basename(BAM_path)))]
-# IMPORTANT!!
+meta <- meta[(DESeq2)]
+# Check unique prefixes!!
 if(any(meta[, .N, output_prefix]$N>1))
   stop(paste0("Some output prefixes are not unique and cannot be used. Check metadata table (replicates?)!\n"))
 
@@ -32,21 +33,10 @@ meta[, pairs_counts:= {
     dir <- paste0(dir, "_", cdition, "_rep", DESeq2_pseudo_rep)
   paste0(dir, "_merged_pair_counts.txt")
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
-meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
-                                 group, ".dds"), .(group, cdition, DESeq2)]
+meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", group, ".dds"), .(group, cdition, DESeq2)]
 meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
                                       group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
-
-#-------------------------------------------------------------#
-# File removal?
-#-------------------------------------------------------------#
-pattern <- "vllib023|vllib024|vllib025|vllib026|vllib027|vllib028"
-files <- list.files("db/fastq/", pattern, full.names = T)
-files <- list.files("db/bam/", pattern, full.names = T)
-files <- list.files("db/umi_counts/", pattern, full.names = T)
-files <- list.files("db/merged_counts/", pattern, full.names = T)
-files <- list.files("db/FC_tables/", pattern, full.names = T)
 
 #-------------------------------------------------------------#
 # PARALLELIZATION
@@ -61,7 +51,7 @@ meta[, {
   fwrite(cbind(.SD, DESeq2, group), tmp)
   # Bsub
   Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
-                normalizePath("git_peSTARRSeq/functions/pipeline_3.0.R"),
+                normalizePath("git_peSTARRSeq/subscripts/pipeline_3.0.R"),
                 tmp)
   if(DESeq2)
   {
@@ -91,4 +81,3 @@ meta[, {
   unlist(job_ID[2])
   print("Submitted!")
 }, .(group, DESeq2)]
-

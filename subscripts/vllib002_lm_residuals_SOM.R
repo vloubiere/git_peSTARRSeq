@@ -5,18 +5,19 @@ require(kohonen)
 
 # Import data
 dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
-model <- readRDS("Rdata/CV_linear_model_vllib002.rds")$model
-dat[, diff:= log2FoldChange-predict(model, new= dat)]
+pred <- readRDS("Rdata/CV_linear_model_vllib002.rds")$pred
+dat[pred, residuals:= log2FoldChange-i.predicted, on= c("L", "R")]
+
 
 # SOM clustering
 trainL <- dcast(dat,
                 L~R, 
-                value.var = "diff")
+                value.var = "residuals")
 trainL <- as.matrix(trainL, 1)
 somGrid <- somgrid(xdim = 10, ydim = 10, topo= 'hexagonal', toroidal = T)
 set.seed(1)
 init <- sample(nrow(trainL), somGrid$xdim*somGrid$ydim)
-init <- trainL[init, , drop=F]
+init <- trainL[init, , drop= F]
 somL <- supersom(data= trainL, 
                  grid= somGrid, 
                  init= init, 
@@ -26,7 +27,7 @@ somL <- supersom(data= trainL,
 
 trainR <- dcast(dat,
                 R~L, 
-                value.var = "diff")
+                value.var = "residuals")
 trainR <- as.matrix(trainR, 1)
 somGrid <- somgrid(xdim = 10, ydim = 10, topo= 'hexagonal', toroidal = T)
 set.seed(1)
@@ -40,21 +41,23 @@ somR <- supersom(data= trainR,
                  maxNA.fraction = .2)
 
 # Codes clustering
-set.seed(1)
-clL <- data.table(name= rownames(somL$data[[1]]),
+set.seed(7)
+clL <- data.table(data.table(somL$data[[1]], keep.rownames = "name"),
                   cl= kmeans(somL$codes[[1]], 4)$cluster[somL$unit.classif])
-clL[, ord:= median(somL$data[[1]][rownames(somL$data[[1]]) %in% name,], na.rm = T), cl]
+clL[, ord:= median(unlist(.SD[, !"name"]), na.rm = T), cl]
 clL[, cl:= .GRP, keyby= ord]
-clR <- data.table(name= rownames(somR$data[[1]]),
+set.seed(5)
+clR <- data.table(data.table(somR$data[[1]], keep.rownames = "name"),
                   cl= kmeans(somR$codes[[1]], 4)$cluster[somR$unit.classif])
-clR[, ord:= median(somR$data[[1]][rownames(somR$data[[1]]) %in% name,], na.rm = T), cl]
+clR[, ord:= median(unlist(.SD[, !"name"]), na.rm = T), cl]
 clR[, cl:= .GRP, keyby= ord]
 
 # Heatmap
 mat <- trainL[match(clL$name, rownames(trainL)), match(clR$name, colnames(trainL))]
 cl <- vl_heatmap(mat,
-                 row_clusters = clL$cl,
+                 row_clusters = factor(clL$cl, c(4,3,2,1)),
                  col_clusters = clR$cl,
+                 col_clusters_col = rev(grDevices::gray.colors(length(unique(clR$cl)))),
                  cluster_rows = F, 
                  cluster_cols = F,
                  breaks = c(-2,-0.25,0.25,2), 
@@ -64,20 +67,26 @@ cl <- vl_heatmap(mat,
                  show_colnames = F,
                  auto_margins = F,
                  plot= F)
+cl$rows[dat, median:= i.median_L, on= "name==L", mult= "first"]
+cl$cols[dat, median:= i.median_R, on= "name==R", mult= "first"]
+
+# Check confusion matrix
+conf <- merge(cl$rows, cl$cols, by= "name")
+tab <- table(conf$cl.x, conf$cl.y)
+tab <- matrix(tab, ncol = ncol(tab), dimnames = dimnames(tab))
+chi <- chisq.test(tab)
+conf <- chi$residuals
+
+# check plot
+par(mfrow= c(2,1))
 plot(cl)
-res <- merge(cl$rows, cl$cols, by= "name")
-tab <- matrix(c(table(res$cl.x, res$cl.y)), ncol= 4)
-.t <- chisq.test(tab)
-set.seed(1)
-rdm <- matrix(c(table(sample(res$cl.x), sample(res$cl.y))), ncol= 4)
-OR <- log2((tab+1)/(rdm+1))
-pl <- vl_heatmap(x = .t$residuals,
-                 breaks = c(-3,0,3),
-                 cluster_rows = F, 
-                 cluster_cols = F, 
-                 legend_title = "OR (log2)")
-text(rep(1:4, each= 4), rep(4:1, 4), unlist(tab))
+vl_heatmap(x =  matrix(conf, ncol = ncol(conf), dimnames = dimnames(conf)),
+           breaks = c(-3,0,3),
+           cluster_rows = F, 
+           cluster_cols = F, 
+           legend_title = "OR (log2)", 
+           display_numbers = T,
+           display_numbers_matrix = tab)
 
-
-# saveRDS(cl, 
-#         "Rdata/vllib002_clustering_expected_scores_draft_figure_pca.rds")
+saveRDS(cl,
+        "vllib002_lm_residuals_SOM.rds")

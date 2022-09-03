@@ -60,21 +60,20 @@ if(F)
   ########################################################################################
   # pe-STARR-Seq PIPELINE ################################################################
   ########################################################################################
-  # Indexes and functions used by pipeline ----------------------------------------------#
+  # Pipeline 3.0 ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
   file.edit("git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
-  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R")
+  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R") # Compare to BA approach
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
-  file.edit("git_peSTARRSeq/subscripts/Compare_DESeq2_ratio.R")
-  # Pipeline 3.0 ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
-  file.edit("git_peSTARRSeq/subscripts/density_reads_position.R")
-  # QC ----------------------------------------------------------------------------------#
+  # QC and sanity check -----------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Compare_DESeq2_to_raw_log2_ratio.R") # Sanity check
+  file.edit("git_peSTARRSeq/subscripts/density_reads_position.R") # Sanity check
   file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
   file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
   file.edit("git_peSTARRSeq/subscripts/barplot_read_per_theoretical_pair.R")
-  file.edit("git_peSTARRSeq/subscripts/PCC.R")
+  file.edit("git_peSTARRSeq/subscripts/PCC.R") 
   
   ########################################################################################
   # pe-STARR-Seq ANALYSES ################################################################
@@ -82,7 +81,6 @@ if(F)
   # Final tables ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancer_features_object.R")
   file.edit("git_peSTARRSeq/subscripts/generate_final_data_table.R")
-  file.edit("git_peSTARRSeq/subscripts/peAddFeatures_function.R")
   
   # Intron impact -----------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_INPUT.R")
@@ -94,36 +92,32 @@ if(F)
   
   # Modelling ---------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_residuals_vllib002.R") # Linear model to predict residuals
   file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
-  file.edit("git_peSTARRSeq/subscripts/multi_screen_models.R") # Not used
   
   # Clustering --------------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B_hclust.R") # Clusterd using hclust, see fig2B
-  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B_pca.R") # Clusterd using PCA L and R
-  file.edit("git_peSTARRSeq/subscripts/clustering_vllib002_lm_residuals_Figure_2B_SOM.R")
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_hclust.R") # Clusterd using hclust
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_pca.R") # Clusterd using PCA L and R
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_SOM.R") # Clustered using L and R SOM -> nodes kmeans
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_SOM_motifs_enr.R")
   
   # Draft #1 ----------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R") # pe-STARR-Seq sketch
-  file.edit("git_peSTARRSeq/subscripts/Figure_1C.R") # Compare w/ TWIST-STARR-Seq
-  file.edit("git_peSTARRSeq/subscripts/Figure_1D.R") # Active enhancers calling
-  file.edit("git_peSTARRSeq/subscripts/Figure_1E.R") # Viiolin plot ctl/ctl, enh/ctl, enh/enh
+  file.edit("git_peSTARRSeq/subscripts/Figure_1C.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
+  file.edit("git_peSTARRSeq/subscripts/Figure_1E.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
   file.edit("git_peSTARRSeq/subscripts/Figure_1FG.R") # Comparison with luciferase
   
   file.edit("git_peSTARRSeq/subscripts/Figure_2A.R") # Compare add, mult and lm + examples
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B_hclust.R") # Clustering residuals using hclust
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B_pca.R") # Clustering lm residuals using PCA
-  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_2D.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_2E.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_2F.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_2G.R")
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B.R") # Clustering lm residuals using SOM
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B_hclust.R") # NOT USED (Clustering residuals using hclust)
+  file.edit("git_peSTARRSeq/subscripts/Figure_2B_pca.R") # NOT USED (Clustering lm residuals using PCA)
+  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R") # Confusion matrix L and Right clusters (Fig2B)
+  file.edit("git_peSTARRSeq/subscripts/Figure_2D.R") # Motif enrichment per cluster
+  file.edit("git_peSTARRSeq/subscripts/Figure_2E.R") # HTMs enrichment per cluster
+  file.edit("git_peSTARRSeq/subscripts/Figure_2F.R") # PCA showing enhancer identity
+  file.edit("git_peSTARRSeq/subscripts/Figure_2G.R") # Luciferase classes validation
   
-  file.edit("git_peSTARRSeq/subscripts/model_fitting.R")
-  file.edit("git_peSTARRSeq/subscripts/PCA_LR.R")
-  file.edit("git_peSTARRSeq/subscripts/clustering.R")
-  file.edit("git_peSTARRSeq/subscripts/ordered_heatmaps.R")
-  file.edit("git_peSTARRSeq/subscripts/nls_models.R")
-  
+  file.edit("git_peSTARRSeq/subscripts/screenshot_hk_vs_dev_STARR-Seq.R") # screenshot to show diff
   file.edit("git_peSTARRSeq/subscripts/Figure_3AB.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3D.R")
@@ -134,10 +128,17 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_4C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4D.R")
   
+  file.edit("git_peSTARRSeq/subscripts/model_fitting.R")
+  file.edit("git_peSTARRSeq/subscripts/PCA_LR.R")
+  file.edit("git_peSTARRSeq/subscripts/clustering.R")
+  file.edit("git_peSTARRSeq/subscripts/ordered_heatmaps.R")
+  file.edit("git_peSTARRSeq/subscripts/nls_models.R")
+  
   # Draft #2 ----------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/hkCP_additivity.R")
   
   # Supplementary figures ---------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Figure_1D.R") # Active enhancers calling
   file.edit("git_peSTARRSeq/subscripts/Sup_Fig_1A.R")
   file.edit("git_peSTARRSeq/subscripts/enh_enh_distance.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_inact_enh_pairs_heatmap.R")
