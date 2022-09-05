@@ -175,6 +175,12 @@ if(any(meta$DESeq2))
           wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
             as.numeric(NA)
       }, R]
+      # FDR
+      FDR_L <- unique(norm[, .(L, act_wilcox_L)])[, FDR_L:= p.adjust(act_wilcox_L, "fdr")]
+      norm[FDR_L, FDR_L:= i.FDR_L, on= "L"]
+      FDR_R <- unique(norm[, .(R, act_wilcox_R)])[, FDR_R:= p.adjust(act_wilcox_R, "fdr")]
+      norm[FDR_R, FDR_R:= i.FDR_R, on= "R"]
+      norm$act_wilcox_L <- norm$act_wilcox_R <- NULL
       # Subtract basal activity (center controls on 0)
       norm[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
       # Compute expected

@@ -8,42 +8,41 @@ require(data.table)
 # BERNCHMAK (see original code from Bernardo lower down)
 ######################################################
 # Import and sort based on counts
-test <- fread("db/umi_counts/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_1000_F_input_vllib002-spike_0.01_final_rep1__HJFH3BGXF_1_20200403B_20200404.txt.gz")
+test <- fread("db/umi_counts/vllib015_pe-STARR-Seq-2.0_DSCP_T12_SCR1_300_1000_T_screen_NA_NA_final_rep1__H2KMLBGXK_1_20210831B_20210901.txt.gz")
 set.seed(1)
-test <- test[sample(.N, 1e6)]
-test[, UMI_counts := .N, .(L, R, UMI)]
-test[, pair_counts := .N, .(L, R)]
-setorderv(test, 
-          c("pair_counts", "UMI_counts"), 
-          order = c(-1, -1))
+test <- test[sample(nrow(test), 2e6)]
 test[, ID:= paste0(L, "__", R)]
-test[, ID:= factor(ID, unique(ID))]
 
 ######------ Stark way -------#######
 t1 <- Sys.time()
-results <- mclapply(split(test$UMI, test$ID),
-                    function(x)
-                    {
-                      names(x) <- x
-                      keep <- vector("numeric", length(x))
-                      names(keep) <- x
-                      while (length(x)>0) {
-                        rmv = which(stringdist(x[1], x, method="hamming", nthread= 1) <= 1)
-                        keep[names(x)[1]] <- length(rmv)
-                        x <- x[-rmv]
-                      }
-                      return(as.data.table(keep, keep.rownames = "UMI"))
-                    })
-results <- rbindlist(results, idcol= T)
-setnames(results, c("ID", "UMI", "counts"))
+stark <- test[, .(umi_N= .N), .(L, R, UMI)]
+setorderv(stark, "umi_N", order = -1)
+stark <- mclapply(split(stark$UMI, stark[, .(L,R)]),
+                  function(x)
+                  {
+                    names(x) <- x
+                    keep <- vector("numeric", length(x))
+                    names(keep) <- x
+                    while (length(x)>0) {
+                      rmv = which(stringdist(x[1], x, method="hamming", nthread= 1) <= 1)
+                      keep[names(x)[1]] <- length(rmv)
+                      x <- x[-rmv]
+                    }
+                    return(as.data.table(keep, keep.rownames = "UMI"))
+                  })
+stark <- rbindlist(stark, idcol= T)
+stark[, c("L", "R"):= tstrsplit(.id, "[.]")]
+stark <- stark[keep>0][order(L, R, UMI), .(L, R, UMI)]
 t2 <- Sys.time()
 
 ######------ My way -------#######
 t3 <- Sys.time()
-test[, collapsed:= .N==1, .(L, R)]
-while(any(!test$collapsed))
+.c <- test[, .(umi_N= .N), .(L, R, UMI)]
+setorderv(.c, "umi_N", order = -1)
+.c[, collapsed:= .N==1, .(L, R)]
+while(any(!.c$collapsed))
 {
-  test[!(collapsed), c("collapsed", "UMI"):= {
+  .c[!(collapsed), c("collapsed", "UMI"):= {
     coll <- stringdist(UMI[1],
                        UMI,
                        method="hamming",
@@ -52,17 +51,29 @@ while(any(!test$collapsed))
     .(coll, UMI)
   }, .(L, R)]
 }
+.c <- unique(.c[, .(L, R, UMI)])
 t4 <- Sys.time()
-
 
 # Compare
 paste0("Stark:", t2-t1)
 paste0("VL:", t4-t3)
 
-results[, ID:= factor(ID, levels= levels(test$ID))]
-stark <- results[counts>0][order(ID, UMI), .(ID, UMI)]
-vl <- unique(test[order(ID, UMI), .(ID, UMI)])
-identical(stark, vl)
+res <- merge(test[, .(before= .N), .(L, R)],
+             stark[, .(stark= .N), .(L, R)],
+             by= c("L", "R"))
+res <- merge(res,
+             .c[, .(vl= .N), .(L, R)],
+             by= c("L", "R"))
+identical(res$stark, res$vl)
+# par(mfrow=c(2,2))
+# res[, {
+#   plot(before, stark)
+#   abline(0,1)
+#   plot(before, vl)
+#   abline(0,1)
+#   plot(stark, vl)
+#   abline(0,1)
+# }]
 
 ######################################################
 # BERNARDO

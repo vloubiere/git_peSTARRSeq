@@ -24,13 +24,14 @@ lib <- lib[, .(seqnames,
                linker_ID, 
                ID)]
 lib <- unique(lib)# Collapse the two libraries (some oligos are shared)
-# Add values from BA screens
+# Add values from BA gw screens
 dev <- fread("../gw_STARRSeq_bernardo/db/peaks/DSCP_200bp_gw.UMI_cut_merged.peaks.txt")
 dev[, c("seqnames", "start", "end"):= .(factor(V1), V2, V2+V3-1)]
 lib$dev_log2FC_STARR200 <- dev[lib, ifelse(length(V7)>0, max(V7), as.numeric(NA)), .EACHI, on= c("seqnames", "start<=end", "end>=start")]$V1
 hk <- fread("../gw_STARRSeq_bernardo/db/peaks/RpS12_200bp_gw.UMI_cut_merged.peaks.txt")
 hk[, c("seqnames", "start", "end"):= .(factor(V1), V2, V2+V3-1)]
 lib$hk_log2FC_STARR200 <- hk[lib, ifelse(length(V7)>0, max(V7), as.numeric(NA)), .EACHI, on= c("seqnames", "start<=end", "end>=start")]$V1
+# Add values from BA TWIST screen
 BA <- fread("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/BA_300bp_TWIST_STARRSeq.txt")
 lib[BA, c("dev_log2FC_TWIST", "hk_log2FC_TWIST"):= .(i.dev_log2FoldChange, i.hk_log2FoldChange),
     on= c("seqnames", "start", "end", "strand")]
@@ -41,8 +42,8 @@ lib[, group:= switch(as.character(group),
                      "heatshock"= "inducible",
                      "Repressor"= "repressor",
                      group), group]
-lib[group %in% c("hk", "dev", "shared"), group:= fcase(dev_log2FC_TWIST>hk_log2FC_TWIST, "dev",
-                                                       dev_log2FC_TWIST<=hk_log2FC_TWIST, "hk")]
+lib[group %in% c("hk", "dev", "shared"), group:= fcase(hk_log2FC_TWIST>=dev_log2FC_TWIST, "hk",
+                                                       default = "dev")]
 lib[group %in% c("hk", "dev"), 
     detail:= cut(get(paste0(group, "_log2FC_TWIST")), 
                  c(-Inf,3,6,8,Inf),
@@ -81,24 +82,13 @@ lib[, col:= switch(as.character(group),
 # Closest promoter
 gene <- import("/groups/stark/vloubiere/genomes/ensembl/dm3/Drosophila_melanogaster.BDGP5.77.gtf")
 seqlevelsStyle(gene) <- "UCSC"
-tss <- as.data.table(gene)[type=="transcript", .(seqnames, start, end, strand, gene_id, symbol= gene_name)]
-tss[, start:= ifelse(strand=="+", start, end)]
-closestTss <- tss[lib, 
-                  .(ID, 
-                    closest_tss= symbol[which.min(abs(start-(i.start)))],
-                    closest_tss_dist= min(abs(start-(i.start)))), 
-                  .EACHI, 
-                  on= "seqnames"][, .(ID, closest_tss, closest_tss_dist)]
+tss <- vl_resizeBed(as.data.table(gene)[type=="transcript"], "start", 0, 0)
+cl <- vl_closestBed(lib, tss)
+lib[cl, c("closestTss", "closestTssDist"):= .(gene_name.b, i.dist), on= "ID"]
 # Multiple enhancer promoters
-tss <- tss[symbol %in% c("ush", "shn", "ct", "InR", "Eip75B", "Mur2B", "Smr", "brat", "kay", "chinmo")]
-closestSelTss <- tss[lib, 
-                     .(ID, 
-                       closest_sel_tss= symbol[which.min(abs(start-(i.start)))],
-                       closest_sel_tss_dist= min(abs(start-(i.start)))),
-                     .EACHI, on= "seqnames"][, .(ID, closest_sel_tss, closest_sel_tss_dist)]
-closestTss <- merge(closestTss, 
-                    closestSelTss)
-lib <- merge(lib, closestTss, by= "ID")
+tss <- tss[gene_name %in% c("ush", "shn", "ct", "InR", "Eip75B", "Mur2B", "Smr", "brat", "kay", "chinmo")]
+cl <- vl_closestBed(lib, tss)
+lib[cl, c("closestSelTss", "closestSelTssDist"):= .(gene_name.b, i.dist), on= "ID"]
 
 #---------------------------------------------------------------#
 # Chromatin Features
@@ -116,10 +106,10 @@ lib[, H3K27Ac:=
 lib[, H3K4me1:= 
       vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K4me1_ChIP_Rep1.bw")+
       vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K4me1_ChIP_Rep2.bw")]
-lib[, K4me3:= 
+lib[, H3K4me3:= 
       vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE81795/tracks/S2_H3K4me3_Rep1.bw")+
       vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE81795/tracks/S2_H3K4me3_Rep2.bw")]
-lib[, K27me3:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27me3_ChIP.bw")]
+lib[, H3K27me3:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27me3_ChIP.bw")]
 lib[, PolII:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_PolII_ChIP.bw")]
 lib[, GAF:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE40646_Trl/tracks/S2_Trl_ChIP_Lis.bw")]
 
@@ -130,7 +120,7 @@ lib[, GAF:= vl_bw_coverage(regions, "/groups/stark/haberle/data/public/dm3/S2_ce
 "/groups/stark/almeida/Projects/Vincent_pairedSTARRseq/results/DeepSTARR_predictions/Run_DeepSTARR.sh"
 deep <- fread("/groups/stark/almeida/Projects/Vincent_pairedSTARRseq/results/DeepSTARR_predictions/vl_sequences.fa_predictions_Model_continuous_CNN_pool_120_7_60_3_60_3_pooling_2denses_dropout0.3_valloss2.73.txt")
 setnames(deep, c("ID", "seq", "deep_dev", "deep_hk"))
-lib <- merge(lib, deep[, .(ID, deep_dev, deep_hk)])
+lib <- merge(lib, deep[, .(ID, deep_dev, deep_hk)], by= "ID")
 
 #------------------------------------------------------------------------------------------------------------------------------#
 # TF motif counts

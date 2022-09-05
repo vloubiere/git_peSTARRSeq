@@ -5,7 +5,8 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act== "enh./enh."]
+# lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act== "enh./enh."]
+lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 set.seed(1)
 dat <- lib[sample(nrow(lib), nrow(lib))]
 

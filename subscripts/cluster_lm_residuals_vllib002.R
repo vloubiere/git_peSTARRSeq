@@ -4,10 +4,10 @@ require(vlfunctions)
 require(kohonen)
 
 # Import data
-dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
+# dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
+dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 pred <- readRDS("Rdata/CV_linear_model_vllib002.rds")$pred
 dat[pred, residuals:= log2FoldChange-i.predicted, on= c("L", "R")]
-
 
 # SOM clustering
 trainL <- dcast(dat,
@@ -38,24 +38,26 @@ somR <- supersom(data= trainR,
                  init= init, 
                  rlen= 100, 
                  keep.data = TRUE,
-                 maxNA.fraction = .2)
+                 maxNA.fraction = .8)
 
 # Codes clustering
+rkcl <- 4
+ckcl <- 4
 set.seed(7)
 clL <- data.table(data.table(somL$data[[1]], keep.rownames = "name"),
-                  cl= kmeans(somL$codes[[1]], 4)$cluster[somL$unit.classif])
+                  cl= kmeans(somL$codes[[1]], rkcl)$cluster[somL$unit.classif])
 clL[, ord:= median(unlist(.SD[, !"name"]), na.rm = T), cl]
 clL[, cl:= .GRP, keyby= ord]
 set.seed(5)
 clR <- data.table(data.table(somR$data[[1]], keep.rownames = "name"),
-                  cl= kmeans(somR$codes[[1]], 4)$cluster[somR$unit.classif])
+                  cl= kmeans(somR$codes[[1]], ckcl)$cluster[somR$unit.classif])
 clR[, ord:= median(unlist(.SD[, !"name"]), na.rm = T), cl]
 clR[, cl:= .GRP, keyby= ord]
 
 # Heatmap
 mat <- trainL[match(clL$name, rownames(trainL)), match(clR$name, colnames(trainL))]
 cl <- vl_heatmap(mat,
-                 row_clusters = factor(clL$cl, c(4,3,2,1)),
+                 row_clusters = factor(clL$cl, rev(seq(ckcl))),
                  col_clusters = clR$cl,
                  col_clusters_col = rev(grDevices::gray.colors(length(unique(clR$cl)))),
                  cluster_rows = F, 
@@ -78,15 +80,14 @@ chi <- chisq.test(tab)
 conf <- chi$residuals
 
 # check plot
-par(mfrow= c(2,1))
 plot(cl)
-vl_heatmap(x =  matrix(conf, ncol = ncol(conf), dimnames = dimnames(conf)),
-           breaks = c(-3,0,3),
-           cluster_rows = F, 
-           cluster_cols = F, 
-           legend_title = "OR (log2)", 
-           display_numbers = T,
-           display_numbers_matrix = tab)
+# vl_heatmap(x =  matrix(conf, ncol = ncol(conf), dimnames = dimnames(conf)),
+#            breaks = c(-3,0,3),
+#            cluster_rows = F, 
+#            cluster_cols = F, 
+#            legend_title = "OR (log2)", 
+#            display_numbers = T,
+#            display_numbers_matrix = tab)
 
-saveRDS(cl,
-        "vllib002_lm_residuals_SOM.rds")
+# saveRDS(cl,
+#         "Rdata/vllib002_lm_residuals_SOM.rds")

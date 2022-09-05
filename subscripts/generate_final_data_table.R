@@ -6,6 +6,7 @@ require(vlfunctions)
 # Import dat
 #-----------------------------------------------------#
 dat <- fread("Rdata/metadata_processed.txt")[(DESeq2)]
+
 #-----------------------------------------------------#
 # Clean
 #-----------------------------------------------------#
@@ -14,18 +15,15 @@ dat <- merge(unique(dat[, .(vllib, library, CP, spacer, spacer_size, FC_file)]),
              by= "FC_file")
 dat <- dat[!is.na(log2FoldChange) & !is.na(median_L) & !is.na(median_R)]
 dat[, spacer:= paste0(spacer, "_", spacer_size), .(spacer, spacer_size)]
-dat[, vllib:= factor(vllib, levels= sort(unique(dat$vllib)))]
+dat[, vllib:= factor(vllib, levels= sort(unique(vllib)))]
 dat[, library:= factor(library, c("T8", "T12"))]
-dat$FC_file <- NULL
-dat$spacer_size <- NULL
+dat$FC_file <- dat$spacer_size <- NULL
 
 #-----------------------------------------------------#
 # Define active/inactive individual enhancers
 #-----------------------------------------------------#
-dat[, class_act_L:= ifelse(act_wilcox_L<0.001 & median_L>log2(1.5), "active", "inactive")]
-dat[is.na(class_act_L), class_act_L:= "inactive"]
-dat[, class_act_R:= ifelse(act_wilcox_R<0.001 & median_R>log2(1.5), "active", "inactive")]
-dat[is.na(class_act_R), class_act_R:= "inactive"]
+dat[, class_act_L:= fcase(FDR_L<0.05 & median_L>log2(1.5), "active", default= "inactive")]
+dat[, class_act_R:= fcase(FDR_R<0.05 & median_R>log2(1.5), "active", default= "inactive")]
 
 #-----------------------------------------------------#
 # Activity classes -> cannot be defined without screen data in 300bp_uniq_enhancers
@@ -49,7 +47,15 @@ dat[, class_act:= factor(class_act,
                            "inact./enh.",
                            "enh./enh."))]
 # Activity classes colors
-dat[, col_act:= c("grey0", "grey33", "grey66", "grey100", "royalblue2", "cornflowerblue", "purple", "magenta", "#74C27A")[.GRP], keyby= class_act]
+dat[, col_act:= c("grey0", 
+                  "grey33", 
+                  "grey66", 
+                  "grey100", 
+                  "royalblue2", 
+                  "cornflowerblue", 
+                  "purple", 
+                  "magenta", 
+                  "#74C27A")[.GRP], keyby= class_act]
 
 # Clean
 saveRDS(dat,

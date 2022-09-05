@@ -4,6 +4,7 @@ require(vlfunctions)
 
 # Import data
 dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
+# dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 pred <- readRDS("Rdata/CV_linear_model_vllib002.rds")$pred
 dat[pred, diff:= log2FoldChange-i.predicted, on= c("L", "R")]
 
@@ -42,7 +43,9 @@ cl <- vl_heatmap(x,
                  plot= F)
 cl$rows[pcaL, PC1:= PC1, on= "name"]
 cl$cols[pcaR, PC1:= PC1, on= "name"]
+plot(cl)
+
+
 saveRDS(cl, 
         "Rdata/vllib002_lm_residuals_PCA.rds")
 
-plot(cl)

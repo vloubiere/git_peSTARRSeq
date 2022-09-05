@@ -1,29 +1,30 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
-require(vlfunctions)
-
-source("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/peAddFeatures_function.R")
 
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
 lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 
+# Retrieve candidates vs control sequences
 pl <- data.table(enh= unique(lib[, c(L, R)]))
 pl[, group:= fcase(grepl("^control", enh), "rdm seq.",
                    default = "Candidates")]
 pl[, group:= factor(group, c("rdm seq.", "Candidates"))]
+
+# Merge individual act
 pl <- rbindlist(list("5'"= pl[unique(lib[, .(L, class= class_act_L, act= median_L)]), on= "enh==L"],
                      "3'"= pl[unique(lib[, .(R, class= class_act_R, act= median_R)]), on= "enh==R"]), 
                 idcol = T)
 pl[, .id:= factor(.id, c("5'", "3'"))]
+# Split Active enhancers based on their strength
 pl[, act:= fcase(class=="inactive", "inactive",
                  act<=2, "low (<=2)",
                  act<=4, "medium (2-4)",
                  default= "strong (>4)")]
 pl[, act:= factor(act, c("inactive", "low (<=2)", "medium (2-4)", "strong (>4)"))]
 
-pdf("pdf/draft/Figure_1D.pdf", 
+pdf("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.pdf",
     width = 3, 
     height = 3)
 # Scatter plot
@@ -47,7 +48,8 @@ pl[, {
                  col= Cc,
                  names.arg = rep(NA, ncol(perc)),
                  space= c(1,0.1),
-                 ylab= "% of oligos", )
+                 ylab= "% of oligos", 
+                 border=NA)
   text(bar,
        par("usr")[3]-strheight("M", cex= 0.25), 
        labels = gsub("5'_|3'_", "", colnames(perc)),
@@ -80,10 +82,11 @@ pl[, {
        offset= 0)
   legend(par("usr")[2],
          par("usr")[4],
-         fill= Cc, 
-         legend = levels(tab$act),
+         fill= rev(Cc), 
+         legend = rev(levels(tab$act)),
          xpd= T,
          bty= "n",
-         cex= 0.7)
+         cex= 0.7,
+         border= NA)
 }]
 dev.off()

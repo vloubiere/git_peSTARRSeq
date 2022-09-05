@@ -3,7 +3,8 @@ require(data.table)
 require(vlfunctions)
 
 # Import data
-dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
+# dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh."]
+dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
 pred <- readRDS("Rdata/CV_linear_model_vllib002.rds")$pred
 dat[pred, diff:= log2FoldChange-i.predicted, on= c("L", "R")]
 
@@ -14,19 +15,22 @@ while(sum(is.na(mat))>0.025*length(mat))
   mat <- mat[-which.max(apply(mat, 1, function(x) sum(is.na(x)))),]
   mat <- mat[, -which.max(apply(mat, 2, function(x) sum(is.na(x))))]
 }
+mat[mat>quantile(mat, na.rm= T, 0.99)] <- quantile(mat, na.rm= T, 0.99)
 cl <- vl_heatmap(mat,
                  breaks = c(-2,-0.25,0.25,2), 
-                 cutree_rows = 4,
-                 cutree_cols = 4,
+                 cutree_rows = 6,
+                 cutree_cols = 6,
                  col= c("cornflowerblue", "white", "white", "tomato"), 
                  # clustering_method = "ward.D2",
                  legend_title = "Obs./Exp. (log2)", 
                  show_rownames = F,
                  show_colnames = F,
                  auto_margins = F,
-                 plot= F)
+                 plot= F, 
+                 clustering_method = "ward.D2")
 cl$rows[dat, median:= median_L, on= "name==L", mult= "first"]
 cl$cols[dat, median:= median_R, on= "name==R", mult= "first"]
-saveRDS(cl, "Rdata/vllib002_lm_residuals_hclust.rds")
 
 plot(cl)
+
+saveRDS(cl, "Rdata/vllib002_lm_residuals_hclust.rds")

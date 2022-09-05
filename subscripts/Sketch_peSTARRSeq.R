@@ -4,7 +4,7 @@ require(bezier)
 require(plotrix)
 require(vlfunctions)
 
-pdf("pdf/draft/Figure_1AB.pdf", width = 4, height = 4)
+pdf("pdf/draft/Sketch_peSTARRSeq.pdf", width = 4, height = 4)
 par(mar= c(0,0,0,0), 
     xaxt= "n", 
     yaxt= "n", 

@@ -82,6 +82,25 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancer_features_object.R")
   file.edit("git_peSTARRSeq/subscripts/generate_final_data_table.R")
   
+  # Figure 1 - peSTARRSeq validations ---------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Sketch_peSTARRSeq.R") # pe-STARR-Seq sketch
+  file.edit("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
+  file.edit("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
+  file.edit("git_peSTARRSeq/subscripts/Luciferase_validations.R") # Comparison with luciferase
+  
+  # Supplementary figure 1 --------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates_vllib002.R") # pe-STARR-Seq sketch
+  file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
+  
+  # Figure 2 - dev pairs are synergistic, hk enhancers are additive ---------------------#
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
+  file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_SOM_motifs_enr.R")
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_residuals_vllib002.R") # Linear model to predict residuals
+  file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
+  
+  
+  
   # Intron impact -----------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_INPUT.R")
   file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_SCREEN.R")
@@ -90,22 +109,13 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/get_200bp_STARRSeq_peaks_BA.R") # 200bp STARR-Seq peaks
   file.edit("git_peSTARRSeq/subscripts/get_clusters_motifs_enrichment_BA.R") # DeepSTARR
   
-  # Modelling ---------------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
-  file.edit("git_peSTARRSeq/subscripts/CV_lm_residuals_vllib002.R") # Linear model to predict residuals
-  file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
+  # vllib002 clustering and modelling ---------------------------------------------------#
   
-  # Clustering --------------------------------------------------------------------------#
+  
+  # Other clustering --------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_hclust.R") # Clusterd using hclust
   file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_pca.R") # Clusterd using PCA L and R
-  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_SOM.R") # Clustered using L and R SOM -> nodes kmeans
-  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_SOM_motifs_enr.R")
   
-  # Draft #1 ----------------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/Figure_1AB.R") # pe-STARR-Seq sketch
-  file.edit("git_peSTARRSeq/subscripts/Figure_1C.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
-  file.edit("git_peSTARRSeq/subscripts/Figure_1E.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
-  file.edit("git_peSTARRSeq/subscripts/Figure_1FG.R") # Comparison with luciferase
   
   file.edit("git_peSTARRSeq/subscripts/Figure_2A.R") # Compare add, mult and lm + examples
   file.edit("git_peSTARRSeq/subscripts/Figure_2B.R") # Clustering lm residuals using SOM
@@ -138,7 +148,6 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/hkCP_additivity.R")
   
   # Supplementary figures ---------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/Figure_1D.R") # Active enhancers calling
   file.edit("git_peSTARRSeq/subscripts/Sup_Fig_1A.R")
   file.edit("git_peSTARRSeq/subscripts/enh_enh_distance.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_inact_enh_pairs_heatmap.R")
