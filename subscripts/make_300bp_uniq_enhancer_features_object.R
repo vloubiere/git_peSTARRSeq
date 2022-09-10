@@ -127,12 +127,9 @@ lib <- merge(lib, deep[, .(ID, deep_dev, deep_hk)], by= "ID")
 #------------------------------------------------------------------------------------------------------------------------------#
 counts <- vl_motif_counts(sequences =  lib$enh_seq)
 counts <- as.data.table(counts)
-setnames(counts, function(x) paste0(x, "_motif"))
 lib <- cbind(lib, counts)
 
-cols <- grep("motif$", names(lib), value = T, invert = T)
-setcolorder(lib, cols)
 fwrite(lib,
-       "Rdata/final_300bp_enhancer_features.txt", 
+       "Rdata/final_300bp_enhancer_features.txt",
        sep= '\t',
        na = NA)

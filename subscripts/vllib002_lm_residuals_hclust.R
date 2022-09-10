@@ -15,18 +15,18 @@ while(sum(is.na(mat))>0.025*length(mat))
   mat <- mat[-which.max(apply(mat, 1, function(x) sum(is.na(x)))),]
   mat <- mat[, -which.max(apply(mat, 2, function(x) sum(is.na(x))))]
 }
-mat[mat>quantile(mat, na.rm= T, 0.99)] <- quantile(mat, na.rm= T, 0.99)
+clip <- quantile(mat, na.rm= T, c(0.01, 0.99))
+mat[mat<clip[1]] <- clip[1]
+mat[mat>clip[2]] <- clip[2]
 cl <- vl_heatmap(mat,
                  breaks = c(-2,-0.25,0.25,2), 
                  cutree_rows = 6,
                  cutree_cols = 6,
-                 col= c("cornflowerblue", "white", "white", "tomato"), 
-                 # clustering_method = "ward.D2",
+                 col= c("cornflowerblue", "white", "white", "tomato"),
                  legend_title = "Obs./Exp. (log2)", 
                  show_rownames = F,
                  show_colnames = F,
                  auto_margins = F,
-                 plot= F, 
                  clustering_method = "ward.D2")
 cl$rows[dat, median:= median_L, on= "name==L", mult= "first"]
 cl$cols[dat, median:= median_R, on= "name==R", mult= "first"]

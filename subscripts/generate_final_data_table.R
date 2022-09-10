@@ -22,8 +22,8 @@ dat$FC_file <- dat$spacer_size <- NULL
 #-----------------------------------------------------#
 # Define active/inactive individual enhancers
 #-----------------------------------------------------#
-dat[, class_act_L:= fcase(FDR_L<0.05 & median_L>log2(1.5), "active", default= "inactive")]
-dat[, class_act_R:= fcase(FDR_R<0.05 & median_R>log2(1.5), "active", default= "inactive")]
+dat[, class_act_L:= fcase(FDR_L<0.05 & median_L>1, "active", default= "inactive")]
+dat[, class_act_R:= fcase(FDR_R<0.05 & median_R>1, "active", default= "inactive")]
 
 #-----------------------------------------------------#
 # Activity classes -> cannot be defined without screen data in 300bp_uniq_enhancers

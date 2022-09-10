@@ -93,9 +93,10 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
   
   # Figure 2 - dev pairs are synergistic, hk enhancers are additive ---------------------#
+  file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
   file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
-  file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
-  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_SOM_motifs_enr.R")
+  file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_actPairs_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
+  file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_motif_enrich.R")
   file.edit("git_peSTARRSeq/subscripts/CV_lm_residuals_vllib002.R") # Linear model to predict residuals
   file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
   
