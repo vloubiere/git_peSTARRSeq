@@ -22,7 +22,8 @@ lib[, {
              ylab= "Observed/Expected (log2)",
              names= c("Additive", "Multiplicative"), 
              notch= T,
-             col= "grey")
+             col= "grey", 
+             compute_pval= list(c(1,2)))
   abline(h= 0, lty= "11")
 }]
 dev.off()

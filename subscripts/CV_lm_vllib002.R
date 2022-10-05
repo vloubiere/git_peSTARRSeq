@@ -5,43 +5,50 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-# lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act== "enh./enh."]
 lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & !grepl("^control", L) & !grepl("^control", R)]
 set.seed(1)
 dat <- lib[sample(nrow(lib), nrow(lib))]
 
-# Define train and test sets
-set.seed(1)
-dat[dat[, .(set= sample(5)), L], setL:= i.set, on= "L"]
-set.seed(1)
-dat[dat[, .(set= sample(5)), R], setR:= i.set, on= "R"]
-dat[, set:= paste0("test", .GRP), .(setL, setR)]
-
-# Train linear model for each train set and compute predicted values
-model <- lm(formula = log2FoldChange~median_L*median_R,
-            data= dat)
-model$CV_rsqs <- dat[, {
-  print(set)
-  cL <- L
-  cR <- R
-  train <- dat[!(L %in% cL) & !(R %in% cR)]
+#-----------------------------------------------#
+# Train model
+#-----------------------------------------------#
+if(!file.exists("Rdata/CV_linear_model_vllib002.rds"))
+{
+  # Define train and test sets
+  set.seed(1)
+  dat[dat[, .(set= sample(5)), L], setL:= i.set, on= "L"]
+  set.seed(1)
+  dat[dat[, .(set= sample(5)), R], setR:= i.set, on= "R"]
+  dat[, set:= paste0("test", .GRP), .(setL, setR)]
+  
+  # Train linear model for each train set and compute predicted values
   model <- lm(formula = log2FoldChange~median_L*median_R,
-              data= train)
-  pred <- predict(model, newdata = .SD)
-  .(rsq= vl_model_eval(observed = log2FoldChange, 
-                       predicted = pred)$Rsquare)
-}, set]
-saveRDS(model, 
-        "Rdata/CV_linear_model_vllib002.rds")
+              data= dat)
+  model$CV_rsqs <- dat[, {
+    print(set)
+    cL <- L
+    cR <- R
+    train <- dat[!(L %in% cL) & !(R %in% cR)]
+    model <- lm(formula = log2FoldChange~median_L*median_R,
+                data= train)
+    pred <- predict(model, newdata = .SD)
+    .(rsq= vl_model_eval(observed = log2FoldChange, 
+                         predicted = pred)$Rsquare)
+  }, set]
+  saveRDS(model, 
+          "Rdata/CV_linear_model_vllib002.rds")
+} else
+  model <- readRDS("Rdata/CV_linear_model_vllib002.rds")
+
 
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
 dat[, predicted:= predict(model)]
 # Select examples
-ex <- dat[list("dev_strong_B_00302",
-             c("dev_medium_C_00480", "dev_medium_C_00466", "dev_medium_B_00585")), on= c("L", "R")]
-ex[, Cc:=  c("tomato", "limegreen", "cornflowerblue")]
+ex <- dat[list("dev_medium_C_00236",
+               c("dev_medium_B_00232", "dev_medium_C_00578", "dev_medium_C_00461")), on= c("L", "R")]
+ex[, Cc:=  c("cornflowerblue", "limegreen", "tomato")]
 
 pdf("pdf/draft/CV_linear_model_vllib002.pdf",
     height = 3,
@@ -73,49 +80,4 @@ ex[, {
          col= Cc, 
          pch= 16)
   }]
-par(mfrow= c(4,1),
-    mar= c(0,0,0,0))
-plot.new()
-segments(0.25, 
-         seq(0.3, 0.7, length.out=3), 
-         0.75,
-         seq(0.3, 0.7, length.out=3))
-rect(rep(c(0.3, 0.55), each= 3),
-     rep(seq(0.3, 0.7, length.out= 3)-0.06, 2),
-     rep(c(0.3, 0.55), each= 3)+0.15,
-     rep(seq(0.3, 0.7, length.out=3)+0.06, 2),
-     col= c(rep("gold", 3), ex$Cc))
-par(mar= c(2.75,8,0.1,8),
-    cex.axis= 0.6,
-    mgp= c(1, 0.3, 0),
-    cex.axis= 0.6,
-    cex= 0.66,
-    tcl= -0.1)
-ex[, {
-  bar <- barplot(c(log2FoldChange,
-                   median_L, 
-                   median_R,
-                   additive,
-                   multiplicative,
-                   predicted), 
-                 col= c("black", "gold", Cc, grey.colors(3, start= 0.9, end= 0.4)),
-                 xaxt= "n",
-                 ylab= "Activity",
-                 space= 1,
-                 border= NA,
-                 width= 0.5)
-  segments(x0 = bar[1]-0.25,
-           y0 = log2FoldChange,
-           x1 = bar[6]+0.25,
-           y1 = log2FoldChange,
-           lty= "11")
-  text(bar,
-       par("usr")[3]-strheight("M", cex= 0.5),
-       c("Obs.", "5'", "3'", "Exp. Add.", "Exp. Mult.", "Exp. lm"),
-       pos= 2,
-       offset= -0.25,
-       xpd= T,
-       srt= 45,
-       cex= 0.8)
-}, (ex)]
 dev.off()

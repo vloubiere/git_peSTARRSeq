@@ -95,10 +95,21 @@ if(F)
   # Figure 2 - dev pairs are synergistic, hk enhancers are additive ---------------------#
   file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
   file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
+  file.edit("git_peSTARRSeq/subscripts/lm_residuals_examples_vllib002.R") # Linear model predicts activity
   file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_actPairs_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
-  file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_motif_enrich.R")
-  file.edit("git_peSTARRSeq/subscripts/CV_lm_residuals_vllib002.R") # Linear model to predict residuals
-  file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Use left and right DeepSTARR models to predict combined act 
+  file.edit("git_peSTARRSeq/subscripts/cluster_chisq_symmetry.R") # Compare left and right clusters
+  file.edit("git_peSTARRSeq/subscripts/LASSO_residuals_vllib002.R") # Linear model to predict residuals
+  file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_motif_enrich.R") # Motif enrich left right clusters
+  file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_boxplot_HTMs.R") # HTMs enrichment per cluster
+  file.edit("git_peSTARRSeq/subscripts/Luciferase_clusters_validation.R") # Luciferase classes validation
+  
+  # Exploration inactive pairs ----------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/exploration_inactive_pairs.R")
+  
+  
+  
+  file.edit("git_peSTARRSeq/subscripts/heatmap_vllib002_motif_enrich.R") # Not used for now
+  file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Not used -> combined DeepSTARR models to predict combined act 
   
   
   

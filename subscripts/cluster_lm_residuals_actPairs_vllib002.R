@@ -97,7 +97,7 @@ if(!file.exists("Rdata/clustering_lm_residuals_vllib002.rds"))
 }
 
 ###############################################
-# PLOT Heatmap
+# PLOT
 ###############################################
 cl <- readRDS("Rdata/clustering_lm_residuals_vllib002.rds")
 

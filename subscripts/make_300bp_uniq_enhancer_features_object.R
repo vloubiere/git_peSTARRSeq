@@ -1,9 +1,5 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
-require(motifmatchr)
-require(rtracklayer)
-require(kohonen)
-require(randomForest)
 
 #------------------------------------------------------------------------------------------------------------------------------#
 # Make enhancers unique and recompile features that were used for design 
@@ -80,8 +76,8 @@ lib[, col:= switch(as.character(group),
 # Gene assignment
 #---------------------------------------------------------------#
 # Closest promoter
-gene <- import("/groups/stark/vloubiere/genomes/ensembl/dm3/Drosophila_melanogaster.BDGP5.77.gtf")
-seqlevelsStyle(gene) <- "UCSC"
+gene <- rtracklayer::import("/groups/stark/vloubiere/genomes/ensembl/dm3/Drosophila_melanogaster.BDGP5.77.gtf")
+GenomeInfoDb::seqlevelsStyle(gene) <- "UCSC"
 tss <- vl_resizeBed(as.data.table(gene)[type=="transcript"], "start", 0, 0)
 cl <- vl_closestBed(lib, tss)
 lib[cl, c("closestTss", "closestTssDist"):= .(gene_name.b, i.dist), on= "ID"]
@@ -125,7 +121,9 @@ lib <- merge(lib, deep[, .(ID, deep_dev, deep_hk)], by= "ID")
 #------------------------------------------------------------------------------------------------------------------------------#
 # TF motif counts
 #------------------------------------------------------------------------------------------------------------------------------#
-counts <- vl_motif_counts(sequences =  lib$enh_seq)
+sel <- vl_Dmel_motifs_DB_full[collection %in% c("bergman", "flyfactorsurvey", "jaspar") | !is.na(Dmel), motif]
+counts <- vl_motif_counts(sequences =  lib$enh_seq, 
+                          sel = sel)
 counts <- as.data.table(counts)
 lib <- cbind(lib, counts)
 

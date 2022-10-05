@@ -34,16 +34,16 @@ par(mar= c(3.5, 3, 0.5, 0.5),
     bty= "n")
 dat[, {
   # Scatter plot
-  plot(median_L, 
-       median_R, 
+  plot(median_R,
+       median_L,
        pch= 16,
        cex= 0.5,
        col= adjustcolor(TWIST_col, 0.7),
        las= 1,
-       xlab= "5' individual activity (log2)",
-       ylab= "3' individual activity (log2)")
+       xlab= "3' individual activity (log2)",
+       ylab= "5' individual activity (log2)")
   # Linear model
-  .lm <- lm(median_R~median_L)
+  .lm <- lm(median_L~median_R)
   abline(.lm, lty= "11")
   
   # Legend
