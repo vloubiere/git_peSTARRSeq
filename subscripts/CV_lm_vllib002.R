@@ -46,8 +46,8 @@ if(!file.exists("Rdata/CV_linear_model_vllib002.rds"))
 #-----------------------------------------------#
 dat[, predicted:= predict(model)]
 # Select examples
-ex <- dat[list("dev_medium_C_00236",
-               c("dev_medium_B_00232", "dev_medium_C_00578", "dev_medium_C_00461")), on= c("L", "R")]
+ex <- dat[list("dev_medium_B_00524",
+               c("dev_weak_C_00365", "dev_strong_B_00302", "dev_medium_C_00542")), on= c("L", "R")]
 ex[, Cc:=  c("cornflowerblue", "limegreen", "tomato")]
 
 pdf("pdf/draft/CV_linear_model_vllib002.pdf",

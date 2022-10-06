@@ -8,12 +8,37 @@ require(parallel)
 # Import data
 #-----------------------------------------------#
 lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
-lib <- lib[(class_act_L=="inactive" & median_L<1) | (class_act_R=="inactive" & median_R<1)]
+lib <- lib[(class_act_L=="inactive" & median_L<1) & (class_act_R=="inactive" & median_R<1)]
 model <- readRDS("Rdata/CV_linear_model_vllib002.rds")
 lib[, pred:= predict(model, .SD)]
 lib[, residuals:= log2FoldChange-pred]
-lib[, resL:= mean(residuals), L]
-lib[, resR:= mean(residuals), R]
+
+matL <- dcast(lib,
+              L~R, 
+              value.var = "residuals")
+matL <- as.matrix(matL, 1)
+prcomp(matL)$x
+
+lib[, marL:= sum(residuals), L]
+lib[, marR:= sum(residuals), R]
+
+
+mat <- dcast(lib,
+             marL+L~marR+R, 
+             value.var = "residuals")
+mat <- as.matrix(mat[, -1], 1)
+while(sum(is.na(mat))>0.05*nrow(mat)*ncol(mat))
+{
+  mat <- mat[-which.max(apply(mat, 1, function(x) sum(is.na(x)))),]
+  mat <- mat[,-which.max(apply(mat, 2, function(x) sum(is.na(x))))]
+}
+
+pdf("test/test2.pdf")
+vl_heatmap(mat, 
+           breaks= c(-2,0,2), 
+           cluster_rows= F, 
+           cluster_cols= F)
+dev.off()
 
 #-----------------------------------------------#
 # Make object

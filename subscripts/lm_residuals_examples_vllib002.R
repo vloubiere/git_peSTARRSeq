@@ -100,9 +100,9 @@ ex <- dat[list("dev_medium_B_00524",
 ex[, Cc:=  c("cornflowerblue", "limegreen", "tomato")]
 
 pdf("pdf/draft/lm_residuals_examples_vllib002.pdf",
-    height = 3,
+    height = 2.8,
     width = 2.5)
-layout(matrix(1:2, nrow= 2), heights = c(0.4, 1))
+layout(matrix(1:2, nrow= 2), heights = c(0.3, 1))
 par(mar= c(0,0,0,0),
     cex.axis= 0.7,
     tcl= -0.1,
@@ -118,20 +118,19 @@ text(x,
      y-0.01,
      vl_Dmel_motifs_DB_full[sel, motif_cluster, on= "motif"], 
      pos= 4,
-     offset= 0,
-     cex= 0.7)
-points(rep(x, length(y))-0.05, 
+     cex= 0.5)
+points(rep(x, length(y)), 
        y, 
        pch= 15,
        xpd= NA,
-       cex= 1.5,
+       cex= 1,
        col= col)
 vl_seqlogo(lapply(vl_Dmel_motifs_DB_full[sel, pwms_perc, on= "motif"], as.matrix),
-           x= 0.3, 
+           x= 0.275, 
            y = y, 
            pos = 4, 
-           cex.width = 0.8,
-           cex.height = 0.9)
+           cex.width = 0.4,
+           cex.height = 0.5)
 par(mar= c(2,7,0.5,0.5))
 ex[, {
   par(mgp= c(0.5, 0.5, 0))
@@ -148,11 +147,11 @@ ex[, {
                  col= c(rep(Cc, each= 3), "gold"),
                  names.arg= c(rep(c("5'/3' Obs. act.", "5'/3' Exp. lm", "3'"), 3), "5'"),
                  xlab= "Activity",
-                 border= NA,
+                 lwd= 0.1,
                  xaxt= "n",
                  xlim= c(0, 8),
                  horiz= T,
-                 space= rep(c(1.25,0.25,0.25), length.out= 10),
+                 space= rep(c(1.5,0.25,0.25), length.out= 10),
                  xpd= NA)
   vl_seqMotifs(sequences[c(L[1], R), enh_sequence, on= "ID_vl"],
                sel= sel,
