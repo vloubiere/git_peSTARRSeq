@@ -12,7 +12,7 @@ require(readxl)
 require(stringdist)
 
 meta <- fread(commandArgs(trailingOnly=TRUE)[1])
-# meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
+# meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib002" & DESeq2] # Example
 print("Sample:")
 print(meta)
 libs <- as.data.table(read_excel("/groups/stark/vloubiere/exp_data/vl_libraries.xlsx"))
@@ -102,6 +102,7 @@ meta[, {
              & grepl(paste0("_", gsub(",", "_|_", libs[lib_ID==vllib, sub_lib_R]), "_"), R)]
     # Advanced UMI collapsing (>1 diff)
     .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
+    .c[, total_counts:= sum(umi_N), .(L, R)]
     setorderv(.c, "umi_N", order = -1)
     .c[, collapsed:= .N==1, .(L, R)]
     while(any(!.c$collapsed))
@@ -113,11 +114,11 @@ meta[, {
                            nthread= getDTthreads()-1)<=1
         UMI[coll] <- UMI[1]
         .(coll, UMI)
-      }, .(L, R)]
+      }, .(L, R, total_counts)]
     }
     # Final collapsing
-    .c <- unique(.c[, .(L, R, UMI)])
-    .c <- .c[, .(umi_counts= .N), .(L, R)]
+    .c <- unique(.c[, .(L, R, total_counts, UMI)])
+    .c <- .c[, .(umi_counts= .N), .(L, R, total_counts)]
     # SAVE
     fwrite(.c, pairs_counts)
   }
@@ -132,7 +133,9 @@ if(any(meta$DESeq2))
   meta[, {
     if(!file.exists(FC_file))
     {
-      ####### FC based on ratio ########
+      #--------------------------------#
+      # FC based on ratio 
+      #--------------------------------#
       # Import counts
       dat <- SJ(file= pairs_counts, 
                 cdition= cdition, 
@@ -150,87 +153,118 @@ if(any(meta$DESeq2))
       norm <- copy(counts)
       inputs <- grep("^input", names(norm), value= T)
       screens <- grep("^screen", names(norm), value= T)
-      norm[, norm_input:= (rowSums(.SD)+0.5)/sum(rowSums(.SD)+0.5)*1e6, .SDcols= inputs]
+      norm[, norm_input:= rowSums(.SD)+0.5, .SDcols= inputs]
+      norm[, norm_input:= norm_input/sum(norm_input)*1e6]
       norm[, paste0("norm_", screens):= lapply(.SD, function(x) (x+0.5)/sum(x+0.5)*1e6), .SDcols= screens]
       # FoldChange
       norm[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/norm_input)))), .SDcols= patterns("^norm_screen")]
-      # Select suitable control sequences
-      ctl_L <- norm[grepl("control", L) & grepl("control", R), median(log2FoldChange, na.rm= T), L]
-      ctl_L[, c("min", "max"):= as.list(range(boxplot.stats(V1)$stats))]
-      norm[, ctl_L:= L %in% ctl_L[V1>=min && V1<=max, L]]
-      ctl_R <- norm[grepl("control", L) & grepl("control", R), median(log2FoldChange, na.rm= T), R]
-      ctl_R[, c("min", "max"):= as.list(range(boxplot.stats(V1)$stats))]
-      norm[, ctl_R:= R %in% ctl_R[V1>=min && V1<=max, R]]
-      # Check if individual enhancer is active
-      control_pairs_log2FC <- norm[ctl_L & ctl_R, log2FoldChange]
-      norm[, act_wilcox_L:= {
-        .c <- log2FoldChange[grepl("control", R)]
-        if(length(.c)>5)
-          wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
-            as.numeric(NA)
-      }, L]
-      norm[, act_wilcox_R:= {
-        .c <- log2FoldChange[grepl("control", L)]
-        if(length(.c)>5)
-          wilcox.test(.c, control_pairs_log2FC, alternative = "greater")$p.value else
-            as.numeric(NA)
-      }, R]
-      # FDR
-      FDR_L <- unique(norm[, .(L, act_wilcox_L)])[, FDR_L:= p.adjust(act_wilcox_L, "fdr")]
-      norm[FDR_L, FDR_L:= i.FDR_L, on= "L"]
-      FDR_R <- unique(norm[, .(R, act_wilcox_R)])[, FDR_R:= p.adjust(act_wilcox_R, "fdr")]
-      norm[FDR_R, FDR_R:= i.FDR_R, on= "R"]
-      norm$act_wilcox_L <- norm$act_wilcox_R <- NULL
-      # Subtract basal activity (center controls on 0)
-      norm[, log2FoldChange:= log2FoldChange-median(control_pairs_log2FC)]
+      # Select usable, inactive control pairs
+      ctlPairs <- norm[grepl("^control", L) & grepl("^control", R)]
+      inactCtlL <- ctlPairs[, mean(log2FoldChange), L][between(scale(V1), -1, 1), L]
+      inactCtlR <- ctlPairs[, mean(log2FoldChange), R][between(scale(V1), -1, 1), R]
+      norm[, ctlL:= L %in% inactCtlL]
+      norm[, ctlR:= R %in% inactCtlR]
+      # Center activities
+      ctlPairs <- norm[ctlL & ctlR, log2FoldChange]
+      norm[, log2FoldChange:= log2FoldChange-median(ctlPairs)]
+      # Compute individual act and pval (vs ctlPairs)
+      ctlPairs <- norm[ctlL & ctlR, log2FoldChange]
+      Left <- norm[(ctlR), 
+                   .(.N>=5, 
+                     wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
+                     mean(log2FoldChange)), L][(V1)]
+      Left[, padj:= p.adjust(V2, "fdr")]
+      norm[Left, c("indL", "padjL"):= .(i.V3, i.padj), on= "L"]
+      Right <- norm[(ctlL), 
+                    .(.N>=5, 
+                      wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
+                      mean(log2FoldChange)), R][(V1)]
+      Right[, padj:= p.adjust(V2, "fdr")]
+      norm[Right, c("indR", "padjR"):= .(i.V3, i.padj), on= "R"]
+      # Remove pairs for which ind act could not be computed and center log2FC
+      norm <- norm[!is.na(indL) & !is.na(indR)]
+      
+      #-----------------------------------------------------#
+      # Define active/inactive individual enhancers and pairs
+      #-----------------------------------------------------#
+      norm[, actClassL:= fcase(padjL<0.05 & indL>1, "active", default= "inactive")]
+      norm[, actClassR:= fcase(padjR<0.05 & indR>1, "active", default= "inactive")]
+      norm[, actClass:= fcase(grepl("control", L), "ctl.", 
+                              actClassL=="active", "enh.",
+                              default = "inact.")]
+      norm[, actClass:= paste0(actClass, "/")]
+      norm[, actClass:= paste0(actClass,
+                               fcase(grepl("control", R), "ctl.", 
+                                     actClassR=="active", "enh.",
+                                     default= "inact."))]
+      norm[, actClass:= factor(actClass, 
+                               c("ctl./ctl.",
+                                 "ctl./inact.",
+                                 "inact./ctl.",
+                                 "inact./inact.",
+                                 "enh./ctl.",
+                                 "enh./inact.",
+                                 "ctl./enh.",
+                                 "inact./enh.",
+                                 "enh./enh."))]
+      
+      #-----------------------------------------------------#
+      # Linear models on active pairs
+      #-----------------------------------------------------#
+      if(!file.exists(lm_file))
+      {
+        # Define train and test sets
+        set.seed(1)
+        norm[norm[, .(set= sample(3)), L], setL:= i.set, on= "L"]
+        set.seed(1)
+        norm[norm[, .(set= sample(3)), R], setR:= i.set, on= "R"]
+        norm[, set:= .GRP, .(setL, setR)]
+        # Train linear model for each train set and compute predicted values
+        model <- lm(formula = log2FoldChange~indL*indR,
+                    data= norm)
+        model$CV_rsqs <- norm[, {
+          print(set)
+          cL <- L
+          cR <- R
+          train <- norm[!(L %in% cL) & !(R %in% cR)]
+          model <- lm(formula = log2FoldChange~indL*indR,
+                      data= train)
+          .(rsq= summary(model)$r.squared)
+        }, set]
+        saveRDS(model, lm_file)
+      }else
+        model <- readRDS(lm_file)
+      
       # Compute expected
-      norm[, median_L:= .SD[(ctl_R), ifelse(.N>=5, median(log2FoldChange), as.numeric(NA))], L]
-      norm[, median_R:= .SD[(ctl_L), ifelse(.N>=5, median(log2FoldChange), as.numeric(NA))], R]
-      norm[, additive:= log2(2^median_L+2^median_R)]
-      norm[, multiplicative:= median_L+median_R]
-    }
-    
-    ####### DESeq2 ########
-    if(all(c("input_rep1", "input_rep2", "screen_rep1", "screen_rep2") %in% names(norm)))
-    {
-      counts_cols <- grep("^input|^screen", names(norm), value = T)
-      # Format sampleTable
-      sampleTable <- SJ(name= counts_cols)
-      sampleTable <- data.frame(sampleTable[, c("cdition", "rep"):= tstrsplit(name, "_rep")], 
-                                row.names = "name")
-      # Format DF
-      DF <- norm[, c("L", "R", counts_cols), with= F]
-      DF <- DF[, name:= paste0(L, "__", R)][, !c("L", "R")]
-      DF <- data.frame(DF,
-                       row.names = "name")
-      # DESeq
-      dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
-                                            colData= sampleTable,
-                                            design= ~rep+cdition)
-      controls <- norm[ctl_L & ctl_R, paste0(L, "__", R)]
-      sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[rownames(DF) %in% controls,]))
-      dds <- DESeq2::DESeq(dds)
+      norm[, additive:= log2(2^indL+2^indR)]
+      norm[, multiplicative:= indL+indR]
+      norm[, predicted:= predict(model)]
+      norm[, residuals:= log2FoldChange-predicted]
+      norm[, meanResidualsL:= mean(residuals), L]
+      norm[, meanResidualsR:= mean(residuals), R]
       
-      # Differential expression
-      FC <- as.data.frame(DESeq2::results(dds, contrast= c("cdition", "screen", "input")))
-      FC <- as.data.table(FC, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
-      setnames(FC, 
-               c("log2FoldChange", "padj"), 
-               function(x) paste0("DESeq_", x))
-      norm <- merge(norm,
-                    FC,
-                    by= c("L", "R"))
+      # Retrieve genomic coordinates
+      .lib <- if(library=="T8")
+        readRDS("Rdata/vl_library_twist008_112019.rds")else if(library=="T12")
+          readRDS("Rdata/vl_library_twist12_210610.rds")
+      .lib <- as.data.table(.lib)
+      if(library=="T8")
+        setnames(.lib, "ID_vl", "ID")
+      norm[.lib, coorL:= paste0(i.seqnames, ":", i.start, "-", i.end, ":", i.strand), on= "L==ID"]
+      norm[.lib, coorR:= paste0(i.seqnames, ":", i.start, "-", i.end, ":", i.strand), on= "R==ID"]
       
-      # Compute expected
-      norm[, DESeq_median_L:= .SD[(ctl_R), ifelse(.N>=5, median(DESeq_log2FoldChange), as.numeric(NA))], L]
-      norm[, DESeq_median_R:= .SD[(ctl_L), ifelse(.N>=5, median(DESeq_log2FoldChange), as.numeric(NA))], R]
-      norm[, DESeq_additive:= log2(2^DESeq_median_L+2^DESeq_median_R)]
-      norm[, DESeq_multiplicative:= DESeq_median_L+DESeq_median_R]
-      
+      # Handle missing rep columns
+      cols <- c("L", "R", "indL", "indR", "log2FoldChange", 
+                "additive", "multiplicative", "predicted", "residuals", 
+                "meanResidualsL", "meanResidualsR",
+                "actClassL", "actClassR", "actClass",
+                "ctlL", "ctlR",
+                "coorL", "coorR",
+                "input_rep1", "input_rep2", "screen_rep1", "screen_rep2", 
+                "norm_input", "norm_screen_rep1", "norm_screen_rep2")
+      cols <- cols[cols %in% names(norm)]
       # SAVE
-      saveRDS(dds, dds_file)
+      saveRDS(norm[, cols, with= F], FC_file)
     }
-    # SAVE
-    fwrite(norm, FC_file, na = NA, sep= "\t")
-  }, .(FC_file, dds_file)]
+  }, .(FC_file, lm_file, library)]
 }

@@ -5,7 +5,8 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & !grepl("^control", L) & !grepl("^control", R)]
+dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- dat[actClass=="enh./enh."]
 
 pdf("pdf/draft/Compare_add_mult_vllib002.pdf",
     height = 3,
@@ -15,7 +16,7 @@ par(las= 1,
     mgp= c(1.5, 0.5, 0),
     tcl= -0.2,
     cex= 1)
-lib[, {
+dat[, {
   vl_boxplot(log2FoldChange-additive,
              log2FoldChange-multiplicative,
              tilt.names= T,

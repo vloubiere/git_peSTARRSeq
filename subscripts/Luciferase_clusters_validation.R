@@ -5,12 +5,21 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002" & class_act=="enh./enh.", .(L, R, median_L, median_R)]
-dat <- readRDS("Rdata/validations_luciferase_final_table.rds")[, .(L, R, log2FoldChange, additive)]
-dat <- lib[dat, on= c("L", "R"), nomatch= NULL]
-dat[, group:= fcase(grepl("hk", L) | grepl("hk", R), "Hk",
-                    median_L>6 | median_R>6, "Strong",
-                    default = "Syn")]
+dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat[, resGroupL:= cut(meanResidualsL,
+                       quantile(unique(meanResidualsL), c(0, 0.2, 0.9, 1)),
+                       include.lowest= T,
+                       labels= c("Sub-efficient", "Expected", "Over-efficient"))]
+dat[, resGroupR:= cut(meanResidualsR,
+                       quantile(unique(meanResidualsR), c(0, 0.3, 0.9, 1)),
+                       include.lowest= T,
+                       labels= c("Sub-efficient", "Expected", "Over-efficient"))]
+dat <- dat[!grepl("^control", L) & !grepl("^control", R) & actClassL=="active" & actClassR=="active"]
+luc <- readRDS("Rdata/validations_luciferase_final_table.rds")[, .(L, R, log2FoldChange, additive)]
+dat <- dat[luc, on= c("L", "R"), nomatch= NULL]
+dat[, group:= fcase(resGroupL=="Sub-efficient" | resGroupR=="Sub-efficient", "Sub-efficient",
+                    resGroupL=="Over-efficient" | resGroupR=="Over-efficient", "Over-efficient",
+                    default = "Expected")]
 
 pl <- melt(dat, 
            id.vars = c("L", "R", "group"),

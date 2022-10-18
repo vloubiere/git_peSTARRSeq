@@ -1,0 +1,85 @@
+---
+title: "pe-STARR-Seq"
+author: "Vincent Loubiere"
+date: '2022-10-14'
+output:                                                                    
+  html_document:                                                           
+    toc: true                                                              
+    number_sections: true                                                  
+    code_folding: "hide"                                                   
+    toc_float:                                                             
+      collapse: false                                                      
+      smooth_scroll: false
+    css: styles.css
+---
+
+```{r setup, include= FALSE}
+knitr::opts_chunk$set(echo = FALSE, out.width = "1250px", out.height = "625px")
+```
+
+# Figure 1
+## Main
+### pe-STARR-Seq sketch
+```{r}
+knitr::include_graphics("../pdf/draft/Sketch_peSTARRSeq.pdf")
+```
+### PCC left right activities
+```{r}
+knitr::include_graphics("../pdf/draft/Correlation_left_rigth_activities.pdf")
+```
+### Single enhancer vs pairs
+```{r}
+knitr::include_graphics("../pdf/draft/Compare_individual_vs_enh_pairs.pdf")
+```
+### PCC luciferase validations
+```{r}
+knitr::include_graphics("../pdf/draft/Luciferase_validations.pdf")
+```
+## Supplementary
+### PCC replicates
+```{r}
+knitr::include_graphics("../pdf/draft/PCC_peSTARRSeq_replicates_vllib002.pdf")
+```
+### Candidates classification act/inact
+```{r}
+knitr::include_graphics("../pdf/draft/Candidates_classification_vllib002.pdf")
+```
+
+# Figure 2
+## Main
+### Compare additive multiplicative model
+```{r}
+knitr::include_graphics("../pdf/draft/Compare_add_mult_vllib002.pdf")
+```
+### Linear model
+```{r}
+knitr::include_graphics("../pdf/draft/CV_linear_model_vllib002.pdf")
+```
+### Ordered residuals heatmap
+```{r}
+knitr::include_graphics("../pdf/draft/heatmap_ordered_ind_act.pdf")
+```
+### Individual act vs synergy
+```{r}
+knitr::include_graphics("../pdf/draft/individual_strengths_vs_synergy.pdf")
+```
+### Quantiles motif enrichment
+```{r}
+knitr::include_graphics("../pdf/draft/dev_quantiles_motifs_enrichment_vllib002.pdf")
+```
+## Supplementary
+### CP staturation
+```{r}
+knitr::include_graphics("../pdf/draft/promoter_saturation.pdf")
+```
+### UMI staturation
+```{r}
+knitr::include_graphics("../pdf/draft/umi_saturation.pdf")
+```
+
+# Figure 3
+## Main
+### Example pairs similar act. but different residuals
+```{r}
+knitr::include_graphics("../pdf/draft/lm_residuals_examples_vllib002.pdf")
+```

@@ -1,26 +1,24 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
-require(data.table)
 require(vlfunctions)
 
-# Get ChIP signal
-vars <- c("ATAC", "H3K27Ac", "H3K4me1", "H3K4me3")
-feat <- fread("Rdata/final_300bp_enhancer_features.txt")
-feat <- feat[, c("ID", vars), with= F]
-cl <- readRDS("Rdata/clustering_lm_residuals_vllib002.rds")
-rows <- feat[cl$rows, on= "ID==name"]
-rows <- melt(rows, id.vars = c("ID", "cl"), measure.vars = vars)
-rows[, cl:= factor(cl, levels= c("No syn.", "Weak syn.", "Medium syn.", "High syn."))]
-cols <- feat[cl$cols, on= "ID==name"]
-cols <- melt(cols, id.vars = c("ID", "cl"), measure.vars = vars)
+# Import data
+dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")[!grepl("^control", L) & !grepl("^control", R)]
 
-Cc <- adjustcolor(c("grey90", "grey60", "limegreen", "tomato"), 0.6)
-.c <- substitute(vl_boxplot(value~cl, 
-                            tilt.names= T,
-                            col= Cc[.GRP], 
-                            ylab= ifelse(.GRP==1, "Enrichment", NA),
-                            main= variable, 
-                            # compute_pval= list(c(1,2), c(2,3), c(3,4)))
-                            compute_pval= list(c(1,2), c(1,3), c(1,4))))
+pl <- rbind(unique(dat[, .(side= "3'", ID= L, gp= resGroupL, vl_toDTranges(coorL))]),
+            unique(dat[, .(side= "5'", ID= R, gp= resGroupR, vl_toDTranges(coorR))]))
+files <- c("../available_data_dm3/db/bw/ATAC_merged.bw",
+           "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27ac_ChIP_Rep1.bw",
+           "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K27ac_ChIP_Rep2.bw",
+           "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K4me1_ChIP_Rep1.bw",
+           "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE41440/tracks/S2_H3K4me1_ChIP_Rep2.bw", 
+           "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE81795/tracks/S2_H3K4me3_Rep1.bw",
+           "/groups/stark/haberle/data/public/dm3/S2_cells/ChIPseq/GSE81795/tracks/S2_H3K4me3_Rep2.bw")
+names <- c("ATAC", "H3K27Ac.1", "H3K27Ac.2", "H3K4me1.1", "H3K4me1.2", "H3K4me3.1", "H3K4me3.2")
+pl[, (names):= lapply(files, function(x) vl_bw_coverage(pl, x))]
+pl[, H3K27Ac:= H3K27Ac.1+H3K27Ac.2]
+pl[, H3K4me1:= H3K4me1.1+H3K4me1.2]
+pl[, H3K4me3:= H3K4me3.1+H3K4me3.2]
+cols <- c("ATAC", "H3K27Ac", "H3K4me1", "H3K4me3")
 
 pdf("pdf/draft/clusters_vllib002_boxplot_HTMs.pdf",
     width= 3.8,
@@ -32,6 +30,14 @@ par(mfrow=c(1,4),
     tcl= -0.2,
     las= 1,
     xpd= NA)
-rows[, {eval(.c, .SD); print("")}, variable]
-cols[, {eval(.c, .SD); print("")}, variable]
+pl[, {
+  lapply(seq(.SD), function(i) 
+    vl_boxplot(.SD[[i]]~gp, 
+               tilt.names= T,
+               main= names(.SD)[i], 
+               compute_pval= list(c(1,2), c(2,3), c(1,3)),
+               ylab= ifelse(i==1, "Enrichment", NA),
+               col= grey.colors(4, 0.9, 0.5)[i]))
+  ""
+}, side, .SDcols= cols]
 dev.off()

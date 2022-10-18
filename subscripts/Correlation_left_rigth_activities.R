@@ -5,20 +5,22 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
-dat <- fread("Rdata/final_300bp_enhancer_features.txt")[, .(ID, group, dev_log2FC_TWIST)]
-dat[, TWIST_class:= fcase(group=="control", "Control",
-                          dev_log2FC_TWIST<=2 | is.na(dev_log2FC_TWIST), "Inactive",
-                          dev_log2FC_TWIST<=6, "Weak",
-                          dev_log2FC_TWIST<=8, "Medium",
-                          dev_log2FC_TWIST>8, "Strong")]
+dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- merge(unique(dat[, .(ID= L, indL)]),
+             unique(dat[, .(ID= R, indR)]))
+# Add TWIST data
+lib <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
+twist <- fread("/groups/stark/vloubiere/projects/pe_STARRSeq/Rdata/BA_300bp_TWIST_STARRSeq.txt")
+lib[twist, dev_log2FC_TWIST:= i.dev_log2FoldChange, on= "BA_ID==ID"]
+dat[lib, dev_log2FC_TWIST:= i.dev_log2FC_TWIST, on= "ID==ID_vl"]
+dat[, TWIST_class:= cut(dev_log2FC_TWIST, 
+                        c(-Inf, 2, 6, 8, Inf),
+                        c("Inactive", "Weak", "Medium", "Strong"))]
+dat[grepl("^control", ID) | is.na(TWIST_class), TWIST_class:= ifelse(grepl("^control", ID), "Control", "Inactive")]
 dat[, TWIST_class:= factor(TWIST_class, 
                            c("Control", "Inactive", "Weak", "Medium", "Strong"))]
 dat[, TWIST_col:= c("grey20", "#4D9221", "#B8E186", "#F1B6DA", "#C51B7D")[TWIST_class]]
-
-dat <- dat[unique(lib[, .(ID= L, median_L)]), on= "ID", nomatch= NULL]
-dat <- dat[unique(lib[, .(ID= R, median_R)]), on= "ID", nomatch= NULL]
-dat <- dat[order(group=="control")]
+setorderv(dat, "TWIST_class", order= -1)
 
 #------------------------------------------------------#
 # PLOT
@@ -34,8 +36,8 @@ par(mar= c(3.5, 3, 0.5, 0.5),
     bty= "n")
 dat[, {
   # Scatter plot
-  plot(median_R,
-       median_L,
+  plot(indR,
+       indL,
        pch= 16,
        cex= 0.5,
        col= adjustcolor(TWIST_col, 0.7),
@@ -43,13 +45,13 @@ dat[, {
        xlab= "3' individual activity (log2)",
        ylab= "5' individual activity (log2)")
   # Linear model
-  .lm <- lm(median_L~median_R)
+  .lm <- lm(indL~indR)
   abline(.lm, lty= "11")
   
   # Legend
   leg <- unique(.SD[, TWIST_col, keyby= TWIST_class])
   leg[, legend("topleft",
-               legend = c(paste0("PCC= ", round(cor.test(median_L, median_R)$estimate, 2)),
+               legend = c(paste0("PCC= ", round(cor.test(indL, indR)$estimate, 2)),
                           as.character(rev(TWIST_class))),
                pch= c(NA, 
                       rep(16, length(TWIST_class))),

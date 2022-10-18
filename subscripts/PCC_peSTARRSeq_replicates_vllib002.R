@@ -1,7 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 
-dat <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
+dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
 
 pdf("pdf/draft/PCC_peSTARRSeq_replicates_vllib002.pdf", 
     height = 3, 

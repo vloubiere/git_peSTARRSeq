@@ -33,30 +33,29 @@ meta[, pairs_counts:= {
     dir <- paste0(dir, "_", cdition, "_rep", DESeq2_pseudo_rep)
   paste0(dir, "_merged_pair_counts.txt")
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
-meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", group, ".dds"), .(group, cdition, DESeq2)]
-meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", 
-                                      group, "_counts_norm_final_oe.txt"), .(group, cdition, DESeq2)]
+meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", group, ".dds")]
+meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", group, "_counts_norm_final_oe.rds")]
+meta[(DESeq2), lm_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/", group, "_lm.rds")]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
 cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "pairs_counts", "FC_file", "dds_file")
-# meta <- meta[vllib=="vllib015" & DESeq2] # Example
 meta[, check_exists:= all(file.exists(na.omit(unlist(.SD)))), .(group, DESeq2), .SDcols= cols]
 meta <- meta[!(check_exists)]
 meta[, {
-  # Save as a .R script
+  # Save .R script
   tmp <- tempfile(tmpdir = "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/", fileext = ".txt")
   fwrite(cbind(.SD, DESeq2, group), tmp)
   # Bsub
-  Rcmd <- paste("module load build-env/2020; module load r/3.6.2-foss-2018b; /software/2020/software/r/3.6.2-foss-2018b/bin/Rscript", 
+  Rcmd <- paste("module load r/4.1.2-foss-2021b; Rscript", 
                 normalizePath("git_peSTARRSeq/subscripts/pipeline_3.0.R"),
                 tmp)
   if(DESeq2)
   {
     bsub_cmd <- paste("/groups/stark/software-all/shell/bsub",
-                      "-C 12", # N cpus
+                      "-C 8", # N cpus
                       "-m 32", # memory
                       paste("-n", group), #name
                       "-T '2-00:00:00'", #name

@@ -5,10 +5,10 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("Rdata/final_results_table.rds")[vllib=="vllib002"]
-dat <- lib[class_act %in% c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh.")]
-dat[, class_act:= droplevels(class_act)]
-setorderv(dat, "class_act")
+dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- dat[actClass %in% c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh.")]
+dat[, actClass:= droplevels(actClass)]
+Cc <- c("grey0", "royalblue2", "purple", "#74C27A")
 
 pdf("pdf/draft/Compare_individual_vs_enh_pairs.pdf", 
     width = 2, 
@@ -18,13 +18,15 @@ par(las= 2,
     tcl= -0.2,
     mgp= c(1.5, 0.5, 0),
     lty= 1)
-vl_boxplot(log2FoldChange~class_act,
-           dat,
-           compute_pval = list(c(1,2), c(1,3), c(2,4), c(3,4)),
-           col = adjustcolor(unique(dat$col_act), 0.5),
-           ylab= "Activity (log2)",
-           tilt.names= T,
-           notch= T)
+dat[, {
+  vl_boxplot(log2FoldChange~actClass,
+             compute_pval = list(c(1,2), c(1,3), c(2,4), c(3,4)),
+             col = adjustcolor(Cc, 0.5),
+             ylab= "Activity (log2)",
+             tilt.names= T,
+             notch= T)
+  print("")
+}]
 abline(h= 0, 
        lty= 2)
 dev.off()

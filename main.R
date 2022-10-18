@@ -65,7 +65,7 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
   file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R") # Compare to BA approach
   file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
-  file.edit("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
+  source("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
   file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
   # QC and sanity check -----------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/Compare_DESeq2_to_raw_log2_ratio.R") # Sanity check
@@ -78,68 +78,58 @@ if(F)
   ########################################################################################
   # pe-STARR-Seq ANALYSES ################################################################
   ########################################################################################
-  # Final tables ------------------------------------------------------------------------#
+  # Features table ----------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancer_features_object.R")
-  file.edit("git_peSTARRSeq/subscripts/generate_final_data_table.R")
   
   # Figure 1 - peSTARRSeq validations ---------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/Sketch_peSTARRSeq.R") # pe-STARR-Seq sketch
-  file.edit("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
-  file.edit("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
-  file.edit("git_peSTARRSeq/subscripts/Luciferase_validations.R") # Comparison with luciferase
+  source("git_peSTARRSeq/subscripts/Sketch_peSTARRSeq.R") # pe-STARR-Seq sketch
+  source("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
+  source("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
+  source("git_peSTARRSeq/subscripts/Luciferase_validations.R") # Comparison with luciferase
   
   # Supplementary figure 1 --------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates_vllib002.R") # pe-STARR-Seq sketch
-  file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
+  source("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates_vllib002.R") # Reproducibility
+  source("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
   
-  # Figure 2 - dev pairs are synergistic, hk enhancers are additive ---------------------#
-  file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
-  file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
-  file.edit("git_peSTARRSeq/subscripts/lm_residuals_examples_vllib002.R") # Linear model predicts activity
-  file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_actPairs_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
-  file.edit("git_peSTARRSeq/subscripts/cluster_chisq_symmetry.R") # Compare left and right clusters
+  # Figure 2 - Devevlopmental enhancer pairs are synergistic, stronger ones are additive -----#
+  source("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
+  source("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
+  source("git_peSTARRSeq/subscripts/heatmap_ordered_ind_act_vllib002.R") # Show activity/residuals relationship
+  source("git_peSTARRSeq/subscripts/dev_enhancer_stength_vs_cooperativity.R") # Show that weak enhancer pairs are the most synergystic
+  source("git_peSTARRSeq/subscripts/dev_enhancer_strenght_Q_motifs_enrichment.R") # Show that weak enhancer pairs are the most synergystic
+  
+  source("git_peSTARRSeq/subscripts/umi_saturation.R") # Show that weak enhancer pairs are the most synergystic
+  source("git_peSTARRSeq/subscripts/promoter_saturation.R") # Show that weak enhancer pairs are the most synergystic
+  
+  # Figure 2 - Devevlopmental enhancer pairs are synergistic, stronger ones are additive -----#
+  source("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_vllib002.R") # Show activity/residuals relationship
+  source("git_peSTARRSeq/subscripts/lm_residuals_examples_vllib002.R") # Linear model examples
+  
   file.edit("git_peSTARRSeq/subscripts/LASSO_residuals_vllib002.R") # Linear model to predict residuals
-  file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_motif_enrich.R") # Motif enrich left right clusters
+  
+  
+  
+  # Presentation ------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/peSTARRSeq_presentation.Rmd")
+  
+  
+  
+  
+  file.edit("git_peSTARRSeq/subscripts/chisq_residuals_classes_vllib002.R") # Show activity/residuals relationship
   file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_boxplot_HTMs.R") # HTMs enrichment per cluster
   file.edit("git_peSTARRSeq/subscripts/Luciferase_clusters_validation.R") # Luciferase classes validation
+  
+  
+  
   
   # Exploration inactive pairs ----------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/exploration_inactive_pairs.R")
   
-  
-  
+  # WIP ---------------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_actPairs_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
   file.edit("git_peSTARRSeq/subscripts/heatmap_vllib002_motif_enrich.R") # Not used for now
   file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Not used -> combined DeepSTARR models to predict combined act 
   
-  
-  
-  # Intron impact -----------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_INPUT.R")
-  file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_SCREEN.R")
-  
-  # External data -----------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/get_200bp_STARRSeq_peaks_BA.R") # 200bp STARR-Seq peaks
-  file.edit("git_peSTARRSeq/subscripts/get_clusters_motifs_enrichment_BA.R") # DeepSTARR
-  
-  # vllib002 clustering and modelling ---------------------------------------------------#
-  
-  
-  # Other clustering --------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_hclust.R") # Clusterd using hclust
-  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_pca.R") # Clusterd using PCA L and R
-  
-  
-  file.edit("git_peSTARRSeq/subscripts/Figure_2A.R") # Compare add, mult and lm + examples
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B.R") # Clustering lm residuals using SOM
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B_hclust.R") # NOT USED (Clustering residuals using hclust)
-  file.edit("git_peSTARRSeq/subscripts/Figure_2B_pca.R") # NOT USED (Clustering lm residuals using PCA)
-  file.edit("git_peSTARRSeq/subscripts/Figure_2C.R") # Confusion matrix L and Right clusters (Fig2B)
-  file.edit("git_peSTARRSeq/subscripts/Figure_2D.R") # Motif enrichment per cluster
-  file.edit("git_peSTARRSeq/subscripts/Figure_2E.R") # HTMs enrichment per cluster
-  file.edit("git_peSTARRSeq/subscripts/Figure_2F.R") # PCA showing enhancer identity
-  file.edit("git_peSTARRSeq/subscripts/Figure_2G.R") # Luciferase classes validation
-  
-  file.edit("git_peSTARRSeq/subscripts/screenshot_hk_vs_dev_STARR-Seq.R") # screenshot to show diff
   file.edit("git_peSTARRSeq/subscripts/Figure_3AB.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_3D.R")
@@ -150,48 +140,26 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Figure_4C.R")
   file.edit("git_peSTARRSeq/subscripts/Figure_4D.R")
   
-  file.edit("git_peSTARRSeq/subscripts/model_fitting.R")
-  file.edit("git_peSTARRSeq/subscripts/PCA_LR.R")
-  file.edit("git_peSTARRSeq/subscripts/clustering.R")
-  file.edit("git_peSTARRSeq/subscripts/ordered_heatmaps.R")
+  # Intron impact -----------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_INPUT.R")
+  file.edit("git_peSTARRSeq/subscripts/PCC_input_w_wo_intron_SCREEN.R")
+  
+  # External data -----------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/get_200bp_STARRSeq_peaks_BA.R") # 200bp STARR-Seq peaks
+  file.edit("git_peSTARRSeq/subscripts/get_clusters_motifs_enrichment_BA.R") # DeepSTARR
+  # Modelling ---------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/nls_models.R")
-  
-  # Draft #2 ----------------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/hkCP_additivity.R")
-  
-  # Supplementary figures ---------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/Sup_Fig_1A.R")
-  file.edit("git_peSTARRSeq/subscripts/enh_enh_distance.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_inact_enh_pairs_heatmap.R")
-  
-  # Tests -------------------------------------------------------------------------------#
-  # Modelling
-  file.edit("git_peSTARRSeq/subscripts/gene_activity_prediction.R")
   file.edit("git_peSTARRSeq/subscripts/Modelling_endogenous_activity.R")
   file.edit("git_peSTARRSeq/subscripts/lasso_modelling_dev_hk.R")
-  file.edit("git_peSTARRSeq/subscripts/lm_modelling_dev_hk.R")
-  file.edit("git_peSTARRSeq/subscripts/randomForest_dev_hk.R")
-  file.edit("git_peSTARRSeq/subscripts/feature_selection.R")
-  file.edit("git_peSTARRSeq/subscripts/lm_modelling_dev_hk.R")
-  # Endogenous enhancers
-  file.edit("git_peSTARRSeq/subscripts/hk_vs_dev_endogenous_features_differences.R")
-  # Intron spacer
-  file.edit("git_peSTARRSeq/subscripts/Sup_Figure_intron_spacers.R")
-  # Sequencing depth
-  file.edit("git_peSTARRSeq/subscripts/Sup_sequencing_depth_vs_robustness.R")
-  # Activity
-  file.edit("git_peSTARRSeq/subscripts/activity_aggregate.R")
-  file.edit("git_peSTARRSeq/subscripts/detailed_heatmap_additivity.R")
+  # Other clustering --------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_hclust.R") # Clusterd using hclust
+  file.edit("git_peSTARRSeq/subscripts/vllib002_lm_residuals_pca.R") # Clusterd using PCA L and R
+  # Screenshots ------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/screenshot_hk_vs_dev_STARR-Seq.R") # screenshot to show diff
+  # Supplementary figures ---------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/enh_enh_distance.R")
   # Silencers / insulators
   file.edit("git_peSTARRSeq/subscripts/boxplot_FC_silencer_insulator_LR.R")
-  # Miscellaneous
-  file.edit("git_peSTARRSeq/subscripts/ATAC_STARR_DHS_clustering.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_DSCP_large_screen.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_screen.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_compare_hk_dev.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_inactive_pairs.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_RpS12_DHS_peaks.R")
-  file.edit("git_peSTARRSeq/subscripts/Figure_DSCP_screen.R")
   
   ########################################################################################
   # Luciferase validations ###############################################################
