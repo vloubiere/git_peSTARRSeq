@@ -35,7 +35,6 @@ meta[, pairs_counts:= {
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
 meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", group, ".dds")]
 meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", group, "_counts_norm_final_oe.rds")]
-meta[(DESeq2), lm_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/", group, "_lm.rds")]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
 #-------------------------------------------------------------#

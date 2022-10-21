@@ -49,7 +49,7 @@ dat[, {
   abline(.lm, lty= "11")
   leg <- unique(dat[order(actClass), .(actClass, actCol)])
   leg[, legend("topleft",
-               legend = c(paste0("PCC= ", round(cor.test(log2FoldChange_STARR, log2FoldChange_luc)$estimate, 2)),
+               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2)),
                           as.character(rev(actClass))),
                bty= "n",
                col= c("black", 

@@ -42,6 +42,8 @@ dat[, {
        cex= 0.5,
        col= adjustcolor(TWIST_col, 0.7),
        las= 1,
+       xlim= c(-1,8.5),
+       ylim= c(-1,8.5),
        xlab= "3' individual activity (log2)",
        ylab= "5' individual activity (log2)")
   # Linear model
@@ -51,7 +53,7 @@ dat[, {
   # Legend
   leg <- unique(.SD[, TWIST_col, keyby= TWIST_class])
   leg[, legend("topleft",
-               legend = c(paste0("PCC= ", round(cor.test(indL, indR)$estimate, 2)),
+               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2)),
                           as.character(rev(TWIST_class))),
                pch= c(NA, 
                       rep(16, length(TWIST_class))),
@@ -65,6 +67,3 @@ dat[, {
                y.intersp= 0.8)]
 }]
 dev.off()
-
-
-

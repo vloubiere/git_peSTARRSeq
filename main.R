@@ -82,31 +82,35 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancer_features_object.R")
   
   # Figure 1 - peSTARRSeq validations ---------------------------------------------------#
-  source("git_peSTARRSeq/subscripts/Sketch_peSTARRSeq.R") # pe-STARR-Seq sketch
-  source("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
-  source("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
-  source("git_peSTARRSeq/subscripts/Luciferase_validations.R") # Comparison with luciferase
+  file.edit("git_peSTARRSeq/subscripts/Sketch_peSTARRSeq.R") # pe-STARR-Seq sketch
+  file.edit("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R") # Compare Left and Right individual act. with TWIST-STARR-Seq
+  file.edit("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R") # Violin plot ctl/ctl, enh/ctl, enh/enh
   
   # Supplementary figure 1 --------------------------------------------------------------#
-  source("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates_vllib002.R") # Reproducibility
-  source("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
+  file.edit("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates_vllib002.R") # Reproducibility
+  file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
+  file.edit("git_peSTARRSeq/subscripts/Luciferase_validations.R") # Comparison with luciferase
   
-  # Figure 2 - Devevlopmental enhancer pairs are synergistic, stronger ones are additive -----#
-  source("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
-  source("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
-  source("git_peSTARRSeq/subscripts/heatmap_ordered_ind_act_vllib002.R") # Show activity/residuals relationship
-  source("git_peSTARRSeq/subscripts/dev_enhancer_stength_vs_cooperativity.R") # Show that weak enhancer pairs are the most synergystic
-  source("git_peSTARRSeq/subscripts/dev_enhancer_strenght_Q_motifs_enrichment.R") # Show that weak enhancer pairs are the most synergystic
+  # Figure 2 - Dev. enhancer pairs cooperate multipliclatively until saturation ----#
+  file.edit("git_peSTARRSeq/subscripts/linear_model_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
+  file.edit("git_peSTARRSeq/subscripts/dev_enhancer_stength_vs_cooperativity.R") # Strong enhancers dont synergize and dont show specific motifs
+  file.edit("git_peSTARRSeq/subscripts/heatmap_ordered_ind_act_vllib002.R") # Show activity/residuals relationship
   
-  source("git_peSTARRSeq/subscripts/umi_saturation.R") # Show that weak enhancer pairs are the most synergystic
-  source("git_peSTARRSeq/subscripts/promoter_saturation.R") # Show that weak enhancer pairs are the most synergystic
+  file.edit("git_peSTARRSeq/subscripts/umi_saturation.R") # No saturation of the UMI
+  file.edit("git_peSTARRSeq/subscripts/promoter_saturation.R") # Illustrate saturation of strong enhancers
   
-  # Figure 2 - Devevlopmental enhancer pairs are synergistic, stronger ones are additive -----#
-  source("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_vllib002.R") # Show activity/residuals relationship
-  source("git_peSTARRSeq/subscripts/lm_residuals_examples_vllib002.R") # Linear model examples
+  # Figure 3 - Developmental enhancer pairs are synergistic -----------------------#
+  file.edit("git_peSTARRSeq/subscripts/lm_residuals_examples_vllib002.R") # Linear model examples
+  file.edit("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_vllib002.R") # Show activity/residuals relationship
+  file.edit("git_peSTARRSeq/subscripts/heatmaps_motifs_residuals.R") # Linear model to predict residuals
+  file.edit("git_peSTARRSeq/subscripts/Luciferase_clusters_validation.R") # Luciferase classes validation
   
-  file.edit("git_peSTARRSeq/subscripts/LASSO_residuals_vllib002.R") # Linear model to predict residuals
-  
+  # Figure 4 - Housekeeping enhancer pairs are additive -----------------------#
+  file.edit("git_peSTARRSeq/subscripts/Compare_vllib015_vllib016_activity.R")
+  file.edit("git_peSTARRSeq/subscripts/Compare_vllib015_vllib016_residuals.R")
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib016.R")
   
   
   # Presentation ------------------------------------------------------------------------#
@@ -115,9 +119,9 @@ if(F)
   
   
   
+  file.edit("git_peSTARRSeq/subscripts/LASSO_residuals_vllib002.R") # Linear model to predict residuals
   file.edit("git_peSTARRSeq/subscripts/chisq_residuals_classes_vllib002.R") # Show activity/residuals relationship
   file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_boxplot_HTMs.R") # HTMs enrichment per cluster
-  file.edit("git_peSTARRSeq/subscripts/Luciferase_clusters_validation.R") # Luciferase classes validation
   
   
   

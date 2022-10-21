@@ -31,10 +31,6 @@ knitr::include_graphics("../pdf/draft/Correlation_left_rigth_activities.pdf")
 ```{r}
 knitr::include_graphics("../pdf/draft/Compare_individual_vs_enh_pairs.pdf")
 ```
-### PCC luciferase validations
-```{r}
-knitr::include_graphics("../pdf/draft/Luciferase_validations.pdf")
-```
 ## Supplementary
 ### PCC replicates
 ```{r}
@@ -43,6 +39,10 @@ knitr::include_graphics("../pdf/draft/PCC_peSTARRSeq_replicates_vllib002.pdf")
 ### Candidates classification act/inact
 ```{r}
 knitr::include_graphics("../pdf/draft/Candidates_classification_vllib002.pdf")
+```
+### PCC luciferase validations
+```{r}
+knitr::include_graphics("../pdf/draft/Luciferase_validations.pdf")
 ```
 
 # Figure 2
@@ -63,10 +63,6 @@ knitr::include_graphics("../pdf/draft/heatmap_ordered_ind_act.pdf")
 ```{r}
 knitr::include_graphics("../pdf/draft/individual_strengths_vs_synergy.pdf")
 ```
-### Quantiles motif enrichment
-```{r}
-knitr::include_graphics("../pdf/draft/dev_quantiles_motifs_enrichment_vllib002.pdf")
-```
 ## Supplementary
 ### CP staturation
 ```{r}
@@ -83,3 +79,19 @@ knitr::include_graphics("../pdf/draft/umi_saturation.pdf")
 ```{r}
 knitr::include_graphics("../pdf/draft/lm_residuals_examples_vllib002.pdf")
 ```
+### Density residuals, symmetry and motif enrichment
+```{r}
+knitr::include_graphics("../pdf/draft/density_residuals_motif_enrichment_vllib002.pdf")
+```
+### Heatmap motif contribution residuals
+```{r}
+knitr::include_graphics("../pdf/draft/heatmap_motif_residuals_prediction.pdf")
+```
+
+# Figure 4
+## Main
+### Compare DSCP/RpS12
+```{r}
+knitr::include_graphics("../pdf/draft/Compare_add_mult_vllib15_16_residuals.pdf")
+```
+

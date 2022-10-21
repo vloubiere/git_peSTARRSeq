@@ -6,7 +6,6 @@ require(vlfunctions)
 # Import data
 #-----------------------------------------------#
 dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
-dat <- dat[actClass=="enh./enh."]
 
 pdf("pdf/draft/Compare_add_mult_vllib002.pdf",
     height = 3,

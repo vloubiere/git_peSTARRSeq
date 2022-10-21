@@ -126,7 +126,7 @@ meta[, {
 }, .(vllib, pairs_counts)]
 
 #--------------------------------------------------------------#
-# Method using counts norm (Tolerates one rep)
+# Compute activity using counts norm (Tolerates one rep)
 #--------------------------------------------------------------#
 if(any(meta$DESeq2))
 {
@@ -147,36 +147,37 @@ if(any(meta$DESeq2))
                       value.var = "umi_counts", 
                       fun.aggregate = sum, 
                       sep= "_rep")
-      # Remove homotypic pairs and cutoff low counts
-      counts <- counts[L!=R & rowSums(counts[, !c("L", "R")])>20]
+      # Remove homotypic pairs and cutoff low input counts
+      check <- apply(counts[, .SD, .SDcols= patterns("input")], 1, function(x) all(x>=5))
+      counts <- counts[L!=R & (check)]
       # Normalize counts
       norm <- copy(counts)
-      inputs <- grep("^input", names(norm), value= T)
-      screens <- grep("^screen", names(norm), value= T)
-      norm[, norm_input:= rowSums(.SD)+0.5, .SDcols= inputs]
+      cols <- grep("^input|^screen", names(norm), value= T)
+      norm[, (cols):= lapply(.SD, function(x) x+0.5), .SDcols= cols]
+      norm[, norm_input:= rowSums(.SD), .SDcols= patterns("^input")]
       norm[, norm_input:= norm_input/sum(norm_input)*1e6]
-      norm[, paste0("norm_", screens):= lapply(.SD, function(x) (x+0.5)/sum(x+0.5)*1e6), .SDcols= screens]
+      norm[, norm_screen:= rowSums(.SD), .SDcols= patterns("^screen")]
+      norm[, norm_screen:= norm_screen/sum(norm_screen)*1e6]
       # FoldChange
-      norm[, log2FoldChange:= log2(rowMeans(do.call(cbind, lapply(.SD, function(x) x/norm_input)))), .SDcols= patterns("^norm_screen")]
+      norm[, log2FoldChange:= log2(norm_screen/norm_input)]
       # Select usable, inactive control pairs
       ctlPairs <- norm[grepl("^control", L) & grepl("^control", R)]
       inactCtlL <- ctlPairs[, mean(log2FoldChange), L][between(scale(V1), -1, 1), L]
       inactCtlR <- ctlPairs[, mean(log2FoldChange), R][between(scale(V1), -1, 1), R]
       norm[, ctlL:= L %in% inactCtlL]
       norm[, ctlR:= R %in% inactCtlR]
-      # Center activities
-      ctlPairs <- norm[ctlL & ctlR, log2FoldChange]
-      norm[, log2FoldChange:= log2FoldChange-median(ctlPairs)]
+      # Center activities on the median of inactive pairs
+      norm[, log2FoldChange:= log2FoldChange-median(norm[ctlL & ctlR, log2FoldChange])]
       # Compute individual act and pval (vs ctlPairs)
       ctlPairs <- norm[ctlL & ctlR, log2FoldChange]
       Left <- norm[(ctlR), 
-                   .(.N>=5, 
+                   .(.N>=25, 
                      wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
                      mean(log2FoldChange)), L][(V1)]
       Left[, padj:= p.adjust(V2, "fdr")]
       norm[Left, c("indL", "padjL"):= .(i.V3, i.padj), on= "L"]
       Right <- norm[(ctlL), 
-                    .(.N>=5, 
+                    .(.N>=25, 
                       wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
                       mean(log2FoldChange)), R][(V1)]
       Right[, padj:= p.adjust(V2, "fdr")]
@@ -187,8 +188,8 @@ if(any(meta$DESeq2))
       #-----------------------------------------------------#
       # Define active/inactive individual enhancers and pairs
       #-----------------------------------------------------#
-      norm[, actClassL:= fcase(padjL<0.05 & indL>1, "active", default= "inactive")]
-      norm[, actClassR:= fcase(padjR<0.05 & indR>1, "active", default= "inactive")]
+      norm[, actClassL:= fcase(padjL<0.05 & indL>log2(1.5), "active", default= "inactive")]
+      norm[, actClassR:= fcase(padjR<0.05 & indR>log2(1.5), "active", default= "inactive")]
       norm[, actClass:= fcase(grepl("control", L), "ctl.", 
                               actClassL=="active", "enh.",
                               default = "inact.")]
@@ -207,42 +208,7 @@ if(any(meta$DESeq2))
                                  "ctl./enh.",
                                  "inact./enh.",
                                  "enh./enh."))]
-      
-      #-----------------------------------------------------#
-      # Linear models on active pairs
-      #-----------------------------------------------------#
-      if(!file.exists(lm_file))
-      {
-        # Define train and test sets
-        set.seed(1)
-        norm[norm[, .(set= sample(3)), L], setL:= i.set, on= "L"]
-        set.seed(1)
-        norm[norm[, .(set= sample(3)), R], setR:= i.set, on= "R"]
-        norm[, set:= .GRP, .(setL, setR)]
-        # Train linear model for each train set and compute predicted values
-        model <- lm(formula = log2FoldChange~indL*indR,
-                    data= norm)
-        model$CV_rsqs <- norm[, {
-          print(set)
-          cL <- L
-          cR <- R
-          train <- norm[!(L %in% cL) & !(R %in% cR)]
-          model <- lm(formula = log2FoldChange~indL*indR,
-                      data= train)
-          .(rsq= summary(model)$r.squared)
-        }, set]
-        saveRDS(model, lm_file)
-      }else
-        model <- readRDS(lm_file)
-      
-      # Compute expected
-      norm[, additive:= log2(2^indL+2^indR)]
-      norm[, multiplicative:= indL+indR]
-      norm[, predicted:= predict(model)]
-      norm[, residuals:= log2FoldChange-predicted]
-      norm[, meanResidualsL:= mean(residuals), L]
-      norm[, meanResidualsR:= mean(residuals), R]
-      
+
       # Retrieve genomic coordinates
       .lib <- if(library=="T8")
         readRDS("Rdata/vl_library_twist008_112019.rds")else if(library=="T12")
@@ -254,9 +220,7 @@ if(any(meta$DESeq2))
       norm[.lib, coorR:= paste0(i.seqnames, ":", i.start, "-", i.end, ":", i.strand), on= "R==ID"]
       
       # Handle missing rep columns
-      cols <- c("L", "R", "indL", "indR", "log2FoldChange", 
-                "additive", "multiplicative", "predicted", "residuals", 
-                "meanResidualsL", "meanResidualsR",
+      cols <- c("L", "R", "indL", "indR", "log2FoldChange",
                 "actClassL", "actClassR", "actClass",
                 "ctlL", "ctlR",
                 "coorL", "coorR",
@@ -266,5 +230,5 @@ if(any(meta$DESeq2))
       # SAVE
       saveRDS(norm[, cols, with= F], FC_file)
     }
-  }, .(FC_file, lm_file, library)]
+  }, .(FC_file, library)]
 }
