@@ -2,7 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data
-dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
 pl <- rbindlist(list("Weakest active 5' enhancer"= dat[!ctlL & !ctlR & actClassL=="active"][L==L[which.min(indL)], .(ref= indL, ind= indR, log2FoldChange, predicted)],
                      "Strongest active 5' enhancer"= dat[!ctlL & !ctlR & actClassL=="active"][L==L[which.max(indL)], .(ref= indL, ind= indR, log2FoldChange, predicted)],
                      "Weakest active 3' enhancer"= dat[!ctlR & actClassR=="active"][R==R[which.min(indR)], .(ref= indR, ind= indL, log2FoldChange, predicted)],

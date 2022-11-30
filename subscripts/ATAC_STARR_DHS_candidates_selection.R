@@ -49,5 +49,5 @@ sel[, {
 }, idx]
 dev.off()
 
-saveRDS(sel, "Rdata/DHS+_STARR-_sequences.rds") 
+saveRDS(sel, "db/library_design/twist012/DHS+_STARR-_sequences.rds") 
 

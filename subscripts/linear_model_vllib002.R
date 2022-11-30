@@ -5,7 +5,7 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
 
 #-----------------------------------------------------#
 # Linear models on active pairs
@@ -34,7 +34,8 @@ dat[, additive:= log2(2^indL+2^indR)]
 dat[, multiplicative:= indL+indR]
 dat[, predicted:= predict(model)]
 dat[, residuals:= log2FoldChange-predicted]
-dat[, medianResidualsL:= median(residuals), L]
-dat[, medianResidualsR:= median(residuals), R]
+dat[, meanResidualsL:= mean(residuals), L]
+dat[, meanResidualsR:= mean(residuals), R]
 
-saveRDS(model, "Rdata/linear_model_vllib002.rds")
+saveRDS(model, "db/linear_models/lm_vllib002.rds")
+saveRDS(dat, "db/linear_models/FC_vllib002_with_predictions.rds")

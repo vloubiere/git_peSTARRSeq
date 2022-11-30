@@ -5,7 +5,7 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+lib <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
              lib, 
@@ -48,7 +48,7 @@ dat[, {
   .lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
   abline(.lm, lty= "11")
   leg <- unique(dat[order(actClass), .(actClass, actCol)])
-  leg[, legend("topleft",
+  leg[, legend("bottomright",
                legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2)),
                           as.character(rev(actClass))),
                bty= "n",

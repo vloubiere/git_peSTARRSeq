@@ -59,7 +59,7 @@ hk_sel <- hk_sel[, .(seqnames, start, end, strand, group, detail, enh_seq)]
 #-----------------------------#
 # SUHW peaks
 #-----------------------------#
-suhw_sel <- readRDS("Rdata/SUHW_peaks.rds")
+suhw_sel <- readRDS("db/library_design/twist012/SUHW_peaks.rds")
 suhw_sel <- suhw_sel[, .(seqnames, 
                          start= max_coor-124, 
                          end= max_coor+124, 
@@ -71,7 +71,7 @@ suhw_sel[, enh_seq:= as.character(BSgenome::getSeq(BSgenome.Dmelanogaster.UCSC.d
 #-----------------------------#
 # DHS+ STARR- peaks
 #-----------------------------#
-DHS_sel <- as.data.table(readRDS("Rdata/DHS+_STARR-_sequences.rds"))
+DHS_sel <- as.data.table(readRDS("db/library_design/twist012/DHS+_STARR-_sequences.rds"))
 DHS_sel <- DHS_sel[, .(seqnames,
                        start= round(rowMeans(.SD))-124, 
                        end= round(rowMeans(.SD))+124, 
@@ -83,7 +83,7 @@ DHS_sel[, enh_seq:= as.character(BSgenome::getSeq(BSgenome.Dmelanogaster.UCSC.dm
 #-----------------------------#
 # Repressors
 #-----------------------------#
-rep_sel <- fread("Rdata/Lorena_top_repressors_2010_jung_DLM3+521_twist_oligos_VL.txt")
+rep_sel <- fread("db/library_design/twist012/Lorena_top_repressors_2010_jung_DLM3+521_twist_oligos_VL.txt")
 rep_sel <- rep_sel[, .(seqnames, 
                        start= round(rowMeans(.SD))-124, 
                        end= round(rowMeans(.SD))+124, 
@@ -95,7 +95,7 @@ rep_sel[, enh_seq:= as.character(BSgenome::getSeq(BSgenome.Dmelanogaster.UCSC.dm
 #-----------------------------#
 # CPs
 #-----------------------------#
-CP_sel <- readRDS("Rdata/CPs_selection_twist.rds")
+CP_sel <- readRDS("db/library_design/twist012/CPs_selection_twist.rds")
 CP_sel[strand=="+", end:= end+44] # Discussed with Vanja (orginally +66 downstream)
 CP_sel[strand=="+", start:= end-248]
 CP_sel[strand=="-", start:= start-44] # Discussed with Vanja (orginally +66 downstream)

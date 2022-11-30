@@ -9,7 +9,7 @@ introns <- fread("/groups/stark/vloubiere/genomes/flybase/dm3/dm3_introns.txt",
 #-----------------------#
 # Selection 
 #-----------------------#
-if(!file.exists("Rdata/intron_enhancer_candidates.txt"))
+if(!file.exists("db/library_design/alternative_spacers/intron_enhancer_candidates.txt"))
 {
   # 1- No overlap with other junctions
   sel <- unique(introns[, .(seqnames, start, end, strand, FBgn)])
@@ -45,9 +45,12 @@ if(!file.exists("Rdata/intron_enhancer_candidates.txt"))
   sel[between(end-start, 1750, 2250), size:= 2000]
   sel[between(end-start, 4750, 5250), size:= 5000]
   sel[between(end-start, 8000, 12000), size:= 10000]
-  fwrite(sel, "Rdata/intron_enhancer_candidates.txt", col.names = T, na= NA)
+  fwrite(sel, 
+         "db/library_design/alternative_spacers/intron_enhancer_candidates.txt", 
+         col.names = T, 
+         na= NA)
 }else
-  sel <- fread("Rdata/intron_enhancer_candidates.txt")
+  sel <- fread("db/library_design/alternative_spacers/intron_enhancer_candidates.txt")
 
 #-------------------------------------------------#
 # Screenshots
@@ -96,4 +99,5 @@ sub[, {
 }, (sub)]
 dev.off()
 
-fwrite(sub, "Rdata/selected_introns_enhancer.txt")
+fwrite(sub,
+       "db/library_design/alternative_spacers/selected_introns_enhancer.txt")

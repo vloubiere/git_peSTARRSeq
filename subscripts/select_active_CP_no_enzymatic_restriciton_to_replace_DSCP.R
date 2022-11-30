@@ -140,5 +140,5 @@ dev.off()
 # SAVE selected primers
 #------------------------------#
 fwrite(dat[Cc=="purple", .(oligo_id, name, seqnames, start, end, strand, F_primer, R_primer, CP_sequence= sequence)], 
-       "Rdata/selected_CPs_primers_#2.txt", 
+       "db/library_design/alternative_CPs/selected_CPs_primers_#2.txt", 
        sep= "\t")

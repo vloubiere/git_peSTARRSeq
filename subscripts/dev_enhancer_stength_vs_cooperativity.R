@@ -4,7 +4,7 @@ require(vlfunctions)
 #-----------------------------------#
 # Import data and compute quantiles
 #-----------------------------------#
-dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
 QL <- quantile(dat[actClassL!= "inactive", .(L, indL)]$indL, seq(0,1, length.out= 6))
 dat[, actClassL:= cut(indL, 
                       c(-Inf, QL), 
@@ -24,18 +24,17 @@ mat <- as.matrix(mat, 1)
 #-----------------------------------#
 # Motif enrichment
 #-----------------------------------#
-lib <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
 seq <- rbind(unique(dat[, .(actClass= actClassL, ID= L, side= "L")]),
              unique(dat[, .(actClass= actClassR, ID= R, side= "R")]))
-seq[lib, sequence:= i.enh_sequence, on= "ID==ID_vl"]
-sel <- vl_Dmel_motifs_DB_full[!is.na(FBgn), motif_ID]
-counts <- cbind(seq, vl_motif_counts(seq$sequence, sel= sel))
+counts <- readRDS("db/motif_counts/twist008_motif_counts_low_stringency_no_collapsing.rds")
+sel <- names(counts)[-1]
+counts <- cbind(seq, counts[seq$ID, on= "ID"])
 # Left
 enrL <- vl_motif_cl_enrich(split(counts[side=="L", ..sel], counts[side=="L", actClass], drop = T), 
                            control_cl = "Inactive")
 setorderv(enrL, "padj")
 enrL <- enrL[variable %in% enrL[, variable[1], name]$V1] # Select top enrichment
-# Right
+# Right 
 enrR <- vl_motif_cl_enrich(split(counts[side=="R", ..sel], counts[side=="R", actClass], drop = T), 
                            control_cl = "Inactive")
 setorderv(enrR, "padj")
@@ -44,11 +43,11 @@ enrR <- enrR[variable %in% enrR[, variable[1], name]$V1] # Select top enrichment
 #-----------------------------------#
 # PLOT
 #-----------------------------------#
-pdf("pdf/draft/individual_strengths_vs_synergy.pdf", 
-    width= 6.5,
-    height = 5)
+pdf("pdf/draft/individual_strengths_vs_synergy.pdf",
+    width= 7.25,
+    height = 5.75)
 par(las= 1,
-    mar= c(6,9,5.5,10),
+    mar= c(8.25,12,8.25,12),
     xpd= T)
 # Quantiles residuals heatmap ---------#
 pl <- vl_heatmap(mat, 
@@ -78,18 +77,18 @@ vl_heatkey(breaks = pl$breaks,
            height = 1.5)
 
 # Motif enrichment --------------------#
-par(mar= c(3,20,3,6),
+par(mar= c(3,23,3,6),
     las= 1)
 # Left
 pl <- plot(enrL, 
            padj_cutoff= 0.05, 
-           top_enrich= 6)
+           top_enrich= 7)
 title(main= "Left enhancer", line= 1.5)
 vl_add_motifs(pl)
 # Right
 pl <- plot(enrR, 
            padj_cutoff= 0.05, 
-           top_enrich= 6)
+           top_enrich= 7)
 title(main= "Right enhancer", line= 1.5)
 vl_add_motifs(pl)
 

@@ -5,7 +5,7 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
 QL <- unique(dat[actClassL!= "inactive", .(L, indL)])[indL>quantile(indL, 0.95), L]
 QR <- unique(dat[actClassR!= "inactive", .(R, indR)])[indR>quantile(indR, 0.95), R]
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")

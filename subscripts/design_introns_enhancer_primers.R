@@ -1,7 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(BSgenome.Dmelanogaster.UCSC.dm3)
 
-int <- fread("Rdata/selected_introns_enhancer.txt")
+int <- fread("db/library_design/alternative_spacers/selected_introns_enhancer.txt")
 
 # add 20nt on each side
 int[,c("start", "end"):= .(start-10, end+10)]

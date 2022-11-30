@@ -47,5 +47,5 @@ plot(SUHW$STARR200,
      col= ifelse(seq(nrow(SUHW)) %in% sel, "red", adjustcolor("lightgrey", 0.3)), 
      pch= 19)
 
-saveRDS(SUHW[sel], "Rdata/SUHW_peaks.rds")
+saveRDS(SUHW[sel], "db/library_design/twist012/SUHW_peaks.rds")
 

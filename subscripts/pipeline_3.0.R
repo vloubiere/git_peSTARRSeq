@@ -13,6 +13,7 @@ require(stringdist)
 
 meta <- fread(commandArgs(trailingOnly=TRUE)[1])
 # meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib002" & DESeq2] # Example
+# meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib015" & DESeq2] # Example
 print("Sample:")
 print(meta)
 libs <- as.data.table(read_excel("/groups/stark/vloubiere/exp_data/vl_libraries.xlsx"))
@@ -61,6 +62,7 @@ meta[, {
   }
   print(paste0(bam, " -->> DONE"))
 }, .(fq1, fq2, bam, library)]
+
 #--------------------------------------------------------------#
 # Primary counts
 # Takes each sam file and Extract UMI reads
@@ -130,12 +132,12 @@ meta[, {
 #--------------------------------------------------------------#
 if(any(meta$DESeq2))
 {
+  #--------------------------------#
+  # DESeq2 based approach
+  #--------------------------------#
   meta[, {
-    if(!file.exists(FC_file))
+    if(!file.exists(dds_file))
     {
-      #--------------------------------#
-      # FC based on ratio 
-      #--------------------------------#
       # Import counts
       dat <- SJ(file= pairs_counts, 
                 cdition= cdition, 
@@ -145,6 +147,118 @@ if(any(meta$DESeq2))
       counts <- dcast(dat, 
                       L+R~cdition+rep, 
                       value.var = "umi_counts", 
+                      fun.aggregate = sum, 
+                      sep= "_rep")
+      # Remove homotypic pairs and cutoff low input counts
+      check <- apply(counts[, .SD, .SDcols= patterns("input")], 1, function(x) all(x>=5))
+      counts <- counts[L!=R & (check)]
+      cols <- grep("rep", names(counts), value = T)
+      # Add pseudocount
+      counts[, (cols):= lapply(.SD, function(x) x+1), .SDcols= cols]
+      # DF and sampleTable
+      DF <- data.frame(counts[, !c("L", "R")], row.names = counts[, paste0(L, "__", R)])
+      sampleTable <- SJ(name= colnames(DF))
+      sampleTable <- data.frame(sampleTable[, c("cdition", "rep"):= tstrsplit(name, "_rep")], 
+                                row.names = "name")
+      # DESeq
+      dds <- DESeq2::DESeqDataSetFromMatrix(countData= DF,
+                                            colData= sampleTable,
+                                            design= ~rep+cdition)
+      sizeFactors(dds) <- DESeq2::estimateSizeFactorsForMatrix(as.matrix(DF[grepl("^control.*__control.*", rownames(DF)),]))
+      dds <- try(DESeq2::DESeq(dds)) # Check if missing replicates -> skip
+      if(class(dds)=="DESeqDataSet")
+        saveRDS(dds, dds_file)
+    }
+    if(!file.exists(FC_file_DESeq2) && file.exists(dds_file))
+    {
+      dds <- readRDS(dds_file)
+      # Differential expression
+      norm <- as.data.frame(DESeq2::results(dds, contrast= c("cdition", "screen", "input")))
+      norm <- as.data.table(norm, keep.rownames= T)[, c("L", "R"):= tstrsplit(rn, "__")][, .(L, R, log2FoldChange, padj)]
+      # Select usable, inactive control pairs
+      ctlPairs <- norm[grepl("^control", L) & grepl("^control", R)]
+      inactCtlL <- ctlPairs[, mean(log2FoldChange), L][between(scale(V1), -1, 1), L]
+      inactCtlR <- ctlPairs[, mean(log2FoldChange), R][between(scale(V1), -1, 1), R]
+      norm[, ctlL:= L %in% inactCtlL]
+      norm[, ctlR:= R %in% inactCtlR]
+      # Compute individual act and pval (vs ctlPairs)
+      ctlPairs <- norm[ctlL & ctlR, log2FoldChange]
+      Left <- norm[(ctlR), 
+                   .(.N>=10, 
+                     wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
+                     mean(log2FoldChange)), L][(V1)]
+      Left[, padj:= p.adjust(V2, "fdr")]
+      norm[Left, c("indL", "padjL"):= .(i.V3, i.padj), on= "L"]
+      Right <- norm[(ctlL), 
+                    .(.N>=10, 
+                      wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
+                      mean(log2FoldChange)), R][(V1)]
+      Right[, padj:= p.adjust(V2, "fdr")]
+      norm[Right, c("indR", "padjR"):= .(i.V3, i.padj), on= "R"]
+      # Remove pairs for which combined or ind act could not be computed accurately
+      norm <- norm[!is.na(indL) & !is.na(indR)]
+      
+      #-----------------------------------------------------#
+      # Define active/inactive individual enhancers and pairs
+      #-----------------------------------------------------#
+      norm[, actClassL:= fcase(padjL<1e-4 & indL>=log2(1.5), "active", default= "inactive")]
+      norm[, actClassR:= fcase(padjR<1e-4 & indR>=log2(1.5), "active", default= "inactive")]
+      norm[, actClass:= fcase(grepl("control", L), "ctl.", 
+                              actClassL=="active", "enh.",
+                              default = "inact.")]
+      norm[, actClass:= paste0(actClass, "/")]
+      norm[, actClass:= paste0(actClass,
+                               fcase(grepl("control", R), "ctl.", 
+                                     actClassR=="active", "enh.",
+                                     default= "inact."))]
+      norm[, actClass:= factor(actClass, 
+                               c("ctl./ctl.",
+                                 "ctl./inact.",
+                                 "inact./ctl.",
+                                 "inact./inact.",
+                                 "enh./ctl.",
+                                 "enh./inact.",
+                                 "ctl./enh.",
+                                 "inact./enh.",
+                                 "enh./enh."))]
+      
+      # Retrieve genomic coordinates
+      .lib <- if(library=="T8")
+        readRDS("Rdata/vl_library_twist008_112019.rds")else if(library=="T12")
+          readRDS("Rdata/vl_library_twist12_210610.rds")
+      .lib <- as.data.table(.lib)
+      if(library=="T8")
+        setnames(.lib, "ID_vl", "ID")
+      norm[.lib, coorL:= paste0(i.seqnames, ":", i.start, "-", i.end, ":", i.strand), on= "L==ID"]
+      norm[.lib, coorR:= paste0(i.seqnames, ":", i.start, "-", i.end, ":", i.strand), on= "R==ID"]
+      
+      # Handle missing rep columns
+      cols <- c("L", "R", "indL", "indR", "log2FoldChange", "padj",
+                "actClassL", "actClassR", "actClass",
+                "ctlL", "ctlR",
+                "coorL", "coorR")
+      cols <- cols[cols %in% names(norm)]
+      # SAVE
+      saveRDS(norm[, cols, with= F], FC_file_DESeq2)
+    }
+    .SD
+  }, .(dds_file, FC_file_DESeq2, library)]
+  
+  #--------------------------------#
+  # FC based on ratio (tolerates missing replicates)
+  #--------------------------------#
+  meta[, {
+    if(!file.exists(FC_file_ratio))
+    {
+      # Import counts
+      dat <- SJ(file= pairs_counts, 
+                cdition= cdition, 
+                rep= DESeq2_pseudo_rep)
+      setkeyv(dat, c("cdition", "rep"))
+      dat <- dat[, fread(file), (dat)]
+      counts <- dcast(dat, 
+                      L+R~cdition+rep, 
+                      value.var = "umi_counts",
                       fun.aggregate = sum, 
                       sep= "_rep")
       # Remove homotypic pairs and cutoff low input counts
@@ -171,13 +285,13 @@ if(any(meta$DESeq2))
       # Compute individual act and pval (vs ctlPairs)
       ctlPairs <- norm[ctlL & ctlR, log2FoldChange]
       Left <- norm[(ctlR), 
-                   .(.N>=25, 
+                   .(.N>=10,
                      wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
                      mean(log2FoldChange)), L][(V1)]
       Left[, padj:= p.adjust(V2, "fdr")]
       norm[Left, c("indL", "padjL"):= .(i.V3, i.padj), on= "L"]
       Right <- norm[(ctlL), 
-                    .(.N>=25, 
+                    .(.N>=10,
                       wilcox.test(log2FoldChange, ctlPairs, alternative = "greater")$p.value,
                       mean(log2FoldChange)), R][(V1)]
       Right[, padj:= p.adjust(V2, "fdr")]
@@ -188,8 +302,8 @@ if(any(meta$DESeq2))
       #-----------------------------------------------------#
       # Define active/inactive individual enhancers and pairs
       #-----------------------------------------------------#
-      norm[, actClassL:= fcase(padjL<0.05 & indL>log2(1.5), "active", default= "inactive")]
-      norm[, actClassR:= fcase(padjR<0.05 & indR>log2(1.5), "active", default= "inactive")]
+      norm[, actClassL:= fcase(padjL<0.05 & indL>=1, "active", default= "inactive")]
+      norm[, actClassR:= fcase(padjR<0.05 & indR>=1, "active", default= "inactive")]
       norm[, actClass:= fcase(grepl("control", L), "ctl.", 
                               actClassL=="active", "enh.",
                               default = "inact.")]
@@ -228,7 +342,7 @@ if(any(meta$DESeq2))
                 "norm_input", "norm_screen_rep1", "norm_screen_rep2")
       cols <- cols[cols %in% names(norm)]
       # SAVE
-      saveRDS(norm[, cols, with= F], FC_file)
+      saveRDS(norm[, cols, with= F], FC_file_ratio)
     }
-  }, .(FC_file, library)]
+  }, .(FC_file_ratio, library)]
 }

@@ -75,7 +75,7 @@ final[, {
 dev.off()
 
 fwrite(final, 
-       "Rdata/selected_spacers_sequences.txt", 
+       "db/library_design/alternative_spacers/selected_spacers_sequences.txt", 
        col.names = T, 
        row.names = F, 
        sep= "\t", 

@@ -159,7 +159,7 @@ dev.off()
 #------------------------------#
 sel <- dat[!is.na(F_primer), .(oligo_id, name, seqnames, start, end, strand, F_primer, R_primer, CP_sequence= sequence)]
 fwrite(sel,
-       "Rdata/selected_CPs_primers_final.txt",
+       "db/library_design/alternative_CPs/selected_CPs_primers_final.txt",
        sep= "\t")
 
 #------------------------------#

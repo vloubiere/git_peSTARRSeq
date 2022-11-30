@@ -36,4 +36,5 @@ dev[, detail:= ifelse(log2(dat[sel_dev][["zfh1_enh_avg"]]+1)-log2(dat[sel_dev][[
 hk <- dat[sel_hk]
 hk[, detail:= "hk_inducible"]
 
-saveRDS(rbind(dev, hk), "Rdata/CPs_selection_twist.rds")
+saveRDS(rbind(dev, hk), 
+        "db/library_design/twist012/CPs_selection_twist.rds")

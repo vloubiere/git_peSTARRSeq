@@ -5,7 +5,7 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_final_oe.rds")
+dat <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
 dat <- dat[actClass %in% c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh.")]
 dat[, actClass:= droplevels(actClass)]
 Cc <- c("grey0", "royalblue2", "purple", "#74C27A")

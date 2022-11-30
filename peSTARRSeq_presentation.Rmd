@@ -55,10 +55,6 @@ knitr::include_graphics("../pdf/draft/Compare_add_mult_vllib002.pdf")
 ```{r}
 knitr::include_graphics("../pdf/draft/CV_linear_model_vllib002.pdf")
 ```
-### Ordered residuals heatmap
-```{r}
-knitr::include_graphics("../pdf/draft/heatmap_ordered_ind_act.pdf")
-```
 ### Individual act vs synergy
 ```{r}
 knitr::include_graphics("../pdf/draft/individual_strengths_vs_synergy.pdf")
@@ -86,6 +82,26 @@ knitr::include_graphics("../pdf/draft/density_residuals_motif_enrichment_vllib00
 ### Heatmap motif contribution residuals
 ```{r}
 knitr::include_graphics("../pdf/draft/heatmap_motif_residuals_prediction.pdf")
+```
+### Activity predictive motifs with activity matched controls
+```{r}
+knitr::include_graphics("../pdf/draft/activity_predicitve_motifs_activity_matched.pdf")
+```
+## Supplementary
+### Linear model dev pairs
+```{r}
+knitr::include_graphics("../pdf/draft/CV_linear_model_dev_pairs_vllib002.pdf")
+```
+
+# Inactive pairs
+## Main
+### Motif enrichment inactive inactive pairs
+```{r}
+knitr::include_graphics("../pdf/draft/density_residuals_motif_enrichment_inactive_pairs_vllib002.pdf")
+```
+### Motif enrichment active inactive pairs
+```{r}
+knitr::include_graphics("../pdf/draft/density_residuals_motif_enrichment_inactive_active_pairs_vllib002.pdf")
 ```
 
 # Figure 4

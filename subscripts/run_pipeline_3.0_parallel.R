@@ -34,13 +34,14 @@ meta[, pairs_counts:= {
   paste0(dir, "_merged_pair_counts.txt")
 }, .(group, cdition, DESeq2, DESeq2_pseudo_rep)]
 meta[(DESeq2), dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", group, ".dds")]
-meta[(DESeq2), FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", group, "_counts_norm_final_oe.rds")]
+meta[(DESeq2), FC_file_DESeq2:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables_DESeq2/", group, "_DESeq2_final_oe.rds")]
+meta[(DESeq2), FC_file_ratio:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables_ratio/", group, "_counts_norm_final_oe.rds")]
 fwrite(meta, "Rdata/metadata_processed.txt", na= NA)
 
 #-------------------------------------------------------------#
 # PARALLELIZATION
 #-------------------------------------------------------------#
-cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "pairs_counts", "FC_file", "dds_file")
+cols <- c("fq1", "fq2", "bam", "bam_summary", "umi_counts", "pairs_counts", "dds_file", "FC_file_DESeq2", "FC_file_ratio")
 meta[, check_exists:= all(file.exists(na.omit(unlist(.SD)))), .(group, DESeq2), .SDcols= cols]
 meta <- meta[!(check_exists)]
 meta[, {

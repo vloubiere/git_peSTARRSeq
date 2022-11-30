@@ -10,7 +10,8 @@ seq <- seq[names(seq) %in% c("chr2L", "chr2R", "chr3L", "chr3R", "chr4", "chrX")
 #---------------------------------------#
 # Make primers object
 #---------------------------------------#
-primers <- fread("Rdata/selected_spacers_sequences.txt", select = c(1,2,3,8,9,12,10))
+primers <- fread("db/library_design/alternative_spacers/selected_spacers_sequences.txt", 
+                 select = c(1,2,3,8,9,12,10))
 colnames(primers)[c(1,2,3,7)] <- paste0("region_", colnames(primers)[c(1,2,3,7)])
 primers <- primers[rep(seq(nrow(primers)), each= 3)]
 primers[, id:= c("revSPA1_300", "revSPA1_2k", "revSPA1_5k",
@@ -38,4 +39,9 @@ primers <- rbindlist(lapply(seq(primers$primer_pattern), function(i) {
 # Amplicon sequence
 primers[, amplicon_seq:= as.character(getSeq(BSgenome.Dmelanogaster.UCSC.dm3, primer_seqnames, min(primer_start), max(primer_end))), .(primer_seqnames, id)]
 
-fwrite(primers, "Rdata/selected_spacers_PCR_primers.txt", col.names = T, row.names = F, sep= "\t", quote= F)
+fwrite(primers,
+       "db/library_design/alternative_spacers/selected_spacers_PCR_primers.txt",
+       col.names = T,
+       row.names = F,
+       sep= "\t",
+       quote= F)

@@ -22,6 +22,12 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/CPs_selection_twist.R")
   file.edit("git_peSTARRSeq/subscripts/design_twist_012.R") # lib can be found at "Rdata/vl_library_twist12_210610.rds"
   file.edit("git_peSTARRSeq/subscripts/aggregate_ChIPSeq_tracks_SUHW_silencers.R")
+  # twist015
+  file.edit("git_peSTARRSeq/subscripts/design_mutant_sequences_twist_015.R")
+  file.edit("git_peSTARRSeq/subscripts/predict_mutant_sequences_twist_015.sh") #Not working cause I would need Bernies python environment
+  file.edit("git_peSTARRSeq/subscripts/select_mutant_sequences_twist_015.R")
+  file.edit("git_peSTARRSeq/subscripts/select_DHS_sites_twist_015.R")
+  file.edit("git_peSTARRSeq/subscripts/design_twist_015.R")
   
   # STARRSeq reporter -------------------------------------------------------------------#
   # revSTARRSeq
@@ -31,12 +37,9 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/enh_promoter_distance.R")
   file.edit("git_peSTARRSeq/subscripts/qPCR_non_self_lig_vllib004.R")
   file.edit("git_peSTARRSeq/subscripts/compare_vllib006_protocols.R")
-  # Introns without enhancer
-  file.edit("git_peSTARRSeq/subscripts/intron_selection.R")
-  file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/design_introns_primers.R")
-  file.edit("/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/subscripts/design_introns_primers.R")
-  # Introns with enhancer
-  file.edit("git_peSTARRSeq/subscripts/intron_enhancer_selection.R")
+  # Introns 
+  file.edit("git_peSTARRSeq/subscripts/intron_selection.R") # without enhancer
+  file.edit("git_peSTARRSeq/subscripts/intron_enhancer_selection.R") # with enhancer
   file.edit("git_peSTARRSeq/subscripts/design_introns_enhancer_primers.R")
   # Change promoter
   file.edit("git_peSTARRSeq/subscripts/select_active_CP_to_replace_DSCP.R") # Mistake! Some CPs contain AgeI/SalI sites (see next line)
@@ -78,8 +81,8 @@ if(F)
   ########################################################################################
   # pe-STARR-Seq ANALYSES ################################################################
   ########################################################################################
-  # Features table ----------------------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/make_300bp_uniq_enhancer_features_object.R")
+  # Motif counts tables
+  file.edit("git_peSTARRSeq/subscripts/Libraries_motif_counts.R")
   
   # Figure 1 - peSTARRSeq validations ---------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/Sketch_peSTARRSeq.R") # pe-STARR-Seq sketch
@@ -91,27 +94,36 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R") # Active enhancers calling
   file.edit("git_peSTARRSeq/subscripts/Luciferase_validations.R") # Comparison with luciferase
   
-  # Figure 2 - Dev. enhancer pairs cooperate multipliclatively until saturation ----#
-  file.edit("git_peSTARRSeq/subscripts/linear_model_vllib002.R")
+  # Figure 2 - Dev. enhancer pairs cooperate multiplicatively until saturation ----#
+  file.edit("git_peSTARRSeq/subscripts/linear_model_vllib002.R") # train linear model on the whole library
   file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R") # Compare additive and synergistic models
   file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib002.R") # Linear model predicts activity
   file.edit("git_peSTARRSeq/subscripts/dev_enhancer_stength_vs_cooperativity.R") # Strong enhancers dont synergize and dont show specific motifs
-  file.edit("git_peSTARRSeq/subscripts/heatmap_ordered_ind_act_vllib002.R") # Show activity/residuals relationship
-  
+    
+  # Supplementary figure 2 --------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/umi_saturation.R") # No saturation of the UMI
   file.edit("git_peSTARRSeq/subscripts/promoter_saturation.R") # Illustrate saturation of strong enhancers
   
-  # Figure 3 - Developmental enhancer pairs are synergistic -----------------------#
-  file.edit("git_peSTARRSeq/subscripts/lm_residuals_examples_vllib002.R") # Linear model examples
-  file.edit("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_vllib002.R") # Show activity/residuals relationship
-  file.edit("git_peSTARRSeq/subscripts/heatmaps_motifs_residuals.R") # Linear model to predict residuals
+  # Figure 3 - Specific TFs potentiate/dampen dev enhancer synergy ---------------#
+  file.edit("git_peSTARRSeq/subscripts/linear_model_dev_pairs_vllib002.R") # train linear model on active, non saturating pairs
+  file.edit("git_peSTARRSeq/subscripts/lm_residuals_examples_dev_pairs_vllib002.R") # Linear model examples
+  file.edit("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_dev_pairs_vllib002.R") # Show activity/residuals relationship
+  file.edit("git_peSTARRSeq/subscripts/heatmaps_motifs_residuals_dev_pairs_vllib002.R") # Linear model to predict residuals
+  file.edit("git_peSTARRSeq/subscripts/activity_predictive_motifs_activity_matched_controls.R") # Linear model to predict residuals
+  
+  file.edit("git_peSTARRSeq/subscripts/activity_trl_twist_heterotypic_pairs_activity_matched_controls.R") # Linear model to predict residuals
+  file.edit("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_inactive_pairs_vllib002.R") # Impact TWIST motif on inactive pairs
+  file.edit("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_inactive_active_pairs_vllib002.R") # Impact TWIST motif on inactive/active pairs
   file.edit("git_peSTARRSeq/subscripts/Luciferase_clusters_validation.R") # Luciferase classes validation
+  
+  # Supplementary figure 3 --------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/heatmap_ordered_ind_act_dev_pairs_vllib002.R") # Show activity/residuals relationship
+  file.edit("git_peSTARRSeq/subscripts/CV_lm_dev_pairs_vllib002.R") # Linear model predicts activity
   
   # Figure 4 - Housekeeping enhancer pairs are additive -----------------------#
   file.edit("git_peSTARRSeq/subscripts/Compare_vllib015_vllib016_activity.R")
   file.edit("git_peSTARRSeq/subscripts/Compare_vllib015_vllib016_residuals.R")
   file.edit("git_peSTARRSeq/subscripts/CV_lm_vllib016.R")
-  
   
   # Presentation ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/peSTARRSeq_presentation.Rmd")
@@ -119,17 +131,11 @@ if(F)
   
   
   
+  # WIP ---------------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/LASSO_residuals_vllib002.R") # Linear model to predict residuals
   file.edit("git_peSTARRSeq/subscripts/chisq_residuals_classes_vllib002.R") # Show activity/residuals relationship
   file.edit("git_peSTARRSeq/subscripts/clusters_vllib002_boxplot_HTMs.R") # HTMs enrichment per cluster
   
-  
-  
-  
-  # Exploration inactive pairs ----------------------------------------------------------#
-  file.edit("git_peSTARRSeq/subscripts/exploration_inactive_pairs.R")
-  
-  # WIP ---------------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/cluster_lm_residuals_actPairs_vllib002.R") # Cluster lm residuals using L and R SOM/kmeans
   file.edit("git_peSTARRSeq/subscripts/heatmap_vllib002_motif_enrich.R") # Not used for now
   file.edit("git_peSTARRSeq/subscripts/DeepSTARR_test.R") # Not used -> combined DeepSTARR models to predict combined act 

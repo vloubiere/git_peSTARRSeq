@@ -66,7 +66,7 @@ peaks$STARR600 <- vl_computeEnrichment(ChIP_bed = c("/groups/stark/vloubiere/pro
                                        ext_peaks = 50000)$log2_enr
 
 fwrite(peaks, 
-       file = "Rdata/STARR_ATAC_DHS_CHIP_quantif.txt", 
+       file = "db/library_design/twist012/STARR_ATAC_DHS_CHIP_quantif.txt", 
        col.names = T, 
        row.names = F, 
        sep= "\t", 
