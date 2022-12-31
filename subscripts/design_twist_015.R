@@ -6,7 +6,7 @@ require(GenomicRanges)
 link <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
 
 #-------------------------------#
-# Mutant library
+# Mutant library (A)
 #-------------------------------#
 # Import mutant library
 mut <- readRDS("db/library_design/twist015/mutant_sublib_twist015.rds")
@@ -31,7 +31,9 @@ mut[nchar(oligo_full_sequence)==294, oligo_full_sequence:= paste0("GTA", oligo_f
 mut[nchar(oligo_full_sequence)==296, oligo_full_sequence:= paste0("GT", oligo_full_sequence, "TG")]
 mut[nchar(oligo_full_sequence)==298, oligo_full_sequence:= paste0("G", oligo_full_sequence, "G")]
 
-# Import DHS
+#-------------------------------#
+# DHS library (B)
+#-------------------------------#
 DHS <- readRDS("db/library_design/twist015/DHS_sublib_twist015.rds")
 DHS[, ID:= switch(type, 
                   "control"= "control",

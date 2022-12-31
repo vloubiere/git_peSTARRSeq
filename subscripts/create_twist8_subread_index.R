@@ -8,10 +8,10 @@ names <- c(twist8$ID_vl,
            "ts_SCR2_01002",
            "ts_HAM1_01003",
            "ts_SUP1_01004")
-write.fasta(as.list(seqs), 
-            names, 
-            file.out = "db/fasta/twist8_lib.fasta",
-            as.string = T)
+seqinr::write.fasta(as.list(seqs), 
+                    names, 
+                    file.out = "db/fasta/twist8_lib.fasta",
+                    as.string = T)
 dir <- "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/"
 dir.create(dir, 
            showWarnings = F)

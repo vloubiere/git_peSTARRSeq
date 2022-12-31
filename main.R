@@ -66,11 +66,11 @@ if(F)
   # Pipeline 3.0 ------------------------------------------------------------------------#
   file.edit("git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
   file.edit("git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
-  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R") # Compare to BA approach
-  file.edit("git_peSTARRSeq/subscripts/pipeline_3.0.R")
-  source("git_peSTARRSeq/subscripts/run_pipeline_3.0_parallel.R") # Parallel!
-  file.edit("git_peSTARRSeq/subscripts/rename_files_pipeline_3.0.R")
+  file.edit("git_peSTARRSeq/subscripts/create_twist15_subread_index.R")
+  file.edit("git_peSTARRSeq/subscripts/pipeline_peSTARRSeq.R")
+  file.edit("git_peSTARRSeq/subscripts/run_pipeline_parallel.R")
   # QC and sanity check -----------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R") # Compare to BA approach
   file.edit("git_peSTARRSeq/subscripts/Compare_DESeq2_to_raw_log2_ratio.R") # Sanity check
   file.edit("git_peSTARRSeq/subscripts/density_reads_position.R") # Sanity check
   file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
