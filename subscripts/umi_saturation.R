@@ -1,9 +1,9 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
-meta <- fread("Rdata/metadata_processed.txt")[vllib=="vllib002"]
-
-dat <- meta[, fread(pairs_counts), .(cdition, rep= DESeq2_pseudo_rep, pairs_counts)]
+meta <- data.table(file= list.files("db/umi_counts/", "vllib002", full.names = T))
+meta[, c("lib", "cdition", "rep"):= tstrsplit(basename(file), "_|[.]", keep = 1:3)]
+dat <- meta[, fread(file), .(cdition, rep)]
 counts <- dat[, lapply(.SD, function(x) log2(sum(x)+1)), .(L, R, cdition), .SDcols= c("umi_counts", "total_counts")]
 
 pdf("pdf/draft/umi_saturation.pdf", width = 3.5)
@@ -36,5 +36,5 @@ vl_tilt_xaxis(bar,
               labels = umi_max[, paste0(cdition, " rep", rep)])
 dev.off()
 
-
+file.show("pdf/draft/umi_saturation.pdf")
 

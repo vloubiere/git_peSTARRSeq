@@ -9,4 +9,4 @@ dir <- "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_
 dir.create(dir, 
            showWarnings = F)
 Rsubread::buildindex(basename = paste0(dir, "twist15"), 
-                     reference = "db/fasta/twist12_lib.fasta")
+                     reference = "db/fasta/twist15_lib.fasta")

@@ -5,7 +5,7 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
+dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
 dat <- merge(unique(dat[, .(ID= L, indL)]),
              unique(dat[, .(ID= R, indR)]))
 # Add TWIST data
@@ -65,3 +65,5 @@ dat[, {
                y.intersp= 0.8)]
 }]
 dev.off()
+
+file.show("pdf/draft/Correlation_left_rigth_activities.pdf")

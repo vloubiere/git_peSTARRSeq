@@ -4,9 +4,8 @@ require(vlfunctions)
 #---------------------------------#
 # Import data
 #---------------------------------#
-dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
-dat <- dat[!grepl("control", L) & !grepl("control", R) 
-           & (actL!="Inactive" | actR!="Inactive")]
+dat <- readRDS("db/linear_models/FC_vllib030_with_predictions.rds")
+dat <- dat[!grepl("control", L) & !grepl("control", R)]
 
 #---------------------------------#
 # Residuals density
@@ -35,7 +34,7 @@ sym[, col:= c("tomato", "lightgrey", "cornflowerblue")[gp]]
 # Motif enrichment
 #---------------------------------#
 # Counts
-counts <- readRDS("db/motif_counts/twist008_motif_counts_low_stringency_no_collapsing.rds")
+counts <- readRDS("db/motif_counts/twist015_motif_counts_low_stringency_no_collapsing.rds")
 sel <- names(counts)[-1]
 counts <- counts[sym$ID, on= "ID"]
 ctls <- readRDS("db/motif_counts/random_controls_1000_low_stringency_no_collapsing.rds")
@@ -49,7 +48,7 @@ coll <- enr[variable %in% enr[, variable[1], name]$V1] # Select top enrichment
 #-------------------------------------------------------------#
 # PLOT
 #-------------------------------------------------------------#
-pdf("pdf/draft/density_residuals_motif_enrichment_vllib002.pdf",
+pdf("pdf/draft/density_residuals_motif_enrichment_vllib030.pdf",
     width= 8,
     height = 9)
 par(mar= c(6,22,8,22),
@@ -120,7 +119,7 @@ epl <- plot(coll,
 vl_add_motifs(epl)
 dev.off()
 
-saveRDS(unique(epl[, .(name, variable)]),
-        "Rdata/top_enrich_motifs_residuals_density.rds")
+# saveRDS(unique(epl[, .(name, variable)]),
+#         "Rdata/top_enrich_motifs_residuals_density.rds")
 
-file.show("pdf/draft/density_residuals_motif_enrichment_vllib002.pdf")
+file.show("pdf/draft/density_residuals_motif_enrichment_vllib030.pdf")

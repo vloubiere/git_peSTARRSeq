@@ -5,12 +5,14 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/linear_models/FC_dev_pairs_vllib002_with_predictions.rds")
+dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
 
-# Select one left enhancer for which residuals (among all pairs with Right enhancers) are centered on 0
-ex <- dat[L==dat[, abs(diff(c(0, median(residuals)))), L][which.min(V1), L]]
+# Select a weak left enhancer for which residuals (among all pairs with Right enhancers) are centered on 0
+sel <- dat[!grepl("^control", L) & !grepl("^control", R) & between(indL, 2, 4.5) & padjL<0.05, 
+           abs(diff(c(0, median(residuals)))), L][which.min(V1), L]
+ex <- dat[L==sel]
 # Select examples for which right enhancers all have similar activities and similar to left enhancer
-pts <- ex[between(indR, indL[1]-0.25, indL[1]+0.25)]
+pts <- ex[between(indR, indL[1]-0.5, indL[1]+0.5)]
 # AND that are either higher or lower than expected
 pts <- pts[c(which.min(abs(-1-residuals)),
              which.min(abs(0-residuals)),
@@ -52,7 +54,7 @@ bar <- barplot(c(pts$indL[1],
                            "5'/3' observed"), 3)),
         horiz= T,
         xaxt= "n")
-axis(1, c(0,5), c(0,5))
+axis(1, c(0, 5), c(0, 5))
 title(xlab= "Activity (log2)")
 adj <- strwidth("M")*0.25
 pts[, {
@@ -63,3 +65,5 @@ pts[, {
         xpd= T)
 }, .(log2FoldChange, predicted)]
 dev.off()
+
+file.show("pdf/draft/lm_residuals_examples_vllib002.pdf")

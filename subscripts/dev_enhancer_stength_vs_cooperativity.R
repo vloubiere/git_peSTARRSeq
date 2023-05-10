@@ -5,12 +5,12 @@ require(vlfunctions)
 # Import data and compute quantiles
 #-----------------------------------#
 dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
-QL <- quantile(dat[actClassL!= "inactive", .(L, indL)]$indL, seq(0,1, length.out= 6))
+QL <- quantile(dat[actL!="Inactive", indL], seq(0,1, length.out= 6))
 dat[, actClassL:= cut(indL, 
                       c(-Inf, QL), 
                       c("Inactive", paste0("Q", 1:5)), include.lowest= T)]
 dat[, actClassL:= factor(actClassL, rev(levels(actClassL)))]
-QR <- quantile(dat[actClassR!= "inactive", .(R, indR)]$indR, seq(0,1, length.out= 6))
+QR <- quantile(dat[actR!="Inactive", indR], seq(0,1, length.out= 6))
 dat[, actClassR:= cut(indR, 
                       c(-Inf, QR), 
                       c("Inactive", paste0("Q", 1:5)), include.lowest= T)]
@@ -18,7 +18,10 @@ dat[, actClassR:= cut(indR,
 #-----------------------------------#
 # Matrix heatmap
 #-----------------------------------#
-mat <- dcast(dat, actClassL~actClassR, value.var = "residuals", fun.aggregate = mean)
+mat <- dcast(dat, 
+             actClassL~actClassR, 
+             value.var= "residuals", 
+             fun.aggregate= mean)
 mat <- as.matrix(mat, 1)
 
 #-----------------------------------#
@@ -125,3 +128,5 @@ enrL[name %in% c("GATA/4", "AP1/1"), {
 barplot(t(as.matrix(enrL[padj<0.05, .N, keyby= cl][.N:1], 1)),
         ylab= "Number of motif clusters (padj<0.05)")
 dev.off()
+
+file.show("pdf/draft/individual_strengths_vs_synergy.pdf")

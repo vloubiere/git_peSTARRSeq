@@ -24,7 +24,7 @@ require(stringdist)
 vllib <- args[1]
 type <- args[2]
 index <- args[3]
-meta <- args[4]
+meta <- fread(args[4])
 
 # Checks
 if(!type %in% c("pe-STARR-Seq", "rev-pe-STARR-Seq"))
@@ -39,14 +39,14 @@ if(length(args)>5)
     sublibRegexprR <- ".*"
 
 # # Example
-# vllib <- "vllib015"
+# vllib <- lib <- "vllib030"
 # type <-  "pe-STARR-Seq"
-# index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12"
+# index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15"
 # meta <- read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
-# meta <- as.data.table(meta)[(DESeq2) & vllib=="vllib015"]
+# meta <- as.data.table(meta)[(DESeq2) & vllib==lib]
 # meta <- data.table(meta[, .(BAM_path, i5, cdition, rep= DESeq2_pseudo_rep)])
-# sublibRegexprL <- ".*"
-# sublibRegexprR <- ".*"
+# sublibRegexprL <- "_A_"
+# sublibRegexprR <- "_A_"
 
 # Generate directories and file names
 tmpFolder <- paste0("/scratch/stark/vloubiere/", vllib, "/")
@@ -59,6 +59,7 @@ bamFolder <- paste0(tmpFolder, "bam/")
 dir.create(bamFolder, showWarnings = F)
 meta[, bam:= paste0(bamFolder, vllib, "_", cdition, "_", rep, ".bam"), ]
 meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", vllib, "_", cdition, "_", rep, ".txt")]
+meta[, align:= !file.exists(umi_counts)]
 
 # Check whether DESeq2 can be applied
 check <- meta[, length(unique(rep)), cdition]
@@ -74,8 +75,8 @@ FC_file <- paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/",
 # Extract from VBC bam file
 # For each sequencing run, extract my reads from the bam containing the full lane
 #--------------------------------------------------------------#
-mcmapply(function(b, o, fq1, fq2, i){
-  if(!file.exists(fq1) | !file.exists(fq2))
+mcmapply(function(b, o, fq1, fq2, i, align){
+  if(align & (!file.exists(fq1) | !file.exists(fq2)))
   {
     cmd <- vlfunctions::vl_extract_reads_VBC(bam= b,
                                              output_prefix = o,
@@ -88,6 +89,7 @@ b= meta$BAM_path,
 o= gsub("_1.fq.gz", "", meta$fq1),
 fq1= meta$fq1,
 fq2= meta$fq2,
+align= meta$align,
 i= as.character(reverseComplement(DNAStringSet(gsub(".*-(.*)", "\\1", meta$i5)))),
 mc.preschedule = F,
 mc.cores = getDTthreads())
@@ -97,7 +99,7 @@ mc.cores = getDTthreads())
 # Align each fastq file and produces SAM ouptut
 #--------------------------------------------------------------#
 meta[, {
-  if(!file.exists(bam))
+  if(align & !file.exists(bam))
   {
     tmp1 <- tempfile(tmpdir = fqFolder, fileext = "_1.fq.gz")
     system(paste(c("cat", fq1, ">", tmp1), collapse= " "))
@@ -114,7 +116,7 @@ meta[, {
           nthreads = getDTthreads())
   }
   print(paste0(bam, " -->> DONE"))
-}, bam]
+}, .(bam, align)]
 
 #--------------------------------------------------------------#
 # UMI counts
@@ -131,8 +133,8 @@ meta[, {
     
     # Extract good reads
     if(type=="pe-STARR-Seq")
-      .c <- .c[V9=="+" & V10=="-" & V5>V3] else if(type=="rev-pe-STARR-Seq")
-        .c <- .c[V9=="-" & V10=="+" & V2>V6]
+      .c <- .c[V9=="+" & V10=="-" & V5>V2] else if(type=="rev-pe-STARR-Seq")
+        .c <- .c[V9=="-" & V10=="+" & V2>V5]
     .c <- .c[, .(L= V1, R= V4, UMI= gsub(".*_([A-Z]{10}).*", "\\1", V7))] # Extract UMI
     
     # Filter pairs containing correct patterns
@@ -220,7 +222,7 @@ if(!file.exists(FC_file))
     # FoldChange
     norm[, log2FoldChange:= log2(norm_screen/norm_input)]
   }
-  
+
   # Select usable, inactive control pairs
   ctlPairs <- norm[grepl("^control", L) & grepl("^control", R)]
   inactCtlL <- ctlPairs[, mean(log2FoldChange), L][between(scale(V1), -1, 1), L]
@@ -243,33 +245,31 @@ if(!file.exists(FC_file))
                   mean(log2FoldChange)), R][(V1)]
   Right[, padj:= p.adjust(V2, "fdr")]
   norm[Right, c("indR", "padjR"):= .(i.V3, i.padj), on= "R"]
+
   # Remove pairs for which combined or ind act could not be computed accurately
   norm <- norm[!is.na(indL) & !is.na(indR)]
+
+  # Add activity classes
+  norm[, groupL:= fcase(grepl("^control", L), "Random seq.", default = "Candidate seq.")]
+  norm[, groupR:= fcase(grepl("^control", R), "Random seq.", default = "Candidate seq.")]
   
-  # Define active/inactive individual enhancers and pairs
-  norm[, actClassL:= fcase(padjL<0.05 & indL>=1, "active", default= "inactive")]
-  norm[, actClassR:= fcase(padjR<0.05 & indR>=1, "active", default= "inactive")]
-  norm[, actClass:= fcase(grepl("control", L), "ctl.", 
-                          actClassL=="active", "enh.",
-                          default = "inact.")]
-  norm[, actClass:= paste0(actClass, "/")]
-  norm[, actClass:= paste0(actClass,
-                           fcase(grepl("control", R), "ctl.", 
-                                 actClassR=="active", "enh.",
-                                 default= "inact."))]
-  norm[, actClass:= factor(actClass, 
-                           c("ctl./ctl.",
-                             "ctl./inact.",
-                             "inact./ctl.",
-                             "inact./inact.",
-                             "enh./ctl.",
-                             "enh./inact.",
-                             "ctl./enh.",
-                             "inact./enh.",
-                             "enh./enh."))]
+  # Split Active enhancers based on their strength
+  norm[, actL:= fcase(between(indL, 1, 2) & padjL<0.05, "Low",
+                      between(indL, 2, 4) & padjL<0.05, "Medium",
+                      between(indL, 4, Inf) & padjL<0.05, "Strong",
+                      default = "Inactive")]
+  norm[, actR:= fcase(between(indR, 1, 2) & padjR<0.05, "Low",
+                      between(indR, 2, 4) & padjR<0.05, "Medium",
+                      between(indR, 4, Inf) & padjR<0.05, "Strong",
+                      default = "Inactive")]
+  cols <- c("actL", "actR")
+  norm[, (cols):= lapply(.SD, function(x) factor(x, c("Inactive", "Low", "Medium", "Strong"))), .SDcols= cols]
+  
   # Handle missing columns
-  cols <- c("L", "R", "indL", "indR", "log2FoldChange", "padj",
-            "actClassL", "actClassR", "actClass",
+  cols <- c("L", "R",
+            "groupL", "groupR", "actL", "actR",
+            "indL", "padjL", "indR", "padjR", 
+            "log2FoldChange", "padj",
             "ctlL", "ctlR")
   cols <- cols[cols %in% names(norm)]
   norm <- norm[, cols, with= F]

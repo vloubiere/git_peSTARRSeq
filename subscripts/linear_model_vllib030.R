@@ -5,7 +5,7 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
+dat <- readRDS("db/FC_tables/vllib030_DESeq2.rds")
 
 #-----------------------------------------------------#
 # Linear models on active pairs
@@ -37,5 +37,5 @@ dat[, residuals:= log2FoldChange-predicted]
 dat[, meanResidualsL:= mean(residuals), L]
 dat[, meanResidualsR:= mean(residuals), R]
 
-saveRDS(model, "db/linear_models/lm_vllib002.rds")
-saveRDS(dat, "db/linear_models/FC_vllib002_with_predictions.rds")
+saveRDS(model, "db/linear_models/lm_vllib030.rds")
+saveRDS(dat, "db/linear_models/FC_vllib030_with_predictions.rds")

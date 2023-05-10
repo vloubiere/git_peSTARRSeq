@@ -4,24 +4,18 @@ require(data.table)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
+lib <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
 # Retrieve candidates vs control sequences
-pl <- rbind(lib[, .(ID= L, ind= indL, actClass= actClassL, side= "5'")],
-            lib[, .(ID= R, ind= indR, actClass= actClassR, side= "3'")])
+pl <- rbind(lib[, .(ID= L, group= groupL, act= actL, side= "5'")],
+            lib[, .(ID= R, group= groupR, act= actR, side= "3'")])
 pl <- unique(pl)
-pl[, group:= factor(ifelse(grepl("^control", ID), "rdm seq.", "Candidates"),
-                           c("rdm seq.", "Candidates"))]
+pl[, group:= factor(group, c("Random seq.", "Candidate seq."))]
 # Split Active enhancers based on their strength
-pl[, act:= fcase(actClass=="inactive", "Inactive",
-                 ind<=2, "Low",
-                 ind<=4, "Medium",
-                 default= "Strong")]
 pl[, act:= factor(act, c("Inactive", "Low", "Medium", "Strong"))]
 pl <- pl[, {tot <- .N; .SD[, .(.N, perc= .N/tot*100), act]}, .(side, group)]
 pl[, ypos:= cumsum(perc)-perc/2, .(side, group)]
 
 Cc <- adjustcolor(c("cornflowerblue", "gold", "tomato", "red"), 0.5)
-
 
 pdf("pdf/draft/Candidates_classification_vllib002.pdf",
     height = 3.25, 
@@ -59,3 +53,5 @@ pl[, {
   ""
 }, side]
 dev.off()
+
+file.show("pdf/draft/Candidates_classification_vllib002.pdf")

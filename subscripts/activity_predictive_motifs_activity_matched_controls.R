@@ -7,12 +7,17 @@ require(parallel)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/linear_models/FC_dev_pairs_vllib002_with_predictions.rds")
+dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
+dat <- dat[!grepl("control", L) & !grepl("control", R) 
+           & actL!="Inactive"
+           & actR!="Inactive"]
 
 # Select variables of interest
 top <- data.table(name= c("Ebox/CATATG/twi", "Trl/1", "DRE/1"),
-                  variable= c("flyfactorsurvey__CG16778_SANGER_5_FBgn0003715", "cisbp__M2014", "homer__AVYTATCGATAD_DREF"),
-                  min_count= c(3,4,2))
+                  variable= c("flyfactorsurvey__CG16778_SANGER_5_FBgn0003715", 
+                              "cisbp__M2014", 
+                              "homer__AVYTATCGATAD_DREF"),
+                  min_count= c(2,3,1))
 lib <- as.data.table(readRDS("Rdata/vl_library_twist008_112019.rds"))
 lib <- lib[ID_vl %in% dat[, c(L, R)]]
 
@@ -38,7 +43,7 @@ pl <- top[, {
     }, .(cL= indL, cR= indR, idx)]
   }]
   print(".")
-  cbind(enr[,.(L, R, actClassL, actClassR, indL, indR, log2FoldChange)],
+  cbind(enr[,.(L, R, indL, indR, log2FoldChange)],
         ctls[,.(ctl_indL= indL, ctl_indR= indR, ctl_log2FoldChange= log2FoldChange)])
 }, .(variable, name, min_count)]
 pl[, name:= factor(name, c("DRE/1", "Trl/1", "Ebox/CATATG/twi"))]
@@ -70,7 +75,8 @@ pl[, {
                           .N, " pairs)"),
              xaxt= "n",
              col= c("lightgrey", "rosybrown1"),
-             ylab= "Activity (log2)")
+             ylab= "Activity (log2)",
+             notch= T)
   axis(1, at= xpos, labels = c("5'", "3'", "Pair"))
   legend(par("usr")[2],
          par("usr")[4],
@@ -93,7 +99,8 @@ vl_boxplot(.c,
            col= c("lightgrey", "rosybrown1"),
            compute_pval= list(c(1,2), c(3,4), c(5,6)),
            yaxt= "n",
-           xlab= "Pairs' activity (log2)")
+           xlab= "Pairs' activity (log2)",
+           notch= T)
 names.arg <- table(pl$name)
 names.arg <- paste0(names(names.arg), " (", names.arg, ")")
 axis(2, seq(levels(pl$name)), names.arg)
@@ -108,3 +115,5 @@ legend(par("usr")[2],
                  "Motif pairs"),
        bty= "n")
 dev.off()
+
+file.show("pdf/draft/activity_predicitve_motifs_activity_matched.pdf")

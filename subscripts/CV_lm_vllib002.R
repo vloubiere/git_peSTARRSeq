@@ -32,9 +32,14 @@ dat[, {
                 colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
                 xlab= "Observed activity (log2)",
                 ylab= "Predicted activity (log2)",
-                yaxt= "n")
-  axis(2, at= c(0,5,10), labels = c(0,5,10))
-  mtext(eq, line= 0.5, cex= 1, adj = 1)
+                xaxt= "n",
+                yaxt= "n",
+                xlim= c(-3.5, 10),
+                ylim= c(-3.5, 10))
+  # lines(loess(predicted~log2FoldChange))
+  axis(1, at= c(-3,0,3,6,9), labels = c(-3,0,3,6,9))
+  axis(2, at= c(-3,0,3,6,9), labels = c(-3,0,3,6,9))
+  mtext(eq, line= 0.5, adj = 1, cex= 0.8)
   abline(0,1,lty=2)
   text(par("usr")[1],
        par("usr")[4]-strheight("M"),
@@ -42,3 +47,5 @@ dat[, {
        pos= 4)
 }]
 dev.off()
+
+file.show("pdf/draft/CV_linear_model_vllib002.pdf")

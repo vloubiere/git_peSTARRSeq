@@ -5,12 +5,14 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-dat <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
+dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
 
 # Quick out saturating and iactive pairs
 plot(sort(dat$log2FoldChange), type= "l")
 abline(h= 10)
-dat <- dat[actClassL=="active" & actClassR=="active" & indL<=4.5 & indR<=4.5]
+dat <- dat[!grepl("^control", L) & !grepl("^control", R)
+           & between(indL, log2(1.5), 5) & padjL<0.05
+           & between(indR, log2(1.5), 5) & padjR<0.05]
 
 #-----------------------------------------------------#
 # Linear models on active pairs

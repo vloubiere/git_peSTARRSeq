@@ -6,9 +6,9 @@ dat <- readRDS("db/FC_tables/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_counts_norm_
 .m <- merge(unique(dat[, .(ID= L, resGroupL= factor(resGroupL, rev(levels(resGroupL))))]),
             unique(dat[, .(ID= R, resGroupR)]))
 chisq <- chisq.test(.m$resGroupL, .m$resGroupR)
-chisq_residuals <- matrix(chisq$residuals, nrow= nrow(chisq$residuals))
-rownames(chisq_residuals) <- rownames(chisq$residuals)
-colnames(chisq_residuals) <- colnames(chisq$residuals)
+chisq_residuals <- matrix(chisq$stdres, nrow= nrow(chisq$stdres))
+rownames(chisq_residuals) <- rownames(chisq$stdres)
+colnames(chisq_residuals) <- colnames(chisq$stdres)
 chisq_obs <- matrix(chisq$observed, nrow= nrow(chisq$observed))
 
 pdf("pdf/draft/density_residuals_vllib002.pdf", 4, 3.6)

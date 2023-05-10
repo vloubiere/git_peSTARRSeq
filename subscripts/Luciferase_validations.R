@@ -5,23 +5,21 @@ require(vlfunctions)
 #-----------------------------------------------#
 # Import data
 #-----------------------------------------------#
-lib <- readRDS("db/FC_tables_DESeq2/vllib002_pe-STARR-Seq_DSCP_T8_SCR1_300_DESeq2_final_oe.rds")
+lib <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
              lib, 
              by= c("L", "R"),
              suffixes= c("_luc", "_STARR"))
-dat[, actCol:= adjustcolor(c("grey0", 
-                             "grey25", 
-                             "grey50", 
-                             "grey75", 
-                             "royalblue2", 
-                             "cornflowerblue", 
-                             "purple", 
-                             "magenta", 
-                             "#74C27A")[actClass], 0.5)]
-dat <- dat[actClass %in% c("ctl./ctl.", "ctl./enh.", "enh./ctl.", "enh./enh.")]
-dat[, actClass:= droplevels(actClass)]
+dat[, actClass:= fcase(grepl("^control", L) & grepl("^control", R), "ctl./ctl.",
+                       actL!="Inactive" & actR!="Inactive", "enh./enh.",
+                       grepl("^control", L) & actR!="Inactive", "ctl./enh.",
+                       actL!="Inactive" & grepl("^control", R), "enh./ctl.",
+                       default = NA)]
+dat[, actClass:= factor(actClass, c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh."))]
+dat <- na.omit(dat)
+Cc <- c("grey0", "royalblue2", "purple", "#74C27A")
+dat[, actCol:= adjustcolor(Cc[actClass], 0.5)]
 
 pdf("pdf/draft/Luciferase_validations.pdf", 
     height = 3, 
@@ -65,3 +63,4 @@ dev.off()
 
 
 
+file.show("pdf/draft/Luciferase_validations.pdf")

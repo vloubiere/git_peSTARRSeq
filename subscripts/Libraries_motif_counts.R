@@ -55,3 +55,19 @@ counts[, ID:= lib$ID]
 setcolorder(counts, "ID")
 saveRDS(counts, 
         "db/motif_counts/twist012_motif_counts_low_stringency_no_collapsing.rds")
+
+#--------------------------------------------#
+# twist 012
+#--------------------------------------------#
+# Low stringency counts
+lib <- readRDS("Rdata/vl_library_twist015_112022.rds")
+counts <- vl_motif_counts(sequences = lib$enh_seq, 
+                          sel = sel,
+                          genome= BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3,
+                          bg = "genome", 
+                          p.cutoff = 5e-04, 
+                          collapse_overlapping = F)
+counts[, ID:= lib$ID]
+setcolorder(counts, "ID")
+saveRDS(counts,
+        "db/motif_counts/twist015_motif_counts_low_stringency_no_collapsing.rds")
