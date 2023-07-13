@@ -2,18 +2,16 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-dat <- readRDS("db/linear_models/FC_vllib002_with_predictions.rds")
+dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
 
 #-----------------------------------------------#
 # Different models
 #-----------------------------------------------#
 rsqAdd <- vl_model_eval(dat$log2FoldChange, dat$additive)$Rsquare
 adj.rsqAdd <- 1-(((1-rsqAdd)*(nrow(dat)-1))/(nrow(dat)-2-1))
-lmAdd <- lm(log2FoldChange~additive, dat)
 
 rsqMult <- vl_model_eval(dat$log2FoldChange, dat$multiplicative)$Rsquare
 adj.rsqMult <- 1-(((1-rsqMult)*(nrow(dat)-1))/(nrow(dat)-2-1))
-lmMult <- lm(log2FoldChange~multiplicative, dat)
 
 model <- readRDS("db/linear_models/lm_vllib002.rds")
 adj.rsqlm <- summary(model)$adj.r.square
@@ -28,14 +26,15 @@ eq <- paste0("Predicted= ", eq[1], "+", eq[2], "*5'+", eq[3], "*3'", eq[4], "*5'
 pl <- melt(dat, 
            id.vars = "log2FoldChange", 
            measure.vars = c("additive", "multiplicative", "predicted"))
+pl[, residuals:= log2FoldChange-value]
 pl[, Rsq:= switch(as.character(variable), 
                   "additive"= adj.rsqAdd,
                   "multiplicative"= adj.rsqMult,
                   "predicted"= adj.rsqlm), variable]
-pl[, xlab:= switch(as.character(variable), 
-                   "additive"= "5' + 3' individual activities (log2)",
-                   "multiplicative"= "5' x 3' individual activities (log2)",
-                   "predicted"= "Predicted (log2)"), variable]
+pl[, ylab:= switch(as.character(variable), 
+                   "additive"= "5' + 3' activities (log2)",
+                   "multiplicative"= "5' x 3' activities (log2)",
+                   "predicted"= "Predicted activity (log2)"), variable]
 pl[, title:= switch(as.character(variable), 
                        "additive"= "Additive model",
                        "multiplicative"= "Multiplicative model",
@@ -53,9 +52,9 @@ par(las= 1,
     tcl= -0.2,
     cex= 1)
 bar <- barplot(c(adj.rsqAdd, adj.rsqMult, adj.rsqlm),
-               ylab= "Adj. R2 (goodness of fit)")
+               ylab= "Adjusted R2 (goodness of fit)")
 vl_tilt_xaxis(bar, 
-              labels = c("Additive", "Multiplicative", "Linear model"),)
+              labels = c("Additive", "Multiplicative", "Linear model"))
 dev.off()
 
 #-----------------------------------------------#
@@ -63,22 +62,26 @@ dev.off()
 #-----------------------------------------------#
 lim <- c(-4, 14)
 pdf("pdf/draft/Compare_add_mult_vllib002_smoothScatter.pdf",
-    height = 6,
-    width = 9.5)
-par(las= 1,
+    height = 3.75,
+    width = 6)
+par(font.main= 1,
+    las= 1,
+    lend= 2,
+    cex= 8/12,
+    cex.axis= 7/8,
+    cex.main= 1,
     mfcol= c(2,3),
     mar= c(4.1,4.1,2,2),
-    mgp= c(2, 0.5, 0),
+    mgp= c(1.5, 0.325, 0),
     tcl= -0.2,
-    cex= 1,
     bty= "n")
 pl[, {
   # Model
-  smoothScatter(value,
-                log2FoldChange, 
+  smoothScatter(log2FoldChange,
+                value,
                 colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
-                xlab= xlab,
-                ylab= "Combined activities (log2)",
+                xlab= "Combined activity (log2)",
+                ylab= ylab,
                 main= title,
                 xlim= lim,
                 ylim= lim,
@@ -86,11 +89,12 @@ pl[, {
                 yaxt= "n")
   axis(1, c(-4,0,6,12), c(-4,0,6,12))
   axis(2, c(-4,0,6,12), c(-4,0,6,12))
-  abline(lm(log2FoldChange~value))
-  legend('topleft', 
-         legend= paste0("adj.R2= ", round(Rsq, 2)),
+  legend('bottomright', 
+         legend= bquote(Adj.~R^2 == .(round(Rsq, 2))),
          bty= "n",
-         cex= 0.8)
+         cex= 7/8)
+  clip(-3.75,11,-3.75,11)
+  abline(0, 1, lty= "11")
   if(variable=="predicted")
     text(mean(par("usr")[c(1,2)]), 
          par("usr")[4], 
@@ -101,19 +105,24 @@ pl[, {
          cex= 0.7)
   # Diagnostic
   smoothScatter(value,
-                log2FoldChange-value,
+                residuals,
                 colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
                 xlab= "Fitted (log2)",
                 ylab= "Residuals (log2)",
                 main= title,
-                ylim= c(-10, 6))
-  abline(h= 0, lty= 2)
-  .l <- loess(log2FoldChange-value~value,
+                ylim= c(-10, 6),
+                xaxt= "n")
+  ticks <- if(variable=="additive")
+    c(0,4,8) else if(variable=="multiplicative")
+      c(0,6,12) else if(variable=="predicted")
+        c(0,5,10)
+  axis(1, ticks, ticks)
+  abline(h= 0, lty= "11")
+  .l <- loess(residuals~value,
               .SD[sample(.N, 50000)][order(value)])
   lines(.l$x, .l$fitted, col= "red")
   print(paste0(.GRP, "/", .NGRP))
-}, .(variable, title, xlab, Rsq)]
+}, .(variable, title, ylab, Rsq)]
 dev.off()
 
-file.show(c("pdf/draft/Compare_add_mult_vllib002_smoothScatter.pdf", 
-            "pdf/draft/Compare_add_mult_vllib002.pdf"))
+file.show("pdf/draft/Compare_add_mult_vllib002_smoothScatter.pdf")

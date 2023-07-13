@@ -24,15 +24,13 @@ dat[, actCol:= adjustcolor(Cc[actClass], 0.5)]
 pdf("pdf/draft/Luciferase_validations.pdf", 
     height = 3, 
     width = 3)
-par(las= 1,
-    mar= c(3.5, 2.75, 0.5, 0.5),
-    mgp= c(1.5, 0.5, 0),
-    tcl= -0.2,
-    bty= "n")
+vl_par(mar= c(3.5, 2.75, 0.5, 1.5),
+       mgp= c(1.5, 0.5, 0),
+       bty= "n")
 dat[, {
   plot(log2FoldChange_STARR, 
        log2FoldChange_luc,
-       xlab= "pe-STARR-Seq activity (log2)",
+       xlab= "pSTARR-Seq activity (log2)",
        ylab= "Norm. luciferase activity (log2)",
        ylim= c(-0.8, 6.6),
        col= actCol,
@@ -45,9 +43,10 @@ dat[, {
            col= actCol)
   .lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
   abline(.lm, lty= "11")
+  PCC <- cor.test(log2FoldChange_STARR, log2FoldChange_luc)$estimate
   leg <- unique(dat[order(actClass), .(actClass, actCol)])
   leg[, legend("bottomright",
-               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2)),
+               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2), " | PCC= ", round(PCC, 2)),
                           as.character(rev(actClass))),
                bty= "n",
                col= c("black", 
@@ -57,10 +56,10 @@ dat[, {
                lty= c("11", 
                       rep(NA, length(actClass))),
                seg.len= 0.5,
-               cex= 0.8)]
+               cex= 0.8,
+               inset= c(-0.4,0),
+               xpd= NA)]
 }]
 dev.off()
-
-
 
 file.show("pdf/draft/Luciferase_validations.pdf")

@@ -27,7 +27,7 @@ setorderv(dat, "TWIST_class", order= -1)
 #------------------------------------------------------#
 pdf("pdf/draft/Correlation_left_rigth_activities.pdf", 
     width = 3, 
-    height = 3)
+    height = 2.9)
 # Scatter plot
 par(mar= c(3.5, 3, 0.5, 0.5), 
     mgp= c(1.5, 0.5, 0),
@@ -42,16 +42,17 @@ dat[, {
        cex= 0.5,
        col= adjustcolor(TWIST_col, 0.7),
        las= 1,
-       xlab= "3' individual activity (log2)",
-       ylab= "5' individual activity (log2)")
+       xlab= "3' activity (log2)",
+       ylab= "5' activity (log2)")
   # Linear model
   .lm <- lm(indL~indR)
   abline(.lm, lty= "11")
+  PCC <- cor.test(indR, indL)$estimate
   
   # Legend
   leg <- unique(.SD[, TWIST_col, keyby= TWIST_class])
   leg[, legend("topleft",
-               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2)),
+               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2), " | PCC= ", round(PCC, 2)),
                           as.character(rev(TWIST_class))),
                pch= c(NA, 
                       rep(16, length(TWIST_class))),

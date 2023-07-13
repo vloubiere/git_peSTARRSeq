@@ -1,21 +1,92 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
-########################################################################################
-# All the scripts to reproduce the paper can be found here
-########################################################################################
+#######################################################################################################
+# pe-STARR-Seq PIPELINE 
+#######################################################################################################
 if(F)
 {
-  file.edit("git_peSTARRSeq/paper.R")
+  # Pipeline 3.0 ------------------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
+  file.edit("git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
+  file.edit("git_peSTARRSeq/subscripts/create_twist15_subread_index.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/pipeline_peSTARRSeq.R")
+  file.edit("git_peSTARRSeq/subscripts/run_pipeline_parallel.R")
+  
+  # QC and sanity check -----------------------------------------------------------------#
+  file.edit("git_peSTARRSeq/subscripts/Benchmarking_UMI_collapsing.R") # Compare to BA approach
+  file.edit("git_peSTARRSeq/subscripts/Compare_DESeq2_to_raw_log2_ratio.R") # Sanity check
+  file.edit("git_peSTARRSeq/subscripts/density_reads_position.R") # Sanity check
+  file.edit("git_peSTARRSeq/subscripts/aggregate_alignment_statistics.R")
+  file.edit("git_peSTARRSeq/subscripts/sequencing_saturation.R")
+  file.edit("git_peSTARRSeq/subscripts/barplot_read_per_theoretical_pair.R")
+  file.edit("git_peSTARRSeq/subscripts/PCC.R") 
 }
 
-########################################################################################
-# DESIGN ###############################################################################
-########################################################################################
+#######################################################################################################
+# PAPER ANALYSES 
+#######################################################################################################
+# Wrappers to clean folder
+file.edit("git_peSTARRSeq/subscripts/clean_scripts_pdf.R")
 if(F)
 {
-  # Wrappers to clean folder
-  file.edit("git_peSTARRSeq/subscripts/clean_scripts_pdf.R")
+  # Objects
+  file.edit("git_peSTARRSeq/subscripts/Libraries_motif_counts.R")
+  file.edit("git_peSTARRSeq/subscripts/linear_model_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/PCA_vllib002_actPairs_residuals.R")
+  file.edit("git_peSTARRSeq/subscripts/lasso_model_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/motif_enrichment_residuals.R")
+  file.edit("git_peSTARRSeq/subscripts/Make_final_tables.R")
   
+  # Alignment statistics
+  file.edit("git_peSTARRSeq/subscripts/alignment_statistics.R")
+  # PCC between replicates
+  file.edit("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates.R")
+  # PCC pSTARR-Seq/luciferase
+  file.edit("git_peSTARRSeq/subscripts/Luciferase_validations.R")
+  # Left vs right activities
+  file.edit("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R")
+  # Single enhancers vs pairs
+  file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R")
+  # Activity heatmap ordered by activity
+  file.edit("git_peSTARRSeq/subscripts/heatmap_act_ordered_ind_act_dev_pairs_vllib002.R")
+  # Modelling vllib002 
+  file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/smoothScatter_vllib002_actPairs_lm.R")
+  # CP saturation by strong enhancers
+  file.edit("git_peSTARRSeq/subscripts/promoter_saturation.R")
+  # Modelling residuals 
+  file.edit("git_peSTARRSeq/subscripts/evaluate_lasso_model.R")
+  # Residuals heatmap ordered by residuals
+  file.edit("git_peSTARRSeq/subscripts/heatmap_residuals_ordered_pca_vllib002.R")
+  
+  file.edit("git_peSTARRSeq/subscripts/linear_model_vllib015_vllib016.R")
+  
+  #------------------------------------#
+  # Not used
+  #------------------------------------#
+  # Saturation
+  file.edit("git_peSTARRSeq/subscripts/umi_saturation.R") # No saturation of the UMI
+  file.edit("git_peSTARRSeq/subscripts/dev_enhancer_stength_vs_cooperativity.R") # Strong enhancers dont synergize and dont show specific motifs
+  # Analysis vllib002 residuals Trl/Twist
+  file.edit("git_peSTARRSeq/subscripts/lm_residuals_examples_dev_pairs_vllib002.R") # Linear model examples
+  file.edit("git_peSTARRSeq/subscripts/density_residuals_motif_enrichment_dev_pairs_vllib002.R") # Show activity/residuals relationship
+  file.edit("git_peSTARRSeq/subscripts/heatmaps_motifs_residuals_dev_pairs_vllib002.R") # Heatmap lm coeffs to predict residuals
+  file.edit("git_peSTARRSeq/subscripts/activity_predictive_motifs_activity_matched_controls.R") # Boxplot ind vs comb for act matched pairs
+  # Mutant library
+  file.edit("git_peSTARRSeq/subscripts/mutant_library.R")
+  file.edit("git_peSTARRSeq/subscripts/mutant_library_sequencing_depth.R")
+  # DHS library
+  file.edit("git_peSTARRSeq/subscripts/linear_model_vllib030.R") # train linear model on the whole library
+  file.edit("git_peSTARRSeq/subscripts/DHS_library.R")
+}
+
+#######################################################################################################
+# LIBRARY DESIGN AND QCs
+#######################################################################################################
+if(F)
+{
   # Libraries ---------------------------------------------------------------------------#
   # twist008 
   file.edit("git_peSTARRSeq/subscripts/Generate_Ecoli_random_sequences.R")
@@ -67,10 +138,13 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib017-020.R") # Seems OK
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib021-022.R") # Seems OK
   file.edit("git_peSTARRSeq/subscripts/sanger_vllib023-028.R") # Seems OK
-  
-  ########################################################################################
-  # Luciferase validations ###############################################################
-  ########################################################################################
+}
+
+#######################################################################################################
+# Luciferase validations 
+#######################################################################################################
+if(F)
+{
   # HAM CP (Lorena) ---------------------------------------------------------------------#
   # Sanger seq
   file.edit("git_peSTARRSeq/subscripts/sanger_HAM_SUP1_luciferase_constructs.R")
@@ -88,9 +162,4 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/PCC_STARRSeq_luciferase_validations.R")
   file.edit("git_peSTARRSeq/subscripts/barplot_luciferase_validations.R")
   file.edit("git_peSTARRSeq/subscripts/connected_stripchart_luciferase_validations.R")
-  
-  ########################################################################################
-  # Miscellaneous ########################################################################
-  ########################################################################################
-  file.edit("git_peSTARRSeq/subscripts/shn_screenshot.R")
 }

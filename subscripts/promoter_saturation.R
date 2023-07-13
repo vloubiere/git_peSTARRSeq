@@ -9,13 +9,18 @@ pl <- list("Weakest 5' enhancer"= dat[L==dat[actL!="Inactive"][which.min(indL), 
            "Strongest 3' enhancer"= dat[actL!="Inactive" & R==dat[which.max(indR), R], .(ref= indR, ind= indL, log2FoldChange, predicted)])
 pl <- rbindlist(pl, idcol = T)
 
-pdf("pdf/draft/promoter_saturation.pdf", 5, 5.5)
+pdf("pdf/draft/promoter_saturation.pdf", 3.5, 3.5)
 par(mfrow=c(2,2),
+    lend= 3,
     mar= c(3,4,3,0.5),
+    cex= 8/12,
+    cex.axis= 7/8,
+    font.main= 1,
+    cex.main= 1,
     las= 1,
     tcl= -0.2,
     bty= "n",
-    mgp= c(1.5,0.5,0))
+    mgp= c(1.5,0.35,0))
 pl[, {
   smoothScatter(ind,
                 log2FoldChange,
@@ -23,9 +28,9 @@ pl[, {
                 xlim= c(0.5, 7.5),
                 ylim= c(0, 10.5),
                 main= .id,
-                ylab= "Activity of the pair (log2)",
-                xlab= paste0(ifelse(grepl("3'", .id), "5'", "3'"), " individual activity (log2)"))
-  abline(h= ref, lty= 2)
+                ylab= "Combined acitivity (log2)",
+                xlab= paste0(ifelse(grepl("3'", .id), "5'", "3'"), " activity (log2)"))
+  abline(h= ref, lty= "11")
   ref.lab <- paste(ifelse(grepl("3'", .id), "3'", "5'"), "activity")
   text(par("usr")[2],
        ref-strheight("M"),

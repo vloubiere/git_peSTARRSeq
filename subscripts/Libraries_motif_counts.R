@@ -6,68 +6,94 @@ load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAer
 sel <- as.data.table(TF_clusters_PWMs[["metadata"]])[S2_exp>0, motif_name]
 
 #--------------------------------------------#
-# Random control set
+# Indeitify relevant motifs
 #--------------------------------------------#
+# Control set
 set.seed(1)
-ctl <- vl_random_regions_BSgenome(genome = "dm3", 
-                                  n= 1000,
-                                  width = 249)
-# Low stringency counts
-counts <- vl_motif_counts(bed = ctl, 
+rdm <- vl_random_regions_BSgenome(genome = "dm3", n= 1000, width = 249)
+ctl <- vl_getSequence(rdm, "dm3")
+lib8 <- readRDS("Rdata/vl_library_twist008_112019.rds")$enh_sequence
+lib12 <- readRDS("Rdata/vl_library_twist12_210610.rds")$enh_seq
+lib15 <- readRDS("Rdata/vl_library_twist015_112022.rds")$enh_sequence
+# Counts
+dat <- list(ctl= ctl,
+            lib8= lib8,
+            lib12= lib12,
+            lib15= lib8)
+dat <- lapply(dat, as.data.table)
+dat <- rbindlist(dat, idcol = "lib")
+counts <- vl_motif_counts(sequences = dat$V1, 
                           sel = sel,
                           genome= "dm3",
                           bg = "genome", 
                           p.cutoff = 5e-04, 
                           collapse_overlapping = F)
-counts[, ID:= ctl[, paste0(seqnames, ":", start, "-", end, ":", strand)]]
+enr <- vl_motif_cl_enrich(split(counts, dat$lib),
+                          control_cl = "ctl",
+                          plot = F)
+enr[vl_Dmel_motifs_DB_full, cluster:= i.motif_cluster, on= "variable==motif_ID"]
+sel <- enr[padj<1e-5 & log2OR>0 & set_hit>10, .SD[which.max(log2OR), .(motif_ID= variable)], cluster]
+saveRDS(sel, "db/motif_counts/motifs_IDs.rds")
+
+#------------------------------------------#
+# Random controls
+#------------------------------------------#
+counts <- vl_motif_counts(bed = rdm, 
+                          sel = sel$motif_ID,
+                          genome= "dm3",
+                          bg = "genome", 
+                          p.cutoff = 5e-04, 
+                          collapse_overlapping = F)
+# setnames(counts, new= as.character(sel$cluster))
+counts[, ID:= rdm[, paste0(seqnames, ":", start, "-", end, ":", strand)]]
 setcolorder(counts, "ID")
 saveRDS(counts, 
-        "db/motif_counts/random_controls_1000_low_stringency_no_collapsing.rds")
+        "db/motif_counts/random_controls_1000.rds")
 
-#--------------------------------------------#
-# twist 008
-#--------------------------------------------#
-# Low stringency counts
+#------------------------------------------#
+# Twist 008
+#------------------------------------------#
 lib <- readRDS("Rdata/vl_library_twist008_112019.rds")
 counts <- vl_motif_counts(sequences = lib$enh_sequence, 
-                          sel = sel,
+                          sel = sel$motif_ID,
                           genome= "dm3",
                           bg = "genome", 
                           p.cutoff = 5e-04, 
                           collapse_overlapping = F)
+# setnames(counts, new= as.character(sel$cluster))
 counts[, ID:= lib$ID_vl]
 setcolorder(counts, "ID")
 saveRDS(counts, 
-        "db/motif_counts/twist008_motif_counts_low_stringency_no_collapsing.rds")
+        "db/motif_counts/twist008_motif_counts.rds")
 
 #--------------------------------------------#
 # twist 012
 #--------------------------------------------#
-# Low stringency counts
 lib <- readRDS("Rdata/vl_library_twist12_210610.rds")
 counts <- vl_motif_counts(sequences = lib$enh_seq, 
-                          sel = sel,
+                          sel = sel$motif_ID,
                           genome= "dm3",
                           bg = "genome", 
                           p.cutoff = 5e-04, 
                           collapse_overlapping = F)
+# setnames(counts, new= as.character(sel$cluster))
 counts[, ID:= lib$ID]
 setcolorder(counts, "ID")
 saveRDS(counts, 
-        "db/motif_counts/twist012_motif_counts_low_stringency_no_collapsing.rds")
+        "db/motif_counts/twist012_motif_counts.rds")
 
 #--------------------------------------------#
-# twist 012
+# twist 015
 #--------------------------------------------#
-# Low stringency counts
 lib <- readRDS("Rdata/vl_library_twist015_112022.rds")
 counts <- vl_motif_counts(sequences = lib$enh_seq, 
-                          sel = sel,
+                          sel = sel$motif_ID,
                           genome= BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3,
                           bg = "genome", 
                           p.cutoff = 5e-04, 
                           collapse_overlapping = F)
+# setnames(counts, new= as.character(sel$cluster))
 counts[, ID:= lib$ID]
 setcolorder(counts, "ID")
 saveRDS(counts,
-        "db/motif_counts/twist015_motif_counts_low_stringency_no_collapsing.rds")
+        "db/motif_counts/twist015_motif_counts.rds")

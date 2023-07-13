@@ -1,1 +1,0 @@
-test <- get(load("/groups/stark/almeida/Projects/High_resolution_STARRseq/results/20210122_deep_learning_prediction_bins_100bp_stride/Nucleot_contr_scores/Motif_enrichment_all.RData"))
