@@ -2,8 +2,8 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data
-dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
-pca <- readRDS("db/pca/vllib002_pca_residuals.rds")
+dat <- readRDS("db/linear_models/FC_vllib002_actPairs_lm_predictions.rds")
+pca <- readRDS("db/pca/vllib002_actPairs_pca_residuals.rds")
 dat[pca, c("PC1L", "PC1R"):= .(i.PC1L, i.PC1R), on= c("L", "R")]
 dat <- dat[!is.na(PC1L) & !is.na(PC1R)] # The PCA was only made for active pairs
 dat[, L:= factor(L, unique(L[order(-PC1L)]))]
@@ -12,10 +12,10 @@ dat[, R:= factor(R, unique(R[order(PC1R)]))]
 # motifs
 mot <- readRDS("db/motif_counts/twist008_motif_counts.rds")
 IDs <- readRDS("db/motif_counts/motifs_IDs.rds")
-sel <- IDs[c("AP1/1", "Ebox/CATATG/twi", "Trl/1", "DRE/1"), motif_ID, on= "cluster"]
+sel <- IDs[c("AP1/1", "GATA/1", "SREBP/1", "DRE/1"), motif_ID, on= "cluster"]
 mot <- mot[, c("ID", as.character(sel)), with= F]
 setnames(mot,
-         new= c("ID", "AP-1", "twist", "Trl", "Dref"))
+         new= c("ID", "AP-1", "GATA", "SREBP", "DRE"))
 
 #---------------------------------------------#
 # Order residuals matrix using PCA
@@ -38,7 +38,7 @@ hm <- vl_heatmap(as.matrix(im, 1),
 # Left side
 #---------------------------------------------#
 leftAct <- dat[, .(ind= indL[1]), keyby= L]
-indLim <- c(-2, 7)
+indLim <- c(0, 7)
 hm1 <- vl_heatmap(as.matrix(leftAct, 1),
                   cluster_rows= F,
                   cluster_cols= F, 
@@ -91,7 +91,7 @@ hm4 <- vl_heatmap(t(as.matrix(rightMot, 1)),
 #---------------------------------------------#
 # Plot
 #---------------------------------------------#
-pdf("pdf/draft/heatmap_residuals_pca_order.pdf",
+pdf("pdf/draft/heatmap_residuals_actPairs_pca_order.pdf",
     width = 6,
     height = 5.25)
 mat <- matrix(1:9, ncol= 3)

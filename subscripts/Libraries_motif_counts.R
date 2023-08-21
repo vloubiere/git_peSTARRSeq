@@ -3,7 +3,9 @@ require(vlfunctions)
 
 # Select motifs
 load("/groups/stark/almeida/data/motifs/motif_collection_v7_no_transfac_SteinAerts/TF_clusters_PWMs.RData")
-sel <- as.data.table(TF_clusters_PWMs[["metadata"]])[S2_exp>0, motif_name]
+sel <- as.data.table(TF_clusters_PWMs[["metadata"]])
+sel[, check:= any(S2_exp>=5), Motif_cluster_name]
+sel <- sel[(check), motif]
 
 #--------------------------------------------#
 # Indeitify relevant motifs
@@ -32,7 +34,8 @@ enr <- vl_motif_cl_enrich(split(counts, dat$lib),
                           control_cl = "ctl",
                           plot = F)
 enr[vl_Dmel_motifs_DB_full, cluster:= i.motif_cluster, on= "variable==motif_ID"]
-sel <- enr[padj<1e-5 & log2OR>0 & set_hit>10, .SD[which.max(log2OR), .(motif_ID= variable)], cluster]
+enr[vl_Dmel_motifs_DB_full, Dmel:= i.Dmel, on= "variable==motif_ID"]
+sel <- enr[padj<1e-5 & log2OR>0 & set_hit>10, .SD[which.max(log2OR), .(Dmel, motif_ID= variable)], cluster]
 saveRDS(sel, "db/motif_counts/motifs_IDs.rds")
 
 #------------------------------------------#

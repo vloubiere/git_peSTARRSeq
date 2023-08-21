@@ -40,6 +40,7 @@ saveRDS(dat, "db/linear_models/FC_vllib002_lm_predictions.rds")
 # Linear models on active pairs
 #-----------------------------------------------------#
 dat <- dat[actL!="Inactive" & actR!="Inactive"]
+# dat <- dat[between(predicted, 0, 6, incbounds = T)]
 # Define train and test sets
 set.seed(1)
 dat[dat[, .(set= sample(3)), L], setL:= i.set, on= "L"]

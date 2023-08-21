@@ -3,6 +3,8 @@ require(data.table)
 require(vlfunctions)
 
 dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
+dat[, additive:= log2(2^indL+2^indR)]
+dat[, multiplicative:= indL+indR]
 
 #-----------------------------------------------#
 # Different models
@@ -31,7 +33,7 @@ pl[, Rsq:= switch(as.character(variable),
                   "additive"= adj.rsqAdd,
                   "multiplicative"= adj.rsqMult,
                   "predicted"= adj.rsqlm), variable]
-pl[, ylab:= switch(as.character(variable), 
+pl[, xlab:= switch(as.character(variable), 
                    "additive"= "5' + 3' activities (log2)",
                    "multiplicative"= "5' x 3' activities (log2)",
                    "predicted"= "Predicted activity (log2)"), variable]
@@ -77,11 +79,11 @@ par(font.main= 1,
     bty= "n")
 pl[, {
   # Model
-  smoothScatter(log2FoldChange,
-                value,
+  smoothScatter(value,
+                log2FoldChange,
                 colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
-                xlab= "Combined activity (log2)",
-                ylab= ylab,
+                xlab= xlab,
+                ylab= "Combined activity (log2)",
                 main= title,
                 xlim= lim,
                 ylim= lim,
@@ -89,7 +91,7 @@ pl[, {
                 yaxt= "n")
   axis(1, c(-4,0,6,12), c(-4,0,6,12))
   axis(2, c(-4,0,6,12), c(-4,0,6,12))
-  legend('bottomright', 
+  legend('topleft', 
          legend= bquote(Adj.~R^2 == .(round(Rsq, 2))),
          bty= "n",
          cex= 7/8)
@@ -122,7 +124,7 @@ pl[, {
               .SD[sample(.N, 50000)][order(value)])
   lines(.l$x, .l$fitted, col= "red")
   print(paste0(.GRP, "/", .NGRP))
-}, .(variable, title, ylab, Rsq)]
+}, .(variable, title, xlab, Rsq)]
 dev.off()
 
 file.show("pdf/draft/Compare_add_mult_vllib002_smoothScatter.pdf")
