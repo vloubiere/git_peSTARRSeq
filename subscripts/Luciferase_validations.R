@@ -2,9 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-#-----------------------------------------------#
-# Import data
-#-----------------------------------------------#
+# Import data ----
 lib <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
@@ -21,12 +19,18 @@ dat <- na.omit(dat)
 Cc <- c("grey0", "royalblue2", "purple", "#74C27A")
 dat[, actCol:= adjustcolor(Cc[actClass], 0.5)]
 
+# Model ----
+.lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
+
+# Plot ----
 pdf("pdf/draft/Luciferase_validations.pdf", 
     height = 3, 
     width = 3)
-vl_par(mar= c(3.5, 2.75, 0.5, 1.5),
-       mgp= c(1.5, 0.5, 0),
-       bty= "n")
+par(mar= c(3.5, 2.75, 0.5, 1.5),
+    mgp= c(1.5, 0.5, 0),
+    bty= "n",
+    las= 1,
+    tcl= -0.2)
 dat[, {
   plot(log2FoldChange_STARR, 
        log2FoldChange_luc,
@@ -41,25 +45,17 @@ dat[, {
            log2FoldChange_STARR,
            log2FoldChange_luc+sd,
            col= actCol)
-  .lm <- lm(log2FoldChange_luc~log2FoldChange_STARR, dat)
-  abline(.lm, lty= "11")
-  PCC <- cor.test(log2FoldChange_STARR, log2FoldChange_luc)$estimate
-  leg <- unique(dat[order(actClass), .(actClass, actCol)])
-  leg[, legend("bottomright",
-               legend = c(paste0("R2= ", round(summary(.lm)$r.squared, 2), " | PCC= ", round(PCC, 2)),
-                          as.character(rev(actClass))),
-               bty= "n",
-               col= c("black", 
-                      rev(actCol)),
-               pch= c(NA, 
-                      rep(16, length(actClass))),
-               lty= c("11", 
-                      rep(NA, length(actClass))),
-               seg.len= 0.5,
-               cex= 0.8,
-               inset= c(-0.4,0),
-               xpd= NA)]
+  .SD
 }]
+# Legend
+abline(.lm, lty= "11")
+unique(dat[, .(actClass, actCol)])[,{
+  legend("bottomright",
+         fill= actCol,
+         legend= actClass,
+         bty= "n",
+         cex= 0.8)
+}]
+vl_plot_R2(rsquare = summary(.lm)$r.squared,
+           inset= c(-0.1,0))
 dev.off()
-
-file.show("pdf/draft/Luciferase_validations.pdf")

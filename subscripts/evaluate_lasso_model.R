@@ -32,10 +32,10 @@ for(var in c("log2FoldChange", "residuals"))
                 y,
                 colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
                 xlab= "Observed (log2)",
-                ylab= "Predicted (lasso)")
-  legend('topleft',
-         legend = paste0("R2= ", round(vl_model_eval(x, y), 2)$Rsquare),
-         bty= "n",
-         cex= 7/8)
+                ylab= "Predicted (lasso)",
+                nrpoints= 0)
+  vl_plot_R2(rsquare = vl_model_eval(x, y)$Rsquare,
+             cex= 7/8,
+             inset= c(-0.1, 0))
 }
 dev.off()

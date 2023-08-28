@@ -32,38 +32,57 @@ if(F)
   file.edit("git_peSTARRSeq/subscripts/PCA_vllib002_residuals.R")
   file.edit("git_peSTARRSeq/subscripts/PCA_vllib002_actPairs_residuals.R")
   file.edit("git_peSTARRSeq/subscripts/lasso_model_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/mutant_library_lm_vllib029.R")
   
-  ## Alignment statistics ----
+  ## QC ----
+  ### Alignment statistics ----
   file.edit("git_peSTARRSeq/subscripts/alignment_statistics.R")
-  ## PCC between replicates ----
+  ### PCC between replicates ----
   file.edit("git_peSTARRSeq/subscripts/PCC_peSTARRSeq_replicates.R")
-  ## PCC pSTARR-Seq/luciferase ----
+  ### PCC pSTARR-Seq/luciferase ----
   file.edit("git_peSTARRSeq/subscripts/Luciferase_validations.R")
-  ## Left vs right activities ----
+  ### Left vs right activities ----
   file.edit("git_peSTARRSeq/subscripts/Correlation_left_rigth_activities.R")
-  ## Single enhancers vs pairs ----
+  ### Single enhancers vs pairs ----
   file.edit("git_peSTARRSeq/subscripts/Candidates_classification_vllib002.R")
   file.edit("git_peSTARRSeq/subscripts/Compare_individual_vs_enh_pairs.R")
-  ## Activity heatmap ordered by activity ----
-  file.edit("git_peSTARRSeq/subscripts/heatmap_act_ordered_ind_act_dev_pairs_vllib002.R")
-  ## Modelling vllib002  ----
+  
+  ## Dev enhancers synergy ----
+  ### Activity heatmap ordered by activity ----
+  file.edit("git_peSTARRSeq/subscripts/heatmap_act_ordered_ind_act_vllib002.R")
+  ### Modelling vllib002  ----
   file.edit("git_peSTARRSeq/subscripts/Compare_additive_multiplicative_vllib002.R")
-  file.edit("git_peSTARRSeq/subscripts/smoothScatter_vllib002_actPairs_lm.R")
-  ## CP saturation by strong enhancers ----
+  file.edit("git_peSTARRSeq/subscripts/linear_model_actPairs_vllib002.R")
+  ### CP saturation by strong enhancers ----
   file.edit("git_peSTARRSeq/subscripts/promoter_saturation.R")
-  ## Modelling residuals ----
+  
+  ## Residuals modelling and motifs impact ----
+  ### Residuals heatmap ordered by activity ----
+  file.edit("git_peSTARRSeq/subscripts/heatmap_res_ordered_ind_act_actBreaks_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/heatmap_res_ordered_ind_act_vllib002.R")
+  file.edit("git_peSTARRSeq/subscripts/heatmap_res_ordered_ind_act_vllib002_classes.R")
+  file.edit("git_peSTARRSeq/subscripts/heatmap_res_ordered_ind_act_inact_pairs_vllib002.R")
+  ### Modelling residuals ----
   file.edit("git_peSTARRSeq/subscripts/evaluate_lasso_model.R")
-  ## Residuals reproducibility ----
+  ### Residuals reproducibility ----
   file.edit("git_peSTARRSeq/subscripts/residuals_reproducibility.R")
-  ## Motifs impact vs activity matched controls ----
+  ### Motifs impact vs activity matched controls ----
   file.edit("git_peSTARRSeq/subscripts/activity_predictive_motifs_activity_matched_controls.R")
-  ## Motifs impact residuals vs activity ----
+  ### Motifs impact residuals vs activity ----
   file.edit("git_peSTARRSeq/subscripts/motif_impact_act_vs_res.R")
-  ## Mutant library ----
-  file.edit("git_peSTARRSeq/subscripts/mutant_library.R")
   ## Residuals heatmap ordered by residuals ----
   file.edit("git_peSTARRSeq/subscripts/heatmap_residuals_ordered_pca_vllib002.R")
   file.edit("git_peSTARRSeq/subscripts/heatmap_residuals_ordered_pca_actPairs_vllib002.R")
+  
+  ## Mutant library ----
+  file.edit("git_peSTARRSeq/subscripts/mutant_library.R")
+  
+  ## longer spacer ----
+  file.edit("git_peSTARRSeq/subscripts/long_spacer.R")
+  
+  ## Van Steensel data ----
+  file.edit("git_peSTARRSeq/subscripts/analyse_vanSteensel_data.R")
+  
   ## WIP ----
   file.edit("git_peSTARRSeq/subscripts/linear_model_vllib015_vllib016.R")
   file.edit("git_peSTARRSeq/subscripts/motif_enrichment_residuals.R")

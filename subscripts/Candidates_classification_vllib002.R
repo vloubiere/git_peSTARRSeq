@@ -53,5 +53,3 @@ pl[, {
   .SD
 }, side]
 dev.off()
-
-file.show("pdf/draft/Candidates_classification_vllib002.pdf")

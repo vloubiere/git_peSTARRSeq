@@ -2,21 +2,17 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
-#-----------------------------------------------#
-# Import data
-#-----------------------------------------------#
+# Import data ---
 dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
 
-#-----------------------------------------------------#
-# Linear models on all pairs
-#-----------------------------------------------------#
-# Define train and test sets
+# Linear models on all pairs ----
+## Define train and test sets ----
 set.seed(1)
 dat[dat[, .(set= sample(3)), L], setL:= i.set, on= "L"]
 set.seed(1)
 dat[dat[, .(set= sample(3)), R], setR:= i.set, on= "R"]
 dat[, set:= .GRP, .(setL, setR)]
-# Train linear model for each train set and compute predicted values
+## Train linear model for each train set and compute predicted values ----
 model <- lm(formula = log2FoldChange~indL*indR,
             data= dat)
 model$CV_rsqs <- dat[, {
@@ -29,16 +25,14 @@ model$CV_rsqs <- dat[, {
   .(rsq= summary(model)$r.squared)
 }, set]
 
-# Compute expected
+## Compute expected ----
 dat[, predicted:= predict(model)]
 dat[, residuals:= log2FoldChange-predicted]
 
 saveRDS(model, "db/linear_models/lm_vllib002.rds")
 saveRDS(dat, "db/linear_models/FC_vllib002_lm_predictions.rds")
 
-#-----------------------------------------------------#
-# Linear models on active pairs
-#-----------------------------------------------------#
+# Linear models on active pairs ----
 dat <- dat[actL!="Inactive" & actR!="Inactive"]
 # dat <- dat[between(predicted, 0, 6, incbounds = T)]
 # Define train and test sets
@@ -47,7 +41,8 @@ dat[dat[, .(set= sample(3)), L], setL:= i.set, on= "L"]
 set.seed(1)
 dat[dat[, .(set= sample(3)), R], setR:= i.set, on= "R"]
 dat[, set:= .GRP, .(setL, setR)]
-# Train linear model for each train set and compute predicted values
+
+## Train linear model for each train set and compute predicted values ---
 model <- lm(formula = log2FoldChange~indL*indR,
             data= dat)
 model$CV_rsqs <- dat[, {
@@ -60,9 +55,9 @@ model$CV_rsqs <- dat[, {
   .(rsq= summary(model)$r.squared)
 }, set]
 
-# Compute expected
+## Compute expected ----
 dat[, predicted:= predict(model)]
 dat[, residuals:= log2FoldChange-predicted]
 
-saveRDS(model, "db/linear_models/lm_vllib002_actPAirs.rds")
+saveRDS(model, "db/linear_models/lm_vllib002_actPairs.rds")
 saveRDS(dat, "db/linear_models/FC_vllib002_actPairs_lm_predictions.rds")

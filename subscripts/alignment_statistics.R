@@ -14,12 +14,16 @@ dat[, c("N_pairs", "total_counts", "collapsed_counts", "umi_counts"):= {
 dat[, min_reads:= formatC(min(collapsed_counts), format = "e", digits =  1), .(library, cdition)]
 dat[, Cc:= sapply(cdition, switch, "input"= "grey", "screen"= "tomato")]
 
-pdf("pdf/draft/alignment_statistics.pdf", width = 14, height = 4)
-vl_par(mfrow= c(1,4), 
-       oma= c(0,0,2,10), 
-       mgp= c(3.5,0.5,0),
-       mar= c(5,5,2,2),
-       cex= 1)
+pdf("pdf/draft/alignment_statistics.pdf",
+    width = 14,
+    height = 4)
+par(mfrow= c(1,4), 
+    oma= c(0,0,2,10), 
+    mgp= c(3.5,0.5,0),
+    mar= c(5,5,2,2),
+    cex= 1,
+    las=1,
+    tcl= -0.2)
 dat[, {
   # Barplot number of pairs
   bar <- barplot(N_pairs, 

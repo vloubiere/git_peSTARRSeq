@@ -27,24 +27,12 @@ lm1 <- lm(log2FoldChange_rep1~indL1*indR1, counts)
 lm2 <- lm(log2FoldChange_rep2~indL2*indR2, counts)
 counts[, log2FoldChange_merge:= dat$log2FoldChange]
 counts[, predicted_rep1:= predict(lm1)]
-counts[, residuals_rep1:= log2FoldChange_rep1-predicted_rep1]
 counts[, predicted_rep2:= predict(lm2)]
+counts[, residuals_rep1:= log2FoldChange_rep1-predicted_rep1]
 counts[, residuals_rep2:= log2FoldChange_rep2-predicted_rep2]
 
-cmb <- data.table(c("log2FoldChange_merge",
-                    "log2FoldChange_merge",
-                    "log2FoldChange_rep1",
-                    "predicted_rep1",
-                    "predicted_rep2",
-                    "predicted_rep1",
-                    "residuals_rep1"),
-                  c("log2FoldChange_rep1",
-                    "log2FoldChange_rep2",
-                    "log2FoldChange_rep2",
-                    "log2FoldChange_rep1",
-                    "log2FoldChange_rep2",
-                    "predicted_rep2",
-                    "residuals_rep2"))
+cmb <- data.table(c("predicted_rep1", "residuals_rep1"),
+                  c("predicted_rep2", "residuals_rep2"))
 
 pdf("pdf/draft/residuals_reproductibility.pdf",
     height= 8)
@@ -56,9 +44,16 @@ par(mfrow=c(3,3),
 cmb[, {
   x <- counts[[V1]]
   y <- counts[[V2]]
-  smoothScatter(x, y, xlab= V1[1], ylab= V2[1])
+  smoothScatter(x,
+                y,
+                xlab= V1[1],
+                ylab= V2[1],
+                colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
+                col= "lightgrey")
   PCC <- cor.test(x, y)$estimate
-  legend("topleft", paste0("PCC= ", round(PCC, 3)), bty= "n")
+  legend("topleft",
+         paste0("PCC= ", round(PCC, 3)),
+         bty= "n")
   .SD
 }, .(V1, V2)]
 dev.off()

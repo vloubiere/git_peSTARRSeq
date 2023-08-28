@@ -2,10 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(readxl)
 require(data.table)
 
-#--------------------------------------------------------------#
-# Update exp data
-# Fetch dropbox folder containing my metadata and update local files
-#--------------------------------------------------------------#
+# Update exp data (dropbox folder) ----
 if(F)
   source("/groups/stark/vloubiere/exp_data/update_files.R")
 meta <- read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
@@ -13,9 +10,7 @@ meta <- as.data.table(meta)[(DESeq2)]
 cols <- colnames(meta)
 meta[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
 
-#-------------------------------------------------------------#
-# vllib002
-#-------------------------------------------------------------#
+# vllib002 ----
 lib <- "vllib002"
 type <-  "pe-STARR-Seq"
 index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8"
@@ -36,9 +31,7 @@ vl_bsub(Rcmd,
         t = '2-00:00:00',
         e= "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/")
 
-#-------------------------------------------------------------#
-# vllib006
-#-------------------------------------------------------------#
+# vllib006 ----
 lib <- "vllib006"
 type <-  "rev-pe-STARR-Seq"
 index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8"
@@ -59,10 +52,8 @@ vl_bsub(Rcmd,
         t = '2-00:00:00',
         e= "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/")
 
-#-------------------------------------------------------------#
-# Twist12
-#-------------------------------------------------------------#
-for(lib in c("vllib015", "vllib016"))
+# Twist12 ----
+for(lib in c("vllib015", "vllib016", "vllib027", "vllib028"))
 {
   type <-  "pe-STARR-Seq"
   index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12"
@@ -84,9 +75,7 @@ for(lib in c("vllib015", "vllib016"))
           e= "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/")
 }
 
-#-------------------------------------------------------------#
-# vllib029
-#-------------------------------------------------------------#
+# vllib029 ----
 lib <- "vllib029"
 type <-  "pe-STARR-Seq"
 index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15"
@@ -107,9 +96,7 @@ vl_bsub(Rcmd,
         t = '2-00:00:00',
         e= "/groups/stark/vloubiere/projects/pe_STARRSeq/logs/")
 
-#-------------------------------------------------------------#
-# vllib030
-#-------------------------------------------------------------#
+# vllib030 ----
 lib <- "vllib030"
 type <-  "pe-STARR-Seq"
 index <-  "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15"

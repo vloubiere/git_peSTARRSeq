@@ -1,7 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
-# Import data
+# Import data ----
 dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
 pca <- readRDS("db/pca/vllib002_pca_residuals.rds")
 dat[pca, c("PC1L", "PC1R"):= .(i.PC1L, i.PC1R), on= c("L", "R")]
@@ -9,7 +9,7 @@ dat <- dat[!is.na(PC1L) & !is.na(PC1R)] # The PCA was only made for active pairs
 dat[, L:= factor(L, unique(L[order(-PC1L)]))]
 dat[, R:= factor(R, unique(R[order(PC1R)]))]
 
-# motifs
+# motifs ----
 mot <- readRDS("db/motif_counts/twist008_motif_counts.rds")
 IDs <- readRDS("db/motif_counts/motifs_IDs.rds")
 sel <- IDs[c("AP1/1", "Ebox/CATATG/twi", "Trl/1", "DRE/1"), motif_ID, on= "cluster"]
@@ -17,9 +17,7 @@ mot <- mot[, c("ID", as.character(sel)), with= F]
 setnames(mot,
          new= c("ID", "AP-1", "twist", "Trl", "Dref"))
 
-#---------------------------------------------#
-# Order residuals matrix using PCA
-#---------------------------------------------#
+# Order residuals matrix using PCA ----
 # Order and plot
 im <- dcast(dat,
             L~R,
@@ -34,9 +32,7 @@ hm <- vl_heatmap(as.matrix(im, 1),
                  show_legend = T,
                  plot = F)
 
-#---------------------------------------------#
-# Left side
-#---------------------------------------------#
+# Left side ----
 leftAct <- dat[, .(ind= indL[1]), keyby= L]
 indLim <- c(-2, 7)
 hm1 <- vl_heatmap(as.matrix(leftAct, 1),
@@ -61,9 +57,7 @@ hm2 <- vl_heatmap(as.matrix(leftMot, 1),
                   show_legend = F,
                   plot = F)
 
-#---------------------------------------------#
-# Right side
-#---------------------------------------------#
+# Right side ----
 rightAct <- dat[, .(ind= indR[1]), keyby= R]
 hm3 <- vl_heatmap(t(as.matrix(rightAct, 1)),
                   cluster_rows= F,
@@ -88,9 +82,7 @@ hm4 <- vl_heatmap(t(as.matrix(rightMot, 1)),
                   show_legend = F,
                   plot = F)
 
-#---------------------------------------------#
-# Plot
-#---------------------------------------------#
+# Plot ----
 pdf("pdf/draft/heatmap_residuals_pca_order.pdf",
     width = 6,
     height = 5.25)
