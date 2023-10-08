@@ -3,14 +3,10 @@ require(data.table)
 require(vlfunctions)
 require(glmnet)
 
-#-----------------------------------------------#
-# Import data (test sets already present in the #set column)
-#-----------------------------------------------#
+# Import data ---- (test sets already present in the #set column)
 dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
 
-#-----------------------------------------------#
-# Counts matrix
-#-----------------------------------------------#
+# Counts matrix ----
 count <- readRDS("db/motif_counts/twist008_motif_counts.rds")
 motL <- count[dat$L, on= "ID"]
 setnames(motL, gsub("$", "__L", names(motL)))
@@ -21,9 +17,7 @@ mat <- cbind(as.matrix(motL, 1),
 rm(list= c("motL", "motR"))
 gc()
 
-#-----------------------------------------------#
-# CROSS VALIDATED LASSO
-#-----------------------------------------------#
+# CROSS VALIDATED LASSO  ----
 # Function
 trainLASSO <- function(data, 
                        response= var,
@@ -47,7 +41,8 @@ trainLASSO <- function(data,
                   standardize = TRUE)
   return(model)
 }
-# Train model with the full dataset and compute expected
+
+# Train model ---- with the full dataset and compute expected
 models <- list()
 for(var in c("log2FoldChange", "residuals"))
 {

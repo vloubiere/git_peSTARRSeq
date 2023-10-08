@@ -22,18 +22,21 @@ dat[, TWIST_col:= c("grey20", "#4D9221", "#B8E186", "#F1B6DA", "#C51B7D")[TWIST_
 setorderv(dat, "TWIST_class", order= -1)
 
 # Model ----
-.lm <-lm(indL~indR, dat)
+.lm <- lm(indL~indR, dat)
 
 # Plot ----
 pdf("pdf/draft/Correlation_left_rigth_activities.pdf", 
     width = 3, 
-    height = 2.9)
-# Scatter plot
-par(mar= c(3.5, 3, 0.5, 0.5), 
-    mgp= c(1.5, 0.5, 0),
+    height = 3)
+par(mai= c(0.75,0.75,0.75,0.75), 
+    mgp= c(0.75, 0.25, 0),
+    cex.lab= 8/12,
+    cex.axis= 7/12,
     las= 1,
-    tcl= -0.2,
-    bty= "n")
+    tcl= -0.1,
+    bty= "n",
+    pty= "s",
+    lend= 2)
 dat[, {
   # Scatter plot
   plot(indR,
@@ -42,19 +45,25 @@ dat[, {
        cex= 0.5,
        col= adjustcolor(TWIST_col, 0.7),
        las= 1,
+       xaxt= "n",
        xlab= "3' activity (log2)",
        ylab= "5' activity (log2)")
+  axis(1, padj = -1.25)
+  vl_plot_coeff(value = cor.test(indR, indL)$estimate,
+                type= "pcc",
+                cex= 7/12)
 }]
-# Legend
 abline(.lm, lty= "11")
+# Legend
 unique(dat[, .(TWIST_class, TWIST_col)])[,{
   legend("bottomright",
-         col= TWIST_col,
+         col= adjustcolor(TWIST_col, 0.7),
          pch= 16,
          legend= TWIST_class,
          bty= "n",
-         cex= 0.7)
+         cex= 6/12,
+         y.intersp = .75,
+         inset= c(-.3, 0),
+         xpd= T)
 }]
-vl_plot_R2(rsquare = summary(.lm)$r.squared,
-           inset= c(-0.1,0))
 dev.off()

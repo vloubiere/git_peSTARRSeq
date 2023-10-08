@@ -2,7 +2,18 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data ----
-dat <- readRDS("db/linear_models/FC_vllib029_mutLib_lm_predictions.rds")
+dat <- readRDS("db/FC_tables/vllib029_DESeq2.rds")
+
+# Make sequence ID unique (numbers are only unique within one group) ----
+dat[, c("groupL", "mutL", "IDL"):= tstrsplit(L, "_", keep= c(1,2,4))]
+dat[, c("groupR", "mutR", "IDR"):= tstrsplit(R, "_", keep= c(1,2,4))]
+dat[, IDL:= paste0(groupL, IDL)]
+dat[, IDR:= paste0(groupR, IDR)]
+
+# Compute expected multiplicative ----
+model <- readRDS("db/linear_models/lm_vllib002.rds")
+dat[, multiplicative:= predict(model, .SD)]
+dat[, residuals:= log2FoldChange-multiplicative]
 
 # Extract data for combinations of interest ----
 pl <- merge(dat[mutL=="WT" & mutR=="WT", .(IDL, IDR, indL, indR, log2FoldChange, residuals)],
@@ -17,78 +28,43 @@ pl[, cdition:= fcase(grepl("add.*Trl", mutL) & grepl("add.*Trl", mutR), "Added T
                      grepl("mut.*Dref", mutL) & grepl("mut.*Dref", mutR), "Mutated Dref motifs",
                      default= "mixed")]
 
-pdf("pdf/draft/mutant_library_per_cdition.pdf", 5, 2.25)
-layout(matrix(1:3, nrow = 1), 
-       widths = c(0.75,1,0.5))
-par(oma= c(0,0,4,6),
-    mgp= c(2, 0.5, 0),
-    tcl= -0.2,
+# Only consider enhancers that were active in the first place ----
+pl <- pl[(grepl("^noMotifAct", IDL) & grepl("^noMotifAct", IDL)) 
+         | (grepl("^Trl", IDL) & grepl("^Trl", IDL))
+         | (grepl("^twist", IDL) & grepl("^twist", IDL))]
+
+pdf("pdf/draft/mutant_library_per_cdition.pdf", 
+    width = 9,
+    height= 6)
+par(mfrow= c(2,3),
+    mai= c(.9,1.25,.9,1.35),
+    mgp= c(1, 0.25, 0),
+    cex= 1,
+    cex.lab= 8/12,
+    cex.axis= 7/12,
+    font.main= 1,
     las= 1,
-    font.main= 1)
+    tcl= -0.1,
+    bty= "n",
+    lend= 2,
+    lwd= .75)
 Cc <- c("lightgrey", "pink1")
 pl[cdition!="mixed", {
-  for(cutoff in c(-Inf, 0.5))
-  {
-    
-    .SD[indL_wt>=cutoff & indR_wt>=cutoff, {
-      par(mar= c(5,3.5,1.5,0.5))
-      plot(residuals_wt,
-           residuals_mut,
-           xlab= "WT residuals (log2)",
-           ylab= "Mut residuals (log2)",
-           pch= 16,
-           col= adjustcolor("grey", .2),
-           bty= "n",
-           cex= .5)
-      PCC <- cor.test(residuals_wt,
-                      residuals_mut)$estimate
-      legend("topleft",
-             legend= paste0("PCC= ", round(PCC, 2)),
-             bty= "n",
-             inset= c(-0.1, 0),
-             cex= 0.6)
-      clip(quantile(residuals_wt, 0.01),
-           quantile(residuals_wt, 0.99),
-           quantile(residuals_mut, 0.01),
-           quantile(residuals_mut, 0.99))
-      abline(0, 1, lty= "11")
-      par(mar= c(2,3.5,0,0.5))
-      vl_boxplot(indL_wt,
-                 indL_mut,
-                 indR_wt,
-                 indR_mut,
-                 log2FoldChange_wt,
-                 log2FoldChange_mut,
-                 compute_pval= list(c(1,2), c(3,4), c(5,6)),
-                 ylab= "Activity (log2)",
-                 notch= T,
-                 xaxt= "n",
-                 col= Cc)
-      vl_boxplot(residuals_wt,
-                 residuals_mut,
-                 compute_pval= list(c(1,2)),
-                 ylab= "Residuals (log2)",
-                 xaxt= "n",
-                 notch= T,
-                 col= Cc)
-      text(x= grconvertX(0.5, "ndc", "user"),
-           y= grconvertY(1, "ndc", "user"),
-           labels= paste0(unique(cdition),
-                          ifelse(cutoff==(-Inf), " (all, n=", " (act, n="),
-                          formatC(.N, big.mark = ","), ")"),
-           pos= 1,
-           xpd= NA,
-           cex= 1.5)
-      legend(par("usr")[2],
-             par("usr")[4],
-             fill= Cc,
-             legend= c("WT", "Mut"),
-             bty= "n",
-             xpd= NA)
-      .SD
-    }]
-  }
+  vl_boxplot(residuals_wt,
+             residuals_mut,
+             compute_pval= list(c(1,2)),
+             ylab= "Residuals (log2)",
+             xaxt= "n",
+             main= paste0(unique(cdition)," (all, n=", formatC(.N, big.mark = ","), ")"),
+             notch= T,
+             col= Cc)
+  legend(par("usr")[2],
+         par("usr")[4],
+         fill= Cc,
+         legend= c("WT", "Mut"),
+         bty= "n",
+         xpd= NA,
+         cex= 7/12)
   .SD
 }, cdition]
 dev.off()
-

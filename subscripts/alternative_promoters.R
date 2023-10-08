@@ -2,118 +2,63 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import ----
-dat <- rbindlist(list(dev= readRDS("db/FC_tables/vllib006_DESeq2.rds")),
+dat <- rbindlist(list(dev_highBasal= readRDS("db/FC_tables/vllib028_DESeq2.rds"),
+                      dev_lowBasal= readRDS("db/FC_tables/vllib027_DESeq2.rds"),
+                      # hk_highBasal= readRDS("db/FC_tables/vllib025_DESeq2.rds"), # Quality is very low
+                      hk_lowBasal= readRDS("db/FC_tables/vllib026_DESeq2.rds")),
                  idcol = "class")
-
-# Independent activitites
-ind <- rbindlist(list(short= readRDS("db/FC_tables/vllib002_DESeq2.rds"),
-                      long= readRDS("db/FC_tables/vllib006_DESeq2.rds")),
-                 idcol = "spacer")
-ind <- rbindlist(list(`5'`= ind[, .(spacer, enh= L, ind= indL)],
-                      `3'`= ind[, .(spacer, enh= R, ind= indR)]),
-                 idcol= "side")
-ind[, side:= factor(side, c("5'", "3'"))]
-ind <- dcast(unique(ind), side+enh~spacer, value.var = "ind")
-ind <- na.omit(ind)
+dat[, c("class", "cdition"):= tstrsplit(class, "_")]
 
 # Compute add/mult ----
-dat[, basalMean:= mean(log2FoldChange[ctlL & ctlR]), class]
+dat[, basalMean:= mean(log2FoldChange[ctlL & ctlR]), .(class, cdition)]
 dat[, "Additive model":= log2(2^indL+2^indR-2^basalMean)]
 dat[, "Multiplicative model":= log2(2^indL*2^indR/2^basalMean)]
 dat[, "Linear model":= (-0.02+1.1*indL+1.1*indR-0.09*indL*indR)]
 dat <- dat[, {
   patt <- paste0("^control|^shared|^", class)
   .SD[grepl(patt, L) & grepl(patt, R)]
-}, class]
+}, .(class, cdition)]
 dat[, actPair:= actL!="Inactive" & actR!="Inactive"]
 
 # Melt ----
 setnames(dat, "log2FoldChange", "Observed")
 pl <- melt(dat,
-           id.vars = c("class", "Observed", "actPair"),
+           id.vars = c("class", "cdition", "Observed", "actPair"),
            measure.vars = c("Additive model", "Multiplicative model", "Linear model"))
 pl <- na.omit(pl)
 pl[, residuals:= Observed-value]
 pl[, Rsq:= {
   rsq <- vl_model_eval(Observed, value)$Rsquare
   1-(((1-rsq)*(.N-1))/(.N-2-1))
-}, .(variable, class)]
+}, .(variable, class, cdition)]
 pl[, xlab:= switch(as.character(variable), 
                    "Additive model"= "5' + 3' activities (log2)",
                    "Multiplicative model"= "5' x 3' activities (log2)",
                    "Linear model"= "Predicted activity (log2)"), variable]
 setorderv(pl,
-          c("variable", "class"))
+          c("variable", "class", "cdition"))
 
 # Clip extremes for ploting
 clip <- c(0.005, 0.999)
 
 # Plot ----
-pdf("pdf/draft/Compare_add_mult_longSpacer_vllib006.pdf",
-    width = 10,
+pdf("pdf/draft/scatterplot_low_high_CPs_models.pdf",
+    width = 7.5,
     height = 2.45)
-layout(matrix(c(1,3,2,4,5,5,6,6,7,7,8,8,9,9),
-              nrow= 2),
-       widths= c(0.45,0.45,0.45,1,1,1,0.7))
-par(bty= "n",
-    tcl= -0.1,
+layout(matrix(1:5,
+              nrow= 1),
+       widths= c(0.5,1,1,1,0.7))
+par(font.main= 1,
     las= 1,
-    oma= c(0,0,2,0),
-    font.main= 1,
-    mgp= c(0.75,0.25,0),
-    cex= 0.5,
-    cex.axis= 0.5,
-    cex.lab= 0.6,
-    cex.main= 0.8,
-    bty= "n")
-# Individual activities
-ind[,{
-  par(mar= c(4.5,3,1.7,0.2))
-  plot(short,
-       long,
-       frame= F,
-       pch= 16,
-       col= adjustcolor("grey", 0.4),
-       xaxt= "n",
-       yaxt= "n",
-       xlab= "Act. 300bp spacer (log2)",
-       ylab= "Act. 2kb spacer (log2)")
-  axis(1, lwd= 0.5)
-  axis(2, lwd= 0.5)
-  title(main= paste0(side, " cand."),
-        xpd= NA,
-        line= 0.25)
-  PCC <- cor.test(short,
-                  long)$estimate
-  legend("topleft",
-         legend= paste0("PCC= ", round(PCC, 2)),
-         bty= "n",
-         inset= c(-0.05, 0),
-         cex= 0.6)
-  abline(0, 1, lty= "11")
-  par(mar= c(4.5,4,1.7,1))
-  vl_boxplot(short,
-             long,
-             compute_pval= list(c(1,2)),
-             col= "lightgrey",
-             ylab= "Individual activity (log2)",
-             xaxt= "n",
-             yaxt= "n",
-             lwd= .5)
-  vl_tilt_xaxis(1:2, 
-                labels= c("300bp spacer", "2kb spacer"))
-  axis(2, lwd= 0.5)
-  .SD
-}, side]
-# Different models
-par(lend= 2,
+    lend= 2,
     cex= 8/12,
     cex.axis= 7/8,
-    cex.lab= 1,
     cex.main= 1,
     mar= c(5,3,2,.5),
+    oma= c(0,0,2,0),
     mgp= c(1.5, 0.325, 0),
-    tcl= -0.2)
+    tcl= -0.2,
+    bty= "n")
 pl[, {
   # Performance
   perf <- unique(.SD[, .(variable, Rsq)])
@@ -156,9 +101,8 @@ pl[, {
             add= TRUE,
             xpd= NA)
     # R2
-    vl_plot_coeff(value = Rsq,
-                  type= "rsq",
-                  inset= c(-0.1, 0))
+    vl_plot_R2(rsquare = Rsq,
+               inset= c(-0.1, 0))
     # Abline
     lw <- diff(grconvertX(0:1, "line", "user"))
     lh <- diff(grconvertY(0:1, "line", "user"))
@@ -170,9 +114,9 @@ pl[, {
     print(paste0(.GRP, "/", .NGRP))
   }, .(variable, xlab, Rsq)]
   # Boxplot examples
-  .c <- class
+  .c <- c(class, cdition)
   cols <- c(as.character(perf$variable), "Observed")
-  dat[(class==.c) & (actPair), {
+  dat[(class==.c[1] & cdition==.c[2]) & (actPair), {
     box <- vl_boxplot(.SD,
                       notch = T,
                       # compute_pval= list(c(1,2), c(3,4)),
@@ -202,12 +146,6 @@ pl[, {
     }, (sub)]
     .SD
   }, .SDcols= cols]
-  mtext(class, outer = T)
-}, class]
-for(i in 1:5) plot.new()
-vl_boxplot(value~variable+side,
-           melt(ind, id.vars = "side", measure.vars = c("long", "short")),
-           compute_pval= list(c(1,2), c(3,4)),
-           col= "lightgrey",
-           ylab= "Individual activiy (log2)")
+  mtext(paste(class, cdition), outer = T)
+}, .(class, cdition)]
 dev.off()

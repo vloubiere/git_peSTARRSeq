@@ -9,36 +9,41 @@ pl <- list("Weakest 5' enhancer"= dat[L==dat[actL!="Inactive"][which.min(indL), 
            "Strongest 3' enhancer"= dat[actL!="Inactive" & R==dat[which.max(indR), R], .(ref= indR, ind= indL, log2FoldChange, predicted)])
 pl <- rbindlist(pl, idcol = T)
 
-pdf("pdf/draft/promoter_saturation.pdf", 3.5, 3.5)
-par(mfrow=c(2,2),
-    lend= 3,
-    mar= c(3,4,3,0.5),
-    cex= 8/12,
-    cex.axis= 7/8,
-    font.main= 1,
-    cex.main= 1,
+pdf("pdf/draft/promoter_saturation.pdf",
+    height = 3, 
+    width = 12)
+par(mfrow= c(1,4),
+    mai= rep(.9, 4), 
+    mgp= c(0.75, 0.25, 0),
+    cex= 1,
+    cex.lab= 8/12,
+    cex.axis= 7/12,
     las= 1,
-    tcl= -0.2,
+    tcl= -0.1,
     bty= "n",
-    mgp= c(1.5,0.35,0))
+    pty= "s",
+    lend= 2,
+    font.main= 1)
 pl[, {
   plot(ind,
        log2FoldChange,
+       xlab= paste0(ifelse(grepl("3'", .id), "5'", "3'"), " activity (log2)"),
+       xaxt= "n",
+       ylab= "Combined acitivity (log2)",
        col= adjustcolor("lightgrey", 0.5),
        cex= 0.8,
        pch= 16,
        xlim= c(0.5, 7.5),
        ylim= c(0, 10.5),
-       main= .id,
-       ylab= "Combined acitivity (log2)",
-       xlab= paste0(ifelse(grepl("3'", .id), "5'", "3'"), " activity (log2)"))
+       main= .id)
+  axis(1, padj= -1.25)
   abline(h= ref, lwd= 0.5)
   ref.lab <- paste(ifelse(grepl("3'", .id), "3'", "5'"), "activity")
   text(par("usr")[2],
-       ref-strheight("M"),
+       ref-strheight("M")/1.5,
        ref.lab,
        pos= 2,
-       cex= 0.9)
+       cex= 7/12)
   # Loess
   .lo <- loess(log2FoldChange~ind, .SD[order(ind)])
   lines(.lo$x, .lo$fitted, lty= "11")

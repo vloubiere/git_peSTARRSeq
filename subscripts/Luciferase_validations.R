@@ -9,12 +9,11 @@ dat <- merge(luc,
              lib, 
              by= c("L", "R"),
              suffixes= c("_luc", "_STARR"))
-dat[, actClass:= fcase(grepl("^control", L) & grepl("^control", R), "ctl./ctl.",
-                       actL!="Inactive" & actR!="Inactive", "enh./enh.",
-                       grepl("^control", L) & actR!="Inactive", "ctl./enh.",
-                       actL!="Inactive" & grepl("^control", R), "enh./ctl.",
-                       default = NA)]
-dat[, actClass:= factor(actClass, c("ctl./ctl.", "enh./ctl.", "ctl./enh.", "enh./enh."))]
+dat[, actClass:= fcase(grepl("^control", L) & grepl("^control", R), "Ctl./Ctl.",
+                       grepl("^control", R), "Enh./Ctl.",
+                       grepl("^control", L), "Ctl./Enh.",
+                       default= "Enh./Enh.")]
+dat[, actClass:= factor(actClass, c("Ctl./Ctl.", "Enh./Ctl.", "Ctl./Enh.", "Enh./Enh."))]
 dat <- na.omit(dat)
 Cc <- c("grey0", "royalblue2", "purple", "#74C27A")
 dat[, actCol:= adjustcolor(Cc[actClass], 0.5)]
@@ -26,36 +25,50 @@ dat[, actCol:= adjustcolor(Cc[actClass], 0.5)]
 pdf("pdf/draft/Luciferase_validations.pdf", 
     height = 3, 
     width = 3)
-par(mar= c(3.5, 2.75, 0.5, 1.5),
-    mgp= c(1.5, 0.5, 0),
-    bty= "n",
+par(mai= rep(.9, 4), 
+    mgp= c(0.75, 0.25, 0),
+    cex.lab= 8/12,
+    cex.axis= 7/12,
     las= 1,
-    tcl= -0.2)
+    tcl= -0.1,
+    bty= "n",
+    pty= "s",
+    lend= 2,
+    font.main= 1)
 dat[, {
   plot(log2FoldChange_STARR, 
        log2FoldChange_luc,
+       xaxt= "n",
        xlab= "pSTARR-Seq activity (log2)",
        ylab= "Norm. luciferase activity (log2)",
        ylim= c(-0.8, 6.6),
        col= actCol,
        pch= 16,
-       cex= 0.8)
+       cex= 0.6)
+  axis(1, padj = -1.25)
   segments(log2FoldChange_STARR,
            log2FoldChange_luc-sd,
            log2FoldChange_STARR,
            log2FoldChange_luc+sd,
            col= actCol)
+  vl_plot_coeff(value = cor.test(log2FoldChange_STARR, 
+                                 log2FoldChange_luc)$estimate,
+                type = "pcc",
+                inset= c(-0.1, 0),
+                cex= 7/12)
   .SD
 }]
 # Legend
 abline(.lm, lty= "11")
 unique(dat[, .(actClass, actCol)])[,{
   legend("bottomright",
-         fill= actCol,
+         col= actCol,
          legend= actClass,
          bty= "n",
-         cex= 0.8)
+         cex= 7/12,
+         pch= 16,
+         y = .75, 
+         inset = c(-0.25, 0),
+         xpd= NA)
 }]
-vl_plot_R2(rsquare = summary(.lm)$r.squared,
-           inset= c(-0.1,0))
 dev.off()

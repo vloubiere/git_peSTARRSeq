@@ -5,7 +5,10 @@ require(vlfunctions)
 dat <- readRDS("db/linear_models/FC_vllib002_actPairs_lm_predictions.rds")
 
 # Dcast and clean
-mat <- dcast(dat, -indL+L~indR+R, value.var = "residuals", sep = "__")
+mat <- dcast(dat,
+             -indL+L~indR+R,
+             value.var = "residuals",
+             sep = "__")
 mat <- as.matrix(mat[, -1], 1)
 colnames(mat) <- unlist(tstrsplit(colnames(mat), "__", keep= 2))
 while(sum(is.na(mat))>0.05*nrow(mat)*ncol(mat))

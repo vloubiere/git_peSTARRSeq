@@ -4,6 +4,15 @@ require(data.table)
 # Import counts ----
 dat <- data.table(file= list.files("db/dds/", full.names = T))
 dat[, library:= gsub(".dds$", "", basename(file))]
+dat <- dat[library %in% c("vllib002", "vllib015", "vllib016")]
+dat[, library:= switch(library,
+                       "vllib002"= "Large WT oligo pool",
+                       "vllib015"= "Focused WT oligo pool\nDSCP",
+                       "vllib016"= "Focused WT oligo pool\nhkCP"), library]
+dat[, library:= factor(library,
+                       c("Large WT oligo pool",
+                         "Focused WT oligo pool\nDSCP",
+                         "Focused WT oligo pool\nhkCP"))]
 dat <- dat[, {
   as.data.table(DESeq2::counts(readRDS(file)))
 }, library]
@@ -19,8 +28,8 @@ dat <- dcast(dat,
 
 # Compute PCC and lm ----
 dat[, c("PCC", "lm", "rsq"):= {
-  x <- unlist(rep1)
-  y <- unlist(rep2)
+  x <- unlist(`1`)
+  y <- unlist(`2`)
   .lm <- lm(y~x)
   .(round(cor.test(x, y)$estimate, 2), 
     .(.lm),
@@ -28,29 +37,31 @@ dat[, c("PCC", "lm", "rsq"):= {
 }, .(library, cdition)]
 
 pdf("pdf/draft/PCC_peSTARRSeq_replicates.pdf", 
-    height = 5.5, 
-    width = 2.5*length(unique(dat$library)))
-par(mfcol= c(2, length(unique(dat$library))),
-    las=1,
-    tcl= -0.2,
-    cex= 1,
-    mar= c(3,3,3,1),
+    height = 3, 
+    width = 6)
+par(mfrow= c(1,2),
+    mai= rep(.9, 4), 
+    mgp= c(0.75, 0.25, 0),
+    cex.lab= 8/12,
+    cex.axis= 7/12,
+    las= 1,
+    tcl= -0.1,
     bty= "n",
-    mgp= c(1.5,0.5,0))
+    pty= "s",
+    lend= 2,
+    font.main= 1)
 dat[, {
-  smoothScatter(unlist(rep1),
-                unlist(rep2),
+  smoothScatter(unlist(`1`),
+                unlist(`2`),
                 xlab= "Replicate 1",
                 ylab= "Replicate 2",
                 main= paste(cdition, library),
-                colramp = colorRampPalette(c("white", gray.colors(3, rev= T))),
-                col= "lightgrey")
-  legend("topleft",
-         c(paste("PCC=", PCC)),
-         # paste("R2=", rsq)),
-         bty= "n",
-         cex= 0.8)
-  # abline(lm[[1]], lty= 2)
+                col= adjustcolor(blues9[9], .3),
+                xaxt= "n")
+  axis(1, padj = -1.25)
+  vl_plot_coeff(value= PCC,
+                type= "pcc",
+                cex= 7/12)
   print(.GRP)
 }, .(library, cdition)]
 dev.off()

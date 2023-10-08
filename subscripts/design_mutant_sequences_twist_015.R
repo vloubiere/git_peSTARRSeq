@@ -1,7 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
-# Clean TWIST library
+# Clean TWIST library ----
 if(!file.exists("db/library_design/twist015/candidates_clean_twist015_design.txt"))
 {
   # import TWIST data
@@ -50,9 +50,7 @@ if(!file.exists("db/library_design/twist015/candidates_clean_twist015_design.txt
 }else
   lib <- readRDS("db/library_design/twist015/candidates_clean_twist015_design.txt")
 
-#----------------------------------#
-# WT sequences
-#----------------------------------#
+# WT sequences ----
 WT <- rbindlist(list(control= lib[hk_padj>0.05 & dev_padj>0.05 & dev_log2FoldChange<1 & hk_log2FoldChange<1 
                                   & motif_twist+motif_Trl+motif_Dref==0
                                   & !grepl("^DHS", BAID)], 
@@ -71,9 +69,7 @@ WT[group=="shared", motif_center:= lapply(motif_Dref_pos, function(x) round(rowM
 # Unique sequences
 WT <- WT[, .SD[1], BAID]
 
-#------------------------------#
-# Paste x2 Trl/twist Motifs in control/DHS/noMotifAct sequences
-#------------------------------#
+# Paste x2 Trl/twist Motifs in control/DHS/noMotifAct sequences ----
 addSynMot <- CJ(pos1= 20:110, pos2= 140:230)
 set.seed(1)
 addSynMot <- addSynMot[sample(nrow(addSynMot), 1000)]
@@ -94,9 +90,7 @@ set.seed(2)
 mot2 <- sample(c("CACATATG", "CATATGTG"), nrow(addSynMot), replace = T)
 addSynMot$addTwist <- paste0(addSynMot$seq1, mot1, addSynMot$seq2, mot2, addSynMot$seq3)
 
-#------------------------------#
-# Paste x3 Trl/twist Motifs in control/DHS sequences
-#------------------------------#
+# Paste x3 Trl/twist Motifs in control/DHS sequences ----
 addSynMotInact <- CJ(pos1= 20:110, pos2= 30:220, pos3= 140:230)
 addSynMotInact <- addSynMotInact[pos2>pos1+10 & pos3>pos2+10]
 set.seed(1)
@@ -123,9 +117,7 @@ set.seed(3)
 mot3 <- sample(c("CACATATG", "CATATGTG"), nrow(addSynMotInact), replace = T)
 addSynMotInact$addTwist <- paste0(addSynMotInact$seq1, mot1, addSynMotInact$seq2, mot2, addSynMotInact$seq3, mot3, addSynMotInact$seq4)
 
-#------------------------------#
-# Paste Dref Motifs in active/synergistic sequences
-#------------------------------#
+# Paste Dref Motifs in active/synergistic sequences ----
 addDrefMot <- CJ(pos1= 20:110, pos2= 140:230)
 set.seed(1)
 addDrefMot <- addDrefMot[sample(nrow(addDrefMot), 1000)]
@@ -142,9 +134,7 @@ addDrefMot <- addDrefMot[(keep)]
 # Paste motif
 addDrefMot$addDref <- paste0(addDrefMot$seq1, "TATCGATA", addDrefMot$seq2, "TATCGATA", addDrefMot$seq3)
 
-#------------------------------#
-# Mutate Trl/twist in synergistic enhancers
-#------------------------------#
+# Mutate Trl/twist in synergistic enhancers ----
 mutSynMot <- WT[group %in% c("Trl", "twist"), .(pos= motif_center[[1]]), .(BAID, group, enh_sequence)]
 mutSynMot <- mutSynMot[, {
   exp <- if(group=="twist")
@@ -169,9 +159,7 @@ mutSynMot <- mutSynMot[, {
   .(mutSyn= unique(res))
 }, .(BAID, group)]
 
-#------------------------------#
-# Mutate Dref in shared enhancers
-#------------------------------#
+# Mutate Dref in shared enhancers ----
 mutDrefMot <- WT[group=="shared", .(pos= motif_center[[1]]), .(BAID, group, enh_sequence)]
 mutDrefMot <- mutDrefMot[, {
   exp <- rep(list(c("TAAGA", "TTGACC", "AAGTA", "CCTTAAG", "GCTTAA", "TCTTA", "GGTCAA", "TACTT", "CTTAAGG", "TTAAGC")), 
@@ -194,9 +182,7 @@ mutDrefMot <- mutDrefMot[, {
   .(mutDref= unique(res))
 }, .(BAID, group)]
 
-#----------------------------#
-# SAVE for Bernies' prediction
-#----------------------------#
+# SAVE for DEEPStarr prediction ----
 final <- rbindlist(list(WT= WT[, .(BAID, group, enh_sequence)],
                         add2Trl= addSynMot[, .(BAID, group, enh_sequence= addTrl)],
                         add3Trl= addSynMotInact[, .(BAID, group, enh_sequence= addTrl)],

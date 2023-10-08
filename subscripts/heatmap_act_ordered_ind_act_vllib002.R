@@ -23,8 +23,8 @@ hm <- vl_heatmap(mat,
                  col= viridis::viridis(6), 
                  show_rownames= F,
                  show_colnames= F, 
-                 legend_title= "Activity (log2)",
-                 legend.cex = 0.8,
+                 legend_title= "Combined\nactivity (log2)",
+                 legend.cex = 7/12,
                  plot= F)
 
 # Plot
@@ -33,16 +33,17 @@ barLims <- c(6,-1)
 barAxLims <- c(1,6)
 
 pdf("pdf/draft/heatmap_ordered_ind_act.pdf",
-    width = 3.85,
-    height = 3.25)
+    width = 3,
+    height = 3)
 layout(matrix(c(2,4,1,3), nrow= 2),
        widths= c(0.15,1),
        heights= c(1,0.15))
 par(mar= c(0.2,0.2,0.2,0.2),
-    oma= c(3,3,2,6),
-    mgp= c(2, 0.15, 0),
+    omi= c(.75,.75,.75,.75),
+    mgp= c(1, 0.15, 0),
     tcl= -0.1,
-    cex.axis= 0.6,
+    cex.lab= 8/12,
+    cex.axis= 5/12,
     las= 1,
     xpd= NA)
 plot(hm)
@@ -50,29 +51,31 @@ left <- dat[rev(hm$rows$name), indL, on= "L", mult = "first"]
 right <- dat[hm$cols$name, indR, on= "R", mult = "first"]
 abline(h= min(which(left>actLim)),
        col= "white",
+       lty= "11",
        xpd= F)
 abline(v= min(which(right>actLim)),
        col= "white",
+       lty= "11",
        xpd= F)
 title(xlab= "3' activity",
       ylab= "5' activity")
 par(lwd= 0.25)
 legend(par("usr")[2]+strwidth("M")*0.75,
-       par("usr")[4]-strheight("M")*10,
+       par("usr")[4]-strheight("M")*8,
        c(NA, NA),
        fill= "lightgrey",
        border= T,
        xpd= NA,
        bty= "n",
-       cex= 0.8)
+       cex= 7/12)
 legend(par("usr")[2]+strwidth("M")*0.75,
-       par("usr")[4]-strheight("M")*10,
+       par("usr")[4]-strheight("M")*8,
        c("Active", "Inactive"),
-       dens= c(50, 0),
+       dens= c(100, 0),
        border= F,
        xpd= NA,
        bty= "n",
-       cex= 0.8)
+       cex= 7/12)
 # Left
 par(yaxs= "i")
 bar <- barplot(left,
@@ -85,12 +88,14 @@ bar <- barplot(left,
 axis(side = 3,
      at = barAxLims,
      labels = barAxLims, 
-     line = 0.2)
+     line = .2,
+     padj = .4,
+     lwd= .75)
 x <- left[left>actLim]
 y <- bar[left>actLim]
 polygon(c(0, x, 0),
         c(y[1], y, y[length(y)]),
-        dens= 50)
+        dens= 100)
 # Right
 par(yaxs= "r",
     xaxs= "i")
@@ -103,10 +108,11 @@ bar <- barplot(right,
 axis(side = 4,
      at = barAxLims,
      labels = barAxLims, 
-     line = 0.2)
+     line = 0.2,
+     lwd= .75)
 x <- bar[right>actLim]
 y <- right[right>actLim]
 polygon(c(x[1], x, x[length(x)]),
         c(0, y, 0),
-        dens= 50)
+        dens= 100)
 dev.off()

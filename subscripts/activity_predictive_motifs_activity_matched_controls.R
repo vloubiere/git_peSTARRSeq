@@ -42,7 +42,6 @@ if(!file.exists("db/activity_matched_controls/activity_matched_controls.rds"))
           ctlIndR= x.indR[idx],
           dist= dist[idx])
       }, .EACHI, on= c("breakL", "breakR"), nomatch= NULL]
-      # }, .EACHI, on= c("breakL", "breakR"), nomatch= NULL]
       # for each (potentially duplicated) control pair, select closest enr pair
       setorderv(.c, "dist")
       .c <- .c[, .SD[1], .(ctlL, ctlR)]
