@@ -3,9 +3,7 @@ avail_dir <- "/groups/stark/vloubiere/projects/available_data_dm3/"
 require(vlfunctions)
 require(BSgenome.Dmelanogaster.UCSC.dm3)
 
-#---------------------------------------#
-# ATAC-Seq peak calling
-#---------------------------------------#
+# ATAC-Seq peak calling ----
 if(!file.exists("db/peaks/ATAC_peaks.txt"))
 {
   peaks <- vl_peakCalling(ChIP_bed = c("/groups/stark/vloubiere/projects/available_data_dm3/db/bed/GSE119708_ATAC_rep1_uniq.bed",

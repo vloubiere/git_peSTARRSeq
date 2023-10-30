@@ -3,26 +3,8 @@ require(vlfunctions)
 require(readxl)
 require(data.table)
 
-# Update exp data (dropbox folder) and import metadata ----
-if(F)
-  source("/groups/stark/vloubiere/exp_data/update_files.R")
-meta <- read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
-meta <- as.data.table(meta)
-cols <- names(meta)
-meta[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
-
-# Select usable libraries ----
-sel <- c("vllib002", # Large dev library
-         "vllib006", # Reverse pSTARR-Seq
-         "vllib015", # Restricted dev library
-         "vllib016", # Restricted hk library
-         "vllib025", # highHk CP
-         "vllib026", # lowHk CP
-         "vllib027", # lowDev CP
-         "vllib028", # highDev CP
-         "vllib029", # mutant lib
-         "vllib030") # DHS lib
-meta <- as.data.table(meta)[(DESeq2) & vllib %in% sel]
+# Import metadata
+meta <- readRDS("Rdata/metadata_processed.rds")
 
 
 # Retrieve ID patterns and counts file ----
@@ -38,17 +20,11 @@ meta[, sublibRegexprR:= fcase(vllib=="vllib006", "_B_",
                               vllib=="vllib029", "_A_",
                               vllib=="vllib030", "_B_",
                               default = "_.*_")]
-meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", vllib, "_", cdition, "_", DESeq2_pseudo_rep, ".txt")]
+meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", vllib, "_", cdition, "_", rep, ".txt")]
 
 # Input and output file names ----
 meta[, dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", vllib, ".dds"), vllib]
 meta[, FC_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/FC_tables/", vllib, "_DESeq2.rds"), vllib]
-
-# For vllib029 and vllib030, reads from scren rep 3 were randomly split and added to rep 1 and 2
-# script -> "git_peSTARRSeq/subscripts/vllib029_vllib030_pseudo_reps.R"
-rm <- which(meta[, vllib %in% c("vllib029", "vllib030") & rep=="rep3"])
-meta <- meta[-rm]
-meta[vllib %in% c("vllib029", "vllib030") & cdition=="screen", umi_counts:= gsub("rep", "pseudoRep", umi_counts)]
 
 # Compute log2FoldChange using DESeq2 ----
 meta[, cmd:= {

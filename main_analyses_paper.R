@@ -9,9 +9,8 @@ file.edit("git_peSTARRSeq/subscripts/create_twist8_subread_index.R")
 file.edit("git_peSTARRSeq/subscripts/create_twist12_subread_index.R")
 file.edit("git_peSTARRSeq/subscripts/create_twist15_subread_index.R")
 ## Run pipeline ----
-file.edit("git_peSTARRSeq/subscripts/extract_reads_VBC_bam.R")
+file.edit("git_peSTARRSeq/subscripts/extract_reads_VBC_bam.R") # Select MetaData
 file.edit("git_peSTARRSeq/subscripts/run_pipeline_parallel.R")
-file.edit("git_peSTARRSeq/subscripts/vllib029_vllib030_pseudo_reps.R")
 file.edit("git_peSTARRSeq/subscripts/compute_log2FoldChange.R")
 
 # Figures ----

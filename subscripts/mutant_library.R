@@ -31,13 +31,13 @@ pl[, cdition:= fcase(grepl("add.*Trl", mutL) & grepl("add.*Trl", mutR), "Added T
 # Only consider enhancers that were active in the first place ----
 pl <- pl[(grepl("^noMotifAct", IDL) & grepl("^noMotifAct", IDL)) 
          | (grepl("^Trl", IDL) & grepl("^Trl", IDL))
-         | (grepl("^twist", IDL) & grepl("^twist", IDL))]
+         | (grepl("^twist", IDL) & grepl("^twist", IDL))
+         | (grepl("shared", IDL) & grepl("shared", IDR))]
 
 pdf("pdf/draft/mutant_library_per_cdition.pdf", 
-    width = 9,
-    height= 6)
-par(mfrow= c(2,3),
-    mai= c(.9,1.25,.9,1.35),
+    width = 6,
+    height= 3)
+par(mfrow= c(1,2),
     mgp= c(1, 0.25, 0),
     cex= 1,
     cex.lab= 8/12,
@@ -50,21 +50,50 @@ par(mfrow= c(2,3),
     lwd= .75)
 Cc <- c("lightgrey", "pink1")
 pl[cdition!="mixed", {
+  # Residuals
+  par(mai= c(.9,1.25,.9,1.35))
   vl_boxplot(residuals_wt,
              residuals_mut,
              compute_pval= list(c(1,2)),
              ylab= "Residuals (log2)",
              xaxt= "n",
-             main= paste0(unique(cdition)," (all, n=", formatC(.N, big.mark = ","), ")"),
              notch= T,
              col= Cc)
-  legend(par("usr")[2],
-         par("usr")[4],
-         fill= Cc,
-         legend= c("WT", "Mut"),
-         bty= "n",
-         xpd= NA,
-         cex= 7/12)
+  leg <- substitute(legend(par("usr")[2],
+                           par("usr")[4],
+                           fill= Cc,
+                           legend= c("WT",
+                                     fcase(grepl("Mutated", cdition), "Mutant",
+                                           grepl("Added", cdition), "Added motif")),,
+                           bty= "n",
+                           xpd= NA,
+                           cex= 7/12))
+  eval(leg)
+  # Activities
+  par(mai= c(.9,.9,.9,.9))
+  box <- vl_boxplot(unique(.SD[, .(IDL, indL_wt)])[[2]],
+                    unique(.SD[, .(IDL, indL_mut)])[[2]],
+                    unique(.SD[, .(IDR, indR_wt)])[[2]],
+                    unique(.SD[, .(IDR, indR_mut)])[[2]],
+                    log2FoldChange_wt,
+                    log2FoldChange_mut,
+                    compute_pval= list(c(1,2), c(3,4), c(5,6)),
+                    ylab= "Activity (log2)",
+                    xaxt= "n",
+                    notch= T,
+                    at= c(1,2,4,5,7,8),
+                    col= Cc)
+  text(x= grconvertX(0.5, "ndc", "user"),
+       y= grconvertY(1, "ndc", "user"),
+       labels= paste0(unique(cdition)," (all, n=", formatC(.N, big.mark = ","), ")"),
+       pos= 1,
+       xpd= NA)
+  axis(1, 
+       c(1.5, 4.5, 7.5),
+       labels = paste0(c("5'", "3'", "Pairs"), "\nn=", lengths(box$dat1)), 
+       line= -.15,
+       lwd= 0)
+  eval(leg)
   .SD
 }, cdition]
 dev.off()

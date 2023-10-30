@@ -40,9 +40,6 @@ if(!grepl(".bam$", bam))
 if(!grepl(".txt$", umi_counts))
   stop("Sixth argument 'umi_counts' should finish with .txt extension.")
 
-# Tests ----
-# bam <- "/scratch/stark/vloubiere/vllib029/bam/vllib029_screen_rep3.bam"
-
 # Alignment ----
 tmp1 <- tempfile(tmpdir = "/scratch/stark/vloubiere/fastq/", fileext = "_1.fq.gz")
 system(paste(c("cat", fq1, ">", tmp1), collapse= " "))

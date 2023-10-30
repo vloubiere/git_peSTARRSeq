@@ -2,41 +2,18 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(readxl)
 require(data.table)
 
-# Update exp data (dropbox folder) and import metadata ----
-if(F)
-  source("/groups/stark/vloubiere/exp_data/update_files.R")
-meta <- read_xlsx("/groups/stark/vloubiere/exp_data/vl_sequencing_metadata.xlsx")
-meta <- as.data.table(meta)
-cols <- names(meta)
-meta[, (cols):= lapply(.SD, function(x) ifelse(x=="NA", NA, x)), .SDcols= cols]
+# Import metadata with fq files
+meta <- readRDS("Rdata/metadata.rds")
 
-# Select used libraries ----
-sel <- c("vllib002", # Large dev library
-         "vllib006", # Reverse pSTARR-Seq
-         "vllib015", # Restricted dev library
-         "vllib016", # Restricted hk library
-         "vllib025", # highHk CP
-         "vllib026", # lowHk CP
-         "vllib027", # lowDev CP
-         "vllib028", # highDev CP
-         "vllib029", # mutant lib
-         "vllib030") # DHS lib
-meta <- as.data.table(meta)[(DESeq2) & vllib %in% sel]
-
-# Input and output filenames ---
-meta[, fq1:= list.files("/scratch/stark/vloubiere/fastq/",
-                        paste0(gsub(".bam$", "", basename(BAM_path)), ".*", i5, "_1.fq.gz"),
-                        full.names = T), .(BAM_path, i5)]
-meta[, fq2:= list.files("/scratch/stark/vloubiere/fastq/",
-                        paste0(gsub(".bam$", "", basename(BAM_path)), ".*", i5, "_2.fq.gz"),
-                        full.names = T), .(BAM_path, i5)]
+# Output filenames ---
 meta[, index:= {
-  fcase(vllib %in% c("vllib002", "vllib006"), "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8",
-        vllib %in% c("vllib029", "vllib030"), "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15",
-        default = "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12")
-}, vllib]
-meta[, bam:= paste0("/scratch/stark/vloubiere/bam/", vllib, "_", cdition, "_", DESeq2_pseudo_rep, ".bam")]
-meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", vllib, "_", cdition, "_", DESeq2_pseudo_rep, ".txt")]
+  switch(library,
+         "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8", # WT oligo pool
+         "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12", # Focused oligo pool
+         "T15"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15") # Mutated oligo pool
+}, library]
+meta[, bam:= paste0("/scratch/stark/vloubiere/bam/", vllib, "_", cdition, "_", rep, ".bam")]
+meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", vllib, "_", cdition, "_", rep, ".txt")]
 
 # Align and compute counts ----
 meta[, cmd:= {
@@ -75,3 +52,8 @@ if(nrow(run))
             e= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/")
   }, cmd]
 }
+
+# Save processed metadata ----
+meta$cmd <- NULL
+saveRDS(meta,
+        "Rdata/metadata_processed.rds")

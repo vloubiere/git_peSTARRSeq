@@ -16,26 +16,52 @@ setnames(mot,
 dat <- merge(dat, mot, by.x= "L", by.y= "ID", all.x= T, allow.cartesian = T)
 dat <- merge(dat, mot, by.x= "R", by.y= "ID", all.x= T, allow.cartesian = T, suffixes= c("__L", "__R"))
 
-# Compute residuals/activity for each motif combination ----
+# Compute residuals/activity for each motif combination and t.test pval ----
 cmb <- CJ(grep("__L$", names(dat), value = T),
           grep("__R$", names(dat), value = T))
 res <- cmb[, {
   if(.GRP %% 100==0)
     print(.GRP)
-  .(act_mot= mean(dat$log2FoldChange[dat[[V1]]>0 & dat[[V2]]>0]),
-    act_nomot= mean(dat$log2FoldChange[dat[[V1]]==0 & dat[[V2]]==0]),
-    res_mot= mean(dat$residuals[dat[[V1]]>0 & dat[[V2]]>0]),
-    res_nomot= mean(dat$residuals[dat[[V1]]==0 & dat[[V2]]==0]))
+  # Check motifs
+  mot <- dat[[V1]]>0 & dat[[V2]]>0 # Expected motifs on both sides
+  act_mot <- dat[(mot), log2FoldChange]
+  res_mot <- dat[(mot), residuals]
+  noMot <- dat[[V1]]==0 & dat[[V2]]==0 # No motifs
+  act_nomot <- dat[(noMot), log2FoldChange]
+  res_nomot <- dat[(noMot), residuals]
+  # Return values
+  .(act_mot= mean(act_mot),
+    act_nomot= mean(act_nomot),
+    act_pval= t.test(act_mot, act_nomot)$p.value,
+    res_mot= mean(res_mot),
+    res_nomot= mean(res_nomot),
+    res_pval= t.test(res_mot, res_nomot)$p.value)
 }, .(V1, V2)]
+# FDR ----
+res[, act_padj:= p.adjust(act_pval, "fdr")]
+res[, res_padj:= p.adjust(res_pval, "fdr")]
+plot(density(-log10(res$res_padj)),
+     xlab= "-log10(padj)",
+     col= "red",
+     frame= F)
+lines(density(-log10(res$act_padj)))
+legend("topright",
+       col= c("red", "black"),
+       legend= c("Residuals", "Activity"),
+       lwd= 1,
+       bty= "n")
+# Simplify names ----
 res[, V1:= gsub("/", ".", V1)]
 res[, V2:= gsub("/", ".", V2)]
+# Compute difference between pairs with motifs and without motifs ----
 res[, `Mean activity [motif / no motif] (log2)`:= act_mot-act_nomot]
 res[, `Mean residuals [motif / no motif] (log2)`:= res_mot-res_nomot]
+# Add colors for pairs of interest ----
 res[, sel:= V1 %in% c("Ebox.CATATG.twi__L", "Trl.1__L") & V2 %in% c("Ebox.CATATG.twi__R", "Trl.1__R")
-    | (V1=="DRE.1__L" & V2=="DRE.1__R")
+    | (V1 %in% c("DRE.1__L", "DRE.2__L") & V2 %in% c("DRE.1__R", "DRE.2__R"))
     | (V1 %in% c("AP1.1__L", "GATA.1__L") & V2 %in% c("AP1.1__R", "GATA.1__R"))]
 res[, col:= fcase(V1 %in% c("Ebox.CATATG.twi__L", "Trl.1__L") & V2 %in% c("Ebox.CATATG.twi__R", "Trl.1__R"), "tomato",
-                  V1=="DRE.1__L" & V2=="DRE.1__R", "cornflowerblue",
+                  V1 %in% c("DRE.1__L", "DRE.2__L") & V2 %in% c("DRE.1__R", "DRE.2__R"), "cornflowerblue",
                   V1 %in% c("AP1.1__L", "GATA.1__L") & V2 %in% c("AP1.1__R", "GATA.1__R"), "limegreen",
                   default = "lightgrey")]
 res[, label:= paste0(gsub("__L$", "", V1), " / ", gsub("__R$", "", V2))]
