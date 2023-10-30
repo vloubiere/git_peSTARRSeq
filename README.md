@@ -20,10 +20,10 @@ The "main_analyses_paper.R" file lists all the scripts that are needed to proces
   - Total processing time can be up to 1h on a "normal" desktop computer
 
 2/ The "Figures" section lists, for each main and supplementary figure, the different scripts that were used to analyse the data and generate the corresponding panels. To reproduce this part, processed files containing the STARR-Seq activities of all tested pairs can be retrieved at https://doi.org/10.1101/2023.10.10.561770 (supplementary tables 4,7,9,10). Detailed description:
-  - Supplementary table 4: WT oligo pool STARR-Seq activities, developmental Core Promoter (DSCP). Referred to as "vllib002"" in the different scripts.
-  - Supplementary table 7: Mutated oligo pool STARR-Seq activities, developmental Core Promoter (DSCP). Referred to as "vllib029"" in the different scripts.
-  - Supplementary table 9: Focused oligo pool STARR-Seq activities, housekeeping Core Promoter (Rps12). Referred to as "vllib016"" in the different scripts.
-  - Supplementary table 10: Focused oligo pool STARR-Seq activities, developmental Core Promoter (DSCP). Referred to as "vllib015"" in the different scripts.
+  - Supplementary table 4: WT oligo pool STARR-Seq activities, developmental Core Promoter (DSCP). Referred to as "vllib002" in the different scripts.
+  - Supplementary table 7: Mutated oligo pool STARR-Seq activities, developmental Core Promoter (DSCP). Referred to as "vllib029" in the different scripts.
+  - Supplementary table 9: Focused oligo pool STARR-Seq activities, housekeeping Core Promoter (Rps12). Referred to as "vllib016" in the different scripts.
+  - Supplementary table 10: Focused oligo pool STARR-Seq activities, developmental Core Promoter (DSCP). Referred to as "vllib015" in the different scripts.
 Further details about the different oligo pools can be found in the "Methods" section (https://doi.org/10.1101/2023.10.10.561770).
 Running times should be less than one minute for each individual panel.
 
