@@ -1,5 +1,10 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
+# Notes for revision ----
+# Reconsider whether to use control sequences or not for modelling
+# Supplementary Fig 2c should be updated (the multiplicative score was computed using promoter's basal act)
+# Supplementary Fig 2d-e should be updated (it was using the modelling object made with active pairs)
+
 # pSTARR-Seq PROCESSING ----
 ## Functions ----
 file.edit("git_peSTARRSeq/functions/pSTARRSeq_pipeline.R")
@@ -34,7 +39,6 @@ file.edit("git_peSTARRSeq/subscripts/hk_vs_dev_additive_vs_linear_model.R")
 file.edit("git_peSTARRSeq/subscripts/hk_vs_dev_enh_vs_CP.R")
 file.edit("git_peSTARRSeq/subscripts/hk_vs_dev_IDR_fraction.R")
 file.edit("git_peSTARRSeq/subscripts/define_dev_hk_genes.R")
-file.edit("git_peSTARRSeq/subscripts/hk_vs_dev_clustering.R")
 
 # Supplementary Figure 1 ----
 file.edit("git_peSTARRSeq/functions/characterization_libraries.R")

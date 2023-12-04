@@ -76,5 +76,7 @@ for(var in c("log2FoldChange", "residuals"))
   models[[var]] <- model
 }
 
-saveRDS(models, "db/linear_models/lasso_vllib002_residuals.rds")
-saveRDS(dat, "db/linear_models/FC_lasso_vllib002_residuals_predictions.rds")
+saveRDS(models,
+        "db/linear_models/lasso_vllib002_residuals.rds")
+saveRDS(dat,
+        "db/linear_models/FC_lasso_vllib002_residuals_predictions.rds")

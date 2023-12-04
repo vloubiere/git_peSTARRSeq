@@ -2,8 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
 dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
 dat[, actPair:= actL!="Inactive" & actR!="Inactive"]
-dat[, basalMean:= mean(log2FoldChange[ctlL & ctlR])]
-dat[, `Multiplicative model`:= log2(2^indL*2^indR/2^basalMean)]
+dat[, `Multiplicative model`:= indL+indR]
 
 pdf("pdf/draft/Compare_mult_linear_predictions_vllib002.pdf",
     height = 3, 

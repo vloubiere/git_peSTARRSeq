@@ -68,7 +68,7 @@ box <- vl_boxplot(value~variable+class+CP,
                   xaxt= "n",
                   xlab= NA,
                   boxwex= .2,
-                  compute_pval= list(c(2,4), c(3,4), c(6,8), c(7,8)),
+                  compute.pval= list(c(2,4), c(3,4), c(6,8), c(7,8)),
                   tilt.names= T,
                   add= T,
                   pval_cex= 7/12)$stats

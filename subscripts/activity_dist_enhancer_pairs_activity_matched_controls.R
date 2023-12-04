@@ -75,7 +75,7 @@ par(mai= c(0.75,0.5,1,1.5),
     lwd= .75)
 xpos <- seq(1, 5, length.out= 3)
 vl_boxplot(enr[, .(ctlIndL, indL, ctlIndR, indR, ctlLog2FoldChange, log2FoldChange)],
-           compute_pval= list(c(1,2), c(3,4), c(5,6)),
+           compute.pval= list(c(1,2), c(3,4), c(5,6)),
            notch= T,
            xaxt= "n",
            col= c("lightgrey", "rosybrown1"),

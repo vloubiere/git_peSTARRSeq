@@ -64,10 +64,9 @@ vl_boxplot(content_fraction~class,
            col= "white",
            names= dat[, paste0(class, " (n= ", .N, ")"), keyby= class]$V1,
            viocol= adjustcolor(Cc, .3),
-           compute_pval= list(c(1,2)),
+           compute.pval= list(c(1,2)),
            tilt.names= T,
            notch= T,
            ylab= "IDR fraction",
            violin= T)
 dev.off()
-
