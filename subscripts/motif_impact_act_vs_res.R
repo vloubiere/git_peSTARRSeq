@@ -4,7 +4,6 @@ require(ggplot2)
 require(ggrepel)
 
 dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
-dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 dat$ctlL <- dat$ctlR <- NULL
 
 # Select motifs

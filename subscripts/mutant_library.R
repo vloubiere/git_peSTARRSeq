@@ -54,7 +54,7 @@ pl[cdition!="mixed", {
   par(mai= c(.9,1.25,.9,1.35))
   vl_boxplot(residuals_wt,
              residuals_mut,
-             compute_pval= list(c(1,2)),
+             compute.pval= list(c(1,2)),
              ylab= "Residuals (log2)",
              xaxt= "n",
              notch= T,
@@ -64,7 +64,7 @@ pl[cdition!="mixed", {
                            fill= Cc,
                            legend= c("WT",
                                      fcase(grepl("Mutated", cdition), "Mutant",
-                                           grepl("Added", cdition), "Added motif")),,
+                                           grepl("Added", cdition), "Added motif")),
                            bty= "n",
                            xpd= NA,
                            cex= 7/12))
@@ -77,7 +77,7 @@ pl[cdition!="mixed", {
                     unique(.SD[, .(IDR, indR_mut)])[[2]],
                     log2FoldChange_wt,
                     log2FoldChange_mut,
-                    compute_pval= list(c(1,2), c(3,4), c(5,6)),
+                    compute.pval= list(c(1,2), c(3,4), c(5,6)),
                     ylab= "Activity (log2)",
                     xaxt= "n",
                     notch= T,

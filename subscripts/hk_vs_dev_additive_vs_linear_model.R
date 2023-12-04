@@ -5,6 +5,7 @@ require(vlfunctions)
 dat <- rbindlist(list(dev= readRDS("db/FC_tables/vllib015_DESeq2.rds"), # DSCP core promoter
                       hk= readRDS("db/FC_tables/vllib016_DESeq2.rds")), # RpS12 core promoter
                  idcol = "class")
+dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 
 # Compute additive / multiplicative / linear models ----
 dat[, `Additive model`:= log2(2^indL+2^indR-1)]

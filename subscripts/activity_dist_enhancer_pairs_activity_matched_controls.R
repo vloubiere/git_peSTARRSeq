@@ -12,10 +12,10 @@ lib <- vl_resizeBed(lib, "center", 0, 0)
 
 # Import dat and compute left right distance
 dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
+dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 dat[lib, c("seqL", "startL"):= .(i.seqnames, i.start), on="L==ID_vl"]
 dat[lib, c("seqR", "startR"):= .(i.seqnames, i.start), on="R==ID_vl"]
 dat[, dist:= ifelse(seqL!=seqR, Inf, abs(startL-startR))]
-dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 
 # Find best activity-matched controls ----
 dat$ctlL <- dat$ctlR <- NULL
@@ -75,7 +75,7 @@ par(mai= c(0.75,0.5,1,1.5),
     lwd= .75)
 xpos <- seq(1, 5, length.out= 3)
 vl_boxplot(enr[, .(ctlIndL, indL, ctlIndR, indR, ctlLog2FoldChange, log2FoldChange)],
-           compute_pval= list(c(1,2), c(3,4), c(5,6)),
+           compute.pval= list(c(1,2), c(3,4), c(5,6)),
            notch= T,
            xaxt= "n",
            col= c("lightgrey", "rosybrown1"),
