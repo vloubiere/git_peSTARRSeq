@@ -3,7 +3,7 @@ require(data.table)
 require(vlfunctions)
 
 # Import and select active pairs
-dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
+dat <- readRDS("db/linear_models/FC_DSCP_ECD_large_WT_lm_predictions.rds")
 dat[, actPair:= actL!="Inactive" & actR!="Inactive"]
 
 # Compute additive and multiplicative expected scores ----
@@ -11,7 +11,7 @@ dat[, `Additive model`:= log2(2^indL+2^indR-1)]
 dat[, `Multiplicative model`:= indL+indR]
 
 # Linear ----
-model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
+model <- readRDS("db/linear_models/lm_DSCP_ECD_large_WT.rds")
 adj.rsqlm <- summary(model)$adj.r.square
 eq <- model$coefficients
 eq <- round(eq, 1)
@@ -20,7 +20,7 @@ eq <- paste0("Predicted= ", eq[1], "+", eq[2], "*5'+", eq[3], "*3'", eq[4], "*5'
 # Melt data for plotting ----
 setnames(dat,
          c("predicted", "log2FoldChange"),
-           c("Linear model", "Observed"))
+         c("Linear model", "Observed"))
 pl <- melt(dat, 
            id.vars = c("L", "R", "Observed", "actPair"), 
            measure.vars = c("Additive model", "Multiplicative model", "Linear model"))
@@ -42,7 +42,7 @@ t2 <- pl[(actPair), .(variable[which.min(abs(residuals))]), .(L, R)]$V1
 t2 <- table(droplevels(t2))
 
 # Plot ----
-pdf("pdf/draft/Compare_add_mult_large_WT_lib.pdf",
+pdf("pdf/draft/Compare_add_mult_ECD_WT_lib.pdf",
     width = 9,
     height = 3)
 layout(matrix(1:3,

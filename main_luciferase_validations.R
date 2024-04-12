@@ -6,6 +6,8 @@ if(F)
   ## HAM CP (Lorena) ----
   ### Sanger seq ----
   file.edit("git_peSTARRSeq/subscripts/sanger_HAM_SUP1_luciferase_constructs.R")
+  ### Process validations data ----
+  file.edit("git_peSTARRSeq/subscripts/ham_luciferase_data_processing.R")
   ### Luciferase ----
   file.edit("git_peSTARRSeq/subscripts/HAM_luciferase_assays.R") # Luciferase
   

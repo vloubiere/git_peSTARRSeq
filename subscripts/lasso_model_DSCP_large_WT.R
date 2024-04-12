@@ -4,7 +4,7 @@ require(vlfunctions)
 require(glmnet)
 
 # Import data ---- (test sets already present in the #set column)
-dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
+dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
 
 # Counts matrix ----
 count <- readRDS("db/motif_counts/twist008_motif_counts.rds")
@@ -77,6 +77,6 @@ for(var in c("log2FoldChange", "residuals"))
 }
 
 saveRDS(models,
-        "db/linear_models/lasso_vllib002_residuals.rds")
+        "db/linear_models/lasso_DSCP_large_WT_residuals.rds")
 saveRDS(dat,
-        "db/linear_models/FC_lasso_vllib002_residuals_predictions.rds")
+        "db/linear_models/FC_lasso_DSCP_large_WT_residuals_predictions.rds")

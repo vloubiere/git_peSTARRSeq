@@ -3,7 +3,7 @@ require(data.table)
 require(vlfunctions)
 
 # Import data ----
-lib <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
+lib <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
              lib, 

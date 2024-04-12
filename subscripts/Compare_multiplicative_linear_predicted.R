@@ -1,7 +1,6 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
-dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
-dat[, actPair:= actL!="Inactive" & actR!="Inactive"]
+dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
 dat[, `Multiplicative model`:= indL+indR]
 
 pdf("pdf/draft/Compare_mult_linear_predictions_vllib002.pdf",

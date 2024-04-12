@@ -3,7 +3,7 @@ require(vlfunctions)
 require(ggplot2)
 require(ggrepel)
 
-dat <- readRDS("db/linear_models/FC_vllib002_lm_predictions.rds")
+dat <- readRDS("db/linear_models/FC_lasso_DSCP_large_WT_residuals_predictions.rds")
 dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 dat$ctlL <- dat$ctlR <- NULL
 
@@ -65,15 +65,43 @@ res[, col:= fcase(V1 %in% c("Ebox.CATATG.twi__L", "Trl.1__L") & V2 %in% c("Ebox.
                   V1 %in% c("AP1.1__L", "GATA.1__L") & V2 %in% c("AP1.1__R", "GATA.1__R"), "limegreen",
                   default = "lightgrey")]
 res[, label:= paste0(gsub("__L$", "", V1), " / ", gsub("__R$", "", V2))]
+res[, label:= gsub("AP1.1", "AP-1", label)]
+res[, label:= gsub("GATA.1", "GATA", label)]
+res[, label:= gsub("Ebox.CATATG.twi", "Twist", label)]
+res[, label:= gsub("DRE.1|DRE.2", "Dref", label)]
+res[, label:= gsub("Trl.1", "Trl", label)]
+res[, label:= gsub("SREBP.1", "SREBP", label)]
+res[, label:= gsub("CREB.ATF.2", "CREB", label)]
 setorderv(res, "sel")
 
-# Heatmap to compare symmetry
+# Heatmap to compare symmetry ----
 res[, V1:= gsub("__L$", "", V1)]
 res[, V2:= gsub("__R$", "", V2)]
 mat <- dcast(res,
              V1~V2,
              value.var = "Mean residuals [motif / no motif] (log2)")
 mat <- as.matrix(mat, 1)
+
+# Add examples to boxplot homotypic motif pairs ----
+pl <- function(left, right, x, col, xadj= .1, yadj= 0.05)
+{
+  .c <- res[V1 %in% left & V2 %in% right]
+  y <- .c[, `Mean residuals [motif / no motif] (log2)`]
+  x <- rep(x, length(y))
+  segments(x, y, x+xadj, y+yadj)
+  text(x+xadj,
+       y+yadj,
+       .c$label,
+       pos= 4,
+       xpd= T,
+       cex= 5/12,
+       offset= .1)
+  points(x,
+         y,
+         bg= col,
+         pch= 21,
+         cex= .5)
+}
 
 # Plot ----
 pdf("pdf/draft/motif_impact_act_vs_res.pdf", 
@@ -133,4 +161,19 @@ res[, {
                       ylim= c(-1, 1),
                       cex= .5)
 }]
+# Boxplot homotypic vs heterotypic
+vl_par(mai = c(.7, 1, .7, 1))
+vl_boxplot(res[V1==V2, `Mean residuals [motif / no motif] (log2)`],
+           res[V1!=V2, `Mean residuals [motif / no motif] (log2)`],
+           compute.pval = list(c(1,2)),
+           names= c("Homotypic pairs",
+                    "Heterotypic pairs"),
+           tilt.names = T,
+           ylab= "Mean residuals\n[motif / no motif] (log2)")
+pl("AP1.1", "AP1.1", 1, "tomato")
+pl("AP1.1",
+   c("CREB.ATF.2", "GATA.1", "SREBP.1", "Ebox.CATATG.twi"),
+   2,
+   "limegreen",
+   yadj= c(.05, .0, .05, .05))
 dev.off()

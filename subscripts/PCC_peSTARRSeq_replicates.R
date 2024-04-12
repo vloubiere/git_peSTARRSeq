@@ -2,17 +2,8 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 
 # Import counts ----
-dat <- data.table(file= list.files("db/dds/", full.names = T))
+dat <- data.table(file= list.files("db/dds/", ".dds", full.names = T))
 dat[, library:= gsub(".dds$", "", basename(file))]
-dat <- dat[library %in% c("vllib002", "vllib015", "vllib016")]
-dat[, library:= switch(library,
-                       "vllib002"= "Large WT oligo pool",
-                       "vllib015"= "Focused WT oligo pool\nDSCP",
-                       "vllib016"= "Focused WT oligo pool\nhkCP"), library]
-dat[, library:= factor(library,
-                       c("Large WT oligo pool",
-                         "Focused WT oligo pool\nDSCP",
-                         "Focused WT oligo pool\nhkCP"))]
 dat <- dat[, {
   as.data.table(DESeq2::counts(readRDS(file)))
 }, library]

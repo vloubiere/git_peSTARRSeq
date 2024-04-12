@@ -3,7 +3,7 @@ require(data.table)
 require(vlfunctions)
 
 # Import data ----
-dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
+dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
 dat[, actClass:= fcase(grepl("^control", L) & grepl("^control", R), "Ctl./Ctl.",
                        grepl("^control", R), "Enh./Ctl.",
                        grepl("^control", L), "Ctl./Enh.",
@@ -27,8 +27,8 @@ par(mai= c(0.75,1.25,1,1.1),
     lwd= .75)
 vl_boxplot(log2FoldChange~actClass,
            dat,
-           compute_pval = list(c(1,2), c(1,3), c(2,4), c(3,4)),
-           pval_cex= 7/12,
+           compute.pval = list(c(1,2), c(1,3), c(2, 3), c(2,4), c(3,4)),
+           pval.cex= 7/12,
            col = adjustcolor(Cc, 0.5),
            ylab= "Activity (log2)",
            tilt.names= T,

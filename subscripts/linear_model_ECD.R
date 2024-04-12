@@ -3,7 +3,7 @@ require(data.table)
 require(vlfunctions)
 
 # Import data ---
-dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
+dat <- readRDS("db/FC_tables/DSCP_ECD_WT_DESeq2.rds")
 dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 
 # Linear models on all pairs ----
@@ -30,5 +30,5 @@ model$CV_rsqs <- dat[, {
 dat[, predicted:= predict(model)]
 dat[, residuals:= log2FoldChange-predicted]
 
-saveRDS(model, "db/linear_models/lm_DSCP_large_WT.rds")
-saveRDS(dat, "db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
+saveRDS(model, "db/linear_models/lm_DSCP_ECD_large_WT.rds")
+saveRDS(dat, "db/linear_models/FC_DSCP_ECD_large_WT_lm_predictions.rds")

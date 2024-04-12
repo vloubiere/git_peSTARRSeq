@@ -2,14 +2,14 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import ----
-dat <- rbindlist(list(dev= readRDS("db/FC_tables/vllib015_DESeq2.rds"), # DSCP core promoter
-                      hk= readRDS("db/FC_tables/vllib016_DESeq2.rds")), # RpS12 core promoter
+dat <- rbindlist(list(dev= readRDS("db/FC_tables/DSCP_focused_WT_DESeq2.rds"),
+                      hk= readRDS("db/FC_tables/RpS12_focused_WT_DESeq2.rds")),
                  idcol = "class")
 
 # Compute additive / multiplicative / linear models ----
 dat[, `Additive model`:= log2(2^indL+2^indR-1)]
 dat[, `Multiplicative model`:= indL+indR]
-dat[, `Linear model`:= predict(readRDS("db/linear_models/lm_vllib002.rds"), .SD)]
+dat[, `Linear model`:= predict(readRDS("db/linear_models/lm_DSCP_large_WT.rds"), .SD)]
 dat <- dat[, { # Select dev/hk enhancer-enhancer pairs
   patt <- paste0("^control|^", class)
   .SD[grepl(patt, L) & grepl(patt, R)]

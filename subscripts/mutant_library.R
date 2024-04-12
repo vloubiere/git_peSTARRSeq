@@ -2,7 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data ----
-dat <- readRDS("db/FC_tables/vllib029_DESeq2.rds")
+dat <- readRDS("db/FC_tables/DSCP_mutant_library_DESeq2.rds")
 
 # Make sequence ID unique (numbers are only unique within one group) ----
 dat[, c("groupL", "mutL", "IDL"):= tstrsplit(L, "_", keep= c(1,2,4))]
@@ -11,7 +11,7 @@ dat[, IDL:= paste0(groupL, IDL)]
 dat[, IDR:= paste0(groupR, IDR)]
 
 # Compute expected multiplicative ----
-model <- readRDS("db/linear_models/lm_vllib002.rds")
+model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
 dat[, multiplicative:= predict(model, .SD)]
 dat[, residuals:= log2FoldChange-multiplicative]
 

@@ -54,10 +54,11 @@ align(index = index,
       nthreads = getDTthreads())
 
 # Import bam and filter read ----
-.c <- Rsamtools::scanBam(bam,
+.c <- Rsamtools::scanBam("/scratch/stark/vloubiere/bam/DSCP_NOECD_WT_screen_rep1.bam",
                          param = Rsamtools::ScanBamParam(what=c("qname", "rname", "strand", "pos")))[[1]]
 .c <- as.data.table(.c)
 setnames(.c, c("read", "seqnames", "strand", "start"))
+.c <- .c[seqnames=="dev_medium_C_00533"]
 # Extract first read and potential mates
 fw <- na.omit(.c)
 fw[, idx:= rowid(read)]
@@ -82,14 +83,11 @@ if(type=="pe-STARR-Seq")
   .c <- .c[start.x>start.y, .(read, L, R)]
 }
 
-# Extract UMIs ----
+# UMI collapsing (>1 diff) ----
 .c[, UMI:= gsub(".*_([A-Z]{10}).*", "\\1", read)]
 .c <- .c[, .(umi_N= .N), .(L, R, UMI)]
 .c[, total_counts:= sum(umi_N), .(L, R)]
 setorderv(.c, "umi_N", order = -1)
-
-# Check whether UMI might be collapsed
-# .c[, collapsed:= .N==1, .(L, R)] # Old simple way
 .c[, collapsed:= T, .(L, R)]
 .c[, idx:= .I]
 for(i in 1:10)
@@ -101,8 +99,6 @@ for(i in 1:10)
 }
 .c$idx <- NULL
 paste0(sum(.c$collapsed), " / ", nrow(.c), " pre-collapsed")
-
-# UMI collapsing (>1 diff) ----
 while(any(!.c$collapsed))
 {
   .c[!(collapsed), c("collapsed", "UMI"):= {
@@ -112,11 +108,13 @@ while(any(!.c$collapsed))
                        nthread= getDTthreads()-1)<=1
     UMI[coll] <- UMI[1]
     .(coll, UMI)
-  }, .(L, R)]
+  }, .(L, R, total_counts)]
 }
+
 # Final collapsing
 .c <- unique(.c[, .(L, R, total_counts, UMI)])
 .c <- .c[, .(umi_counts= .N), .(L, R, total_counts)]
 
 # SAVE ----
+fread("db/umi_counts/DSCP_NOECD_WT_screen_rep1.txt")
 fwrite(.c, umi_counts)

@@ -1,7 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
-models <- readRDS("db/linear_models/lasso_vllib002_residuals.rds")
-dat <- readRDS("db/linear_models/FC_lasso_vllib002_residuals_predictions.rds")
+models <- readRDS("db/linear_models/lasso_DSCP_large_WT_residuals.rds")
+dat <- readRDS("db/linear_models/FC_lasso_DSCP_large_WT_residuals_predictions.rds")
 
 pdf("pdf/draft/residuals_prediction_lasso.pdf",
     height = 3, 

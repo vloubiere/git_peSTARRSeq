@@ -11,7 +11,7 @@ lib <- as.data.table(lib)
 lib <- vl_resizeBed(lib, "center", 0, 0)
 
 # Import dat and compute left right distance
-dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
+dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
 dat[lib, c("seqL", "startL"):= .(i.seqnames, i.start), on="L==ID_vl"]
 dat[lib, c("seqR", "startR"):= .(i.seqnames, i.start), on="R==ID_vl"]
 dat[, dist:= ifelse(seqL!=seqR, Inf, abs(startL-startR))]

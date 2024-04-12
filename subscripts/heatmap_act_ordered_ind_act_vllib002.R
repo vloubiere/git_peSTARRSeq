@@ -2,7 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data
-dat <- readRDS("db/FC_tables/vllib002_DESeq2.rds")
+dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
 
 # Make matrix and clean
 mat <- dcast(dat,
@@ -17,13 +17,13 @@ while(sum(is.na(mat))>0.05*nrow(mat)*ncol(mat))
   mat <- mat[,-which.max(apply(mat, 2, function(x) sum(is.na(x))))]
 }
 hm <- vl_heatmap(mat, 
-                 cluster_rows= F,
-                 cluster_cols= F, 
+                 cluster.rows= F,
+                 cluster.cols= F, 
                  breaks = seq(-2, 8, 2),
                  col= viridis::viridis(6), 
-                 show_rownames= F,
-                 show_colnames= F, 
-                 legend_title= "Combined\nactivity (log2)",
+                 show.rownames= F,
+                 show.colnames= F, 
+                 legend.title= "Combined\nactivity (log2)",
                  legend.cex = 7/12,
                  plot= F)
 

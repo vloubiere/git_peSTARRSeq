@@ -12,8 +12,12 @@ meta[, index:= {
          "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12", # Focused oligo pool
          "T15"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15") # Mutated oligo pool
 }, library]
-meta[, bam:= paste0("/scratch/stark/vloubiere/bam/", vllib, "_", cdition, "_", rep, ".bam")]
-meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", vllib, "_", cdition, "_", rep, ".txt")]
+meta[, bam:= paste0("/scratch/stark/vloubiere/bam/", screen, "_", cdition, "_", rep, ".bam")]
+meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", screen, "_", cdition, "_", rep, ".txt")]
+
+# Save processed metadata ----
+saveRDS(meta,
+        "Rdata/metadata_processed.rds")
 
 # Align and compute counts ----
 meta[, cmd:= {
@@ -25,7 +29,7 @@ meta[, cmd:= {
   # [required] 6/ Output .txt file where UMI-collapsed counts will be stored \n")
   if(!file.exists(umi_counts))
   {
-    paste("module load build-env/2020; module load r/3.6.2-foss-2018b; Rscript git_peSTARRSeq/functions/pSTARRSeq_pipeline.R",
+    paste("/software/f2022/software/r/4.3.0-foss-2022b/bin/Rscript /groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/functions/pSTARRSeq_pipeline.R",
           type,
           index,
           paste0(unique(fq1), collapse = ","),
@@ -37,8 +41,8 @@ meta[, cmd:= {
 }, .(type, index, bam, umi_counts)]
 
 # Submit ----
-cores <- 8
-mem <- 32
+cores <- 12
+mem <- 64
 run <- meta[!is.na(cmd)]
 if(nrow(run))
 {
@@ -47,13 +51,8 @@ if(nrow(run))
             cores= cores, 
             m = mem, 
             name = "vlloub", 
-            t = '1-00:00:00',
+            t = '3-00:00:00',
             o= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/",
             e= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/")
   }, cmd]
 }
-
-# Save processed metadata ----
-meta$cmd <- NULL
-saveRDS(meta,
-        "Rdata/metadata_processed.rds")

@@ -2,9 +2,8 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import ----
-dat <- list(hkCP= readRDS("db/FC_tables/vllib016_DESeq2.rds"),
-            devCP= readRDS("db/FC_tables/vllib015_DESeq2.rds"))
-dat <- rbindlist(dat,
+dat <- rbindlist(list(hkCP= readRDS("db/FC_tables/RpS12_focused_WT_DESeq2.rds"),
+                      devCP= readRDS("db/FC_tables/DSCP_focused_WT_DESeq2.rds")),
                  idcol = "CP")
 dat[, CP:= factor(CP, c("hkCP", "devCP"))]
 dat <- dat[(grepl("^hk", L) & grepl("^hk", R)) | (grepl("^dev", L) & grepl("^dev", R))]
@@ -14,7 +13,6 @@ dat[, additive:= log2(2^indL+2^indR-1)]
 pl <- melt(dat,
            id.vars = c("CP", "class"),
            measure.vars = c("additive", "log2FoldChange"))
-
 
 pdf("pdf/draft/boxplot_hkCP_dev_vs_hk_pairs.pdf",
     width = 3, 
