@@ -3,7 +3,7 @@ require(data.table)
 require(vlfunctions)
 
 # Import and select active pairs
-dat <- readRDS("db/linear_models/FC_DSCP_ECD_WT_lm_predictions.rds")
+dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
 
 # Linear ----
 model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
@@ -19,25 +19,23 @@ pl <- melt(dat,
            measure.vars = c("Additive model", "Multiplicative model", "Linear model"))
 pl <- na.omit(pl)
 pl[, residuals:= Observed-value]
-pl[, c("Rsq", "RsqAct"):= {
-  rsq <- vl_model_eval(Observed, value)$Rsquare
-  rsqAct <- vl_model_eval(Observed[(actPair)], value[(actPair)])$Rsquare
-  .(1-(((1-rsq)*(.N-1))/(.N-2-1)),
-    1-(((1-rsqAct)*(sum(actPair)-1))/(sum(actPair)-2-1)))
-}, variable]
 pl[, xlab:= switch(as.character(variable), 
                    "Additive model"= "5' + 3' activities (log2)",
                    "Multiplicative model"= "5' x 3' activities (log2)",
                    "Linear model"= "Predicted activity (log2)"), variable]
 
-# Check best predictor ----
-t1 <- pl[(actPair) & variable!="Linear model", .(variable[which.min(abs(residuals))]), .(L, R)]$V1
-t1 <- table(droplevels(t1))
-t2 <- pl[(actPair), .(variable[which.min(abs(residuals))]), .(L, R)]$V1
-t2 <- table(droplevels(t2))
+# Compute ajusted Rsquared ----
+pl[, nPred:= switch(as.character(variable), 
+                   "Additive model"= 2,
+                   "Multiplicative model"= 2,
+                   "Linear model"= 3), variable]
+pl <- pl[, Rsq:= {
+  rsq <- vl_model_eval(Observed, value)$Rsquare
+  .(1-(((1-rsq)*(.N-1))/(.N-nPred-1)))
+}, .(variable, nPred)]
 
 # Plot ----
-pdf("pdf/draft/Compare_add_mult_ECD_lib.pdf",
+pdf("pdf/draft/Modelling_obs_vs_expected_large_WT_lib.pdf",
     width = 9,
     height = 3)
 par(mfrow= c(1,3),
@@ -76,7 +74,7 @@ pl[, {
   contour(z,
           lwd= 0.5,
           drawlabels= FALSE,
-          col= "#FF7F00",
+          col= "tomato",
           nlevels= 10,
           add= TRUE,
           xpd= NA)
@@ -87,14 +85,14 @@ pl[, {
          y = rep(leg.y, length(leg.s)),
          lwd= 0.5,
          cex= leg.s,
-         col= "#FF7F00")
+         col= "tomato")
   text(x = leg.x,
        y = leg.y,
        pos= 4,
        labels= "Enh./Enh. pairs",
        cex= 6/12,
        offset= .3,
-       col= "#FF7F00")
+       col= "tomato")
   # R2
   vl_plot_coeff(value = Rsq,
                 inset= c(-0.075, 0.07),
@@ -110,7 +108,7 @@ pl[, {
          cex= 0.7)
   # Abline
   rg <- seq(-1, ifelse(variable=="Additive model", 7, 9))
-  lines(rg, rg, lty= "11")
+  lines(rg, rg, lty= "11", col= "tomato")
   print(paste0(.GRP, "/", .NGRP))
 }, .(variable, xlab, Rsq)]
 
@@ -121,7 +119,7 @@ par(mai= c(.9,1.25,.9,1.25),
 pl[, {
   vl_boxplot(residuals,
              residuals[(actPair)],
-             col= c(blues9[4], "#FF7F00"),
+             col= c(blues9[4], "tomato"),
              tilt.names= T,
              ylab= "Residuals\n(Observed-expected)",
              main= variable,
@@ -164,33 +162,4 @@ dat[(actPair), {
   }, (sub)]
   .SD
 }, .SDcols= c("Additive model", "Multiplicative model", "Linear model", "Observed")]
-
-# Performances ----
-par(mgp= c(1.25, .25, 0))
-unique(pl[, .(variable, Rsq, RsqAct)])[, {
-  bar <- barplot(Rsq,
-                 ylab= "R-squared (goodness of fit)",
-                 col= "lightgrey")
-  vl_tilt_xaxis(bar, 
-                labels = variable)
-  bar <- barplot(RsqAct,
-                 ylab= "R-squared enh./enh. pairs",
-                 col= "lightgrey")
-  vl_tilt_xaxis(bar, 
-                labels = variable)
-}]
-
-# Pie charts best prediction ----
-par(mai= rep(1, 4),
-    pty= "s")
-pie(t1,
-    labels = paste0(names(t1), " (", round(t1/sum(t1)*100), "%)\nn= ", formatC(t1, big.mark = ",")),
-    cex= 8/12,
-    lwd= .5,
-    xpd= NA)
-pie(t2,
-    labels = paste0(names(t2), " (", round(t2/sum(t2)*100), "%)\nn= ", formatC(t2, big.mark = ",")),
-    cex= 8/12,
-    lwd= .5,
-    xpd= NA)
 dev.off()

@@ -10,7 +10,7 @@ args = commandArgs(trailingOnly=TRUE)
 # 3/ Collapse reads based on UMI (<=1 difference) and outputs the corresponding count file
 
 # test if there is at least 2 args: if not, return an error
-if (length(args)!=6) {
+if (length(args)<6) {
   stop("Please specify:\n
        [required] 1/ The type of assay. Can be one of 'pe-STARR-Seq' or 'rev-pe-STARR-Seq' \n
        [required] 2/ The index to use for the alignment \n
@@ -43,15 +43,19 @@ tmp1 <- tempfile(tmpdir = "/scratch/stark/vloubiere/fastq/", fileext = "_1.fq.gz
 system(paste(c("cat", fq1, ">", tmp1), collapse= " "))
 tmp2 <- tempfile(tmpdir = "/scratch/stark/vloubiere/fastq/", fileext = "_2.fq.gz")
 system(paste(c("cat", fq2, ">", tmp2), collapse= " "))
-align(index = index,
-      readfile1 = tmp1,
-      readfile2 = tmp2,
-      type = "dna",
-      output_format = "BAM",
-      output_file = bam,
-      maxMismatches = 3,
-      unique = T,
-      nthreads = getDTthreads())
+if(!file.exists(bam))
+{
+  align(index = index,
+        readfile1 = tmp1,
+        readfile2 = tmp2,
+        type = "dna",
+        output_format = "BAM",
+        output_file = bam,
+        maxMismatches = 3,
+        unique = T,
+        nthreads = getDTthreads())
+}else
+  print(paste0("bam file ", bam, " existed and alignment was skipped!"))
 
 # Import bam and filter read ----
 .c <- Rsamtools::scanBam(bam,

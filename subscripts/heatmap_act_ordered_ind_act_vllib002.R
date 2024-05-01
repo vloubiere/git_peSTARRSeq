@@ -1,16 +1,18 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
-# Import data
-dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
+# Import data ----
+dat <- readRDS("db/FC_tables/DSCP_large_WT_FC_DESeq2.rds")
 
-# Make matrix and clean
+# Dcast to matrix ----
 mat <- dcast(dat,
              -indL+L~indR+R,
              value.var = "log2FoldChange",
              sep = "__")
 mat <- as.matrix(mat[, -1], 1)
 colnames(mat) <- unlist(tstrsplit(colnames(mat), "__", keep= 2))
+
+# Select lines and rows with few NA values ----
 while(sum(is.na(mat))>0.05*nrow(mat)*ncol(mat))
 {
   mat <- mat[-which.max(apply(mat, 1, function(x) sum(is.na(x)))),]
@@ -27,7 +29,7 @@ hm <- vl_heatmap(mat,
                  legend.cex = 7/12,
                  plot= F)
 
-# Plot
+# Plot ----
 actLim <- 1
 barLims <- c(6,-1)
 barAxLims <- c(1,6)

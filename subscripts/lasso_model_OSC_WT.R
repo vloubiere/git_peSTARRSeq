@@ -1,15 +1,40 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
+require(glmnet)
 
-# Import data ---- (test sets already present in the #set column)
-dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
+# Predict values for the full dataset (not only ecd pairs)
+if(!file.exists("db/linear_models/FC_DSCP_OSC_WT_lm_predictions_full_data_LASSO.rds"))
+{
+  # Import data and remove control pairs ----
+  dat <- readRDS("db/FC_tables/DSCP_OSC_WT_FC_DESeq2.rds")
+  dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
+  
+  # Predicted values ----
+  dat[, `Additive model`:= log2(2^indL+2^indR-1)]
+  dat[, `Multiplicative model`:= indL+indR]
+  model <- lm(log2FoldChange~indL*indR, dat)
+  dat[, `Linear model`:= predict(model)]
+  dat[, residuals:= log2FoldChange-`Linear model`]
+  
+  # Define train and test sets ----
+  set.seed(1)
+  dat[dat[, .(set= sample(3)), L], setL:= i.set, on= "L"]
+  set.seed(1)
+  dat[dat[, .(set= sample(3)), R], setR:= i.set, on= "R"]
+  dat[, set:= .GRP, .(setL, setR)]
+  dat$setL <- dat$setR <- NULL
+  
+  saveRDS(dat,
+          "db/linear_models/FC_DSCP_OSC_WT_lm_predictions_full_data_LASSO.rds")
+}else
+  dat <- readRDS("db/linear_models/FC_DSCP_OSC_WT_lm_predictions_full_data_LASSO.rds")
 
 # Full dataset (no pairs exclude, all pairs predicted) ----
 fullData <- data.table(set= 0,
                        excludeL= "None", # Use all left enhancers
                        excludeR= "None") # Use all right enhancers
-                       
+
 # Define 10 folds to exclude from training data and CV ----
 set <- dat[, {
   .(excludeL= paste0(unique(L), collapse = ","),
@@ -19,7 +44,7 @@ set <- rbind(set, fullData)
 
 # Predict act and residuals ----
 set[, output:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/lasso_models/",
-                      ifelse(set==0, "full_dataset", paste0("fold", set)), "_large_WT_lasso.rds")]
+                      ifelse(set==0, "full_dataset", paste0("fold", set)), "_OSC_WT_lasso.rds")]
 
 # Command ----
 set[, cmd:= {
@@ -35,7 +60,7 @@ set[, cmd:= {
           excludeL,
           excludeR,
           "/groups/stark/vloubiere/projects/pe_STARRSeq/db/motif_counts/twist008_motif_counts_selected.rds",
-          "/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/FC_DSCP_large_WT_lm_predictions.rds",
+          "/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/FC_DSCP_OSC_WT_lm_predictions_full_data_LASSO.rds",
           output)
   }
 }, output]

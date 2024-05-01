@@ -2,8 +2,8 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 
 # Import counts ----
-dat <- data.table(file= list.files("db/dds/", ".dds", full.names = T))
-dat[, library:= gsub(".dds$", "", basename(file))]
+dat <- data.table(file= list.files("db/FC_tables/", ".dds", full.names = T))
+dat[, library:= gsub("_DESeq2.dds$", "", basename(file))]
 dat <- dat[, {
   as.data.table(DESeq2::counts(readRDS(file)))
 }, library]

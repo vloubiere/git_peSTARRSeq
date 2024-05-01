@@ -1,25 +1,27 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
+require(glmnet)
 
-# Import data ---- (test sets already present in the #set column)
-dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
+# Import data with residuals ----
+dat <- readRDS("db/linear_models/FC_DSCP_ECD_WT_lm_predictions_full_data_LASSO.rds")
 
 # Full dataset (no pairs exclude, all pairs predicted) ----
 fullData <- data.table(set= 0,
                        excludeL= "None", # Use all left enhancers
                        excludeR= "None") # Use all right enhancers
-                       
+
 # Define 10 folds to exclude from training data and CV ----
 set <- dat[, {
   .(excludeL= paste0(unique(L), collapse = ","),
     excludeR= paste0(unique(R), collapse = ","))
 }, set]
 set <- rbind(set, fullData)
+set <- set[set==1]
 
 # Predict act and residuals ----
-set[, output:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/lasso_models/",
-                      ifelse(set==0, "full_dataset", paste0("fold", set)), "_large_WT_lasso.rds")]
+set[, output:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/rf_models/",
+                      ifelse(set==0, "full_dataset", paste0("fold", set)), "_ECD_WT_lasso.rds")]
 
 # Command ----
 set[, cmd:= {
@@ -31,11 +33,11 @@ set[, cmd:= {
     # [required] 4/ .rds input data file containing the response variables \n"
     # [required] 5/ .rds output file \n
     paste("/software/f2022/software/r/4.3.0-foss-2022b/bin/Rscript",
-          "/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/functions/train_LASSO_model.R",
+          "/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/functions/train_random_forest_model.R",
           excludeL,
           excludeR,
           "/groups/stark/vloubiere/projects/pe_STARRSeq/db/motif_counts/twist008_motif_counts_selected.rds",
-          "/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/FC_DSCP_large_WT_lm_predictions.rds",
+          "/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/FC_DSCP_ECD_WT_lm_predictions_full_data_LASSO.rds",
           output)
   }
 }, output]
@@ -46,10 +48,10 @@ if(nrow(run))
 {
   run[,{
     vl_bsub(cmd,
-            cores = 4L,
-            m = 20,
-            t = "08:00:00",
-            name = "vlloub",
+            cores = 8L,
+            m = 120,
+            t = "2-00:00:00",
+            name = "rfECD",
             o = "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/",
             e = "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/")
   }, .(cmd, set)]

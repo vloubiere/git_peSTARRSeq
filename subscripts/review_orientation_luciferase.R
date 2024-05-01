@@ -2,7 +2,7 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 
 # Import data ----
-lib <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
+lib <- readRDS("db/FC_tables/DSCP_large_WT_FC_DESeq2.rds")
 luc <- readRDS("Rdata/validations_luciferase_final_table.rds")
 dat <- merge(luc,
              lib, 

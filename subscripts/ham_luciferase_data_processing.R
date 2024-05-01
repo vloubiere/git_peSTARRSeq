@@ -15,8 +15,8 @@ var[, date:= tstrsplit(basename(file), "_", keep= 1)]
 var[, lum:= gsub(".csv", "", unlist(tstrsplit(basename(file), "_", keep= 3)))]
 var <- dcast(var, date+Wells~lum, value.var = "values")
 dat[var, c("luc", "ren"):= .(i.lum1, i.lum2), on= c("date", "Wells")]
-dat[, L:= switch(L, "HAM1"= "A", "SUP1"= "B", "SCR2"= "control"), L]
-dat[, R:= switch(R, "HAM1"= "A", "SUP1"= "B", "SCR2"= "control"), R]
+dat[, L:= switch(L, "HAM1"= "B", "SUP1"= "A", "SCR2"= "control"), L]
+dat[, R:= switch(R, "HAM1"= "B", "SUP1"= "A", "SCR2"= "control"), R]
 comb <- CJ(L= c("control", "A", "B"),
            R= c("control", "A", "B"),
            sorted = F)
@@ -24,14 +24,20 @@ dat <- merge(comb, dat[, .(L, R, rep, luc, ren)])
 
 # 2- Compute enrichment ----
 dat <- dat[ren>2500]
-dat <- dat[, .(act= mean(log2(luc/ren))), .(L, R, rep)]
-dat <- dat[, .(L, R, log2FoldChange= act-act[L=="control" & R=="control"]), rep]
-dat[, c("indL", "sdL"):= .(mean(log2FoldChange[R=="control"]), sd(log2FoldChange[R=="control"])), L]
-dat[, c("indR", "sdR"):= .(mean(log2FoldChange[L=="control"]), sd(log2FoldChange[L=="control"])), R]
-dat <- unique(dat[, .(log2FoldChange= mean(log2FoldChange),
-                      sd= sd(log2FoldChange)), .(L, R, indL, indR, sdL, sdR)])
-dat[, additive:= log2(2^indL+2^indR-1)]
-dat[, multiplicative:= indL+indR]
-dat[, best:= ifelse(abs(log2FoldChange-additive)<abs(log2FoldChange-multiplicative), "Additive", "Multiplicative")]
+dat <- dat[, .(act= mean(luc/ren)), .(L, R, rep)]
+dat <- dat[, .(L, R, act= act/act[L=="control" & R=="control"]), rep]
+# dat[, act:= log2(act)]
+dat[, indL:= act[R=="control"], .(rep, L)]
+dat[, indR:= act[L=="control"], .(rep, R)]
+dat[, additive:= indL+indR]
+# dat[, additive:= log2(2^indL+2^indR-1)]
 
-saveRDS(dat, "Rdata/ham_luciferase_final_table.rds")
+# Melt
+.m <- melt(dat[(L %in% c("A", "B") & R %in% c("A", "B"))], c("rep", "L", "R"))
+.m[, variable:= factor(variable, c("indL", "indR", "additive", "act"))]
+setorderv(.m, "variable")
+.m <- .m[, .(mean= mean(value), sd= sd(value), all= .(value)), .(L, R, variable)]
+.m[, name:= factor(paste0(L, R), c("AB", "BA", "AA", "BB"))]
+setorderv(.m, "name")
+
+saveRDS(.m, "Rdata/ham_luciferase_final_table.rds")

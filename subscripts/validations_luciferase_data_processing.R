@@ -53,9 +53,8 @@ dat[, indL:= mean(log2FoldChange[grepl("control", R)]), L]
 dat[, indR:= mean(log2FoldChange[grepl("control", L)]), R]
 dat <- na.omit(dat)
 dat[, additive:= log2(2^indL+2^indR-1)]
-model <- lm(log2FoldChange~I(2^indL)*I(2^indR), dat)
-summary(model)
-dat[, multiplicative:= predict(model)]
-dat[, best:= ifelse(abs(log2FoldChange-additive)<abs(log2FoldChange-multiplicative), "Add", "Mult")]
+dat[, multiplicative:= indL+indR]
+model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
+dat[, linear:= predict(model, .SD)]
 
 saveRDS(dat, "Rdata/validations_luciferase_final_table.rds")

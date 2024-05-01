@@ -1,15 +1,17 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
-# Import data and match reversed pairs ----
-dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
+# Import data ----
+dat <- readRDS("db/FC_tables/DSCP_large_WT_FC_DESeq2.rds")
 dat <- dat[!grepl("control", L) & !grepl("control", R)]
+
+# Match pairs to their reversed counterpart ----
 pair <- merge(dat,
              dat,
              by.x= c("L", "R"),
              by.y= c("R", "L"),
              suffixes= c("", ".r"))
 
-# Collapsed per enhancer
+# Collapsed per enhancer ----
 coll <- merge(dat[, .("Mean act. 5' loc. (log2)"= mean(log2FoldChange)), .(enh= L)],
               dat[, .("Mean act. 3' loc. (log2)"= mean(log2FoldChange)), .(enh= R)],
               by= "enh")
@@ -33,8 +35,11 @@ pair[, {
   vl_plot_coeff(value= pcc,
                 type = "pcc",
                 cex= 7/12)
-  clip(-1.5, 8, -1.5, 8)
-  abline(0, 1, lty= "11")
+  clip(min(log2FoldChange),
+       max(log2FoldChange),
+       min(log2FoldChange.r),
+       max(log2FoldChange.r))
+  abline(0, 1, lty= "11", col="tomato")
 }]
 coll[, {
   plot(`Mean act. 3' loc. (log2)`,

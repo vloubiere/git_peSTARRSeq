@@ -3,15 +3,17 @@ require(data.table)
 require(vlfunctions)
 
 # Import data ----
-dat <- readRDS("db/FC_tables/DSCP_large_WT_DESeq2.rds")
+dat <- readRDS("db/FC_tables/DSCP_large_WT_FC_DESeq2.rds")
+
+# Define classes of pairs ----
 dat[, actClass:= fcase(grepl("^control", L) & grepl("^control", R), "Ctl./Ctl.",
                        grepl("^control", R), "Enh./Ctl.",
                        grepl("^control", L), "Ctl./Enh.",
                        default= "Enh./Enh.")]
 dat[, actClass:= factor(actClass, c("Ctl./Ctl.", "Enh./Ctl.", "Ctl./Enh.", "Enh./Enh."))]
-Cc <- c("grey0", "royalblue2", "purple", "#74C27A")
 
 # Plot ----
+Cc <- c("grey0", "royalblue2", "purple", "#74C27A")
 pdf("pdf/draft/Compare_individual_vs_enh_pairs.pdf", 
     width = 3, 
     height = 3)
