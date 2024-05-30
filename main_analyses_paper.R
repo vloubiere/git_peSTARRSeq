@@ -20,8 +20,6 @@ file.edit("git_peSTARRSeq/subscripts/validations_luciferase_data_processing.R")
 file.edit("git_peSTARRSeq/subscripts/homotypic_validations_data_processing.R")
 # Linear models ----
 file.edit("git_peSTARRSeq/subscripts/linear_model_large_WT_lib.R")
-file.edit("git_peSTARRSeq/subscripts/linear_model_ECD_ecd_pairs.R")
-file.edit("git_peSTARRSeq/subscripts/linear_model_OSC_osc_pairs.R")
 file.edit("git_peSTARRSeq/subscripts/linear_model_longer_spacer_act_pairs.R")
 file.edit("git_peSTARRSeq/subscripts/linear_model_ECD_full_dataset.R")
 file.edit("git_peSTARRSeq/subscripts/linear_model_OSC_full_dataset.R")

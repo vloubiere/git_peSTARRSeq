@@ -2,28 +2,16 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data ----
-ECD <- readRDS("db/linear_models/FC_DSCP_ECD_ecd_pairs_lm_predictions.rds")
-OSC <- readRDS("db/linear_models/FC_DSCP_OSC_osc_pairs_lm_predictions.rds")
+ECD <- readRDS("db/linear_models/FC_DSCP_ECD_full_dataset_lm_predictions.rds")
+ECD <- ECD[!is.na(group)] # Select ECD enhancer pairs and controls
+OSC <- readRDS("db/linear_models/FC_DSCP_OSC_full_dataset_lm_predictions.rds")
+OSC <- OSC[!is.na(group)] # Select OSC enhancer pairs and controls
 dat <- list("S2 cells + ecdysone"= ECD,
             "OSC cells"= OSC)
 
 # Import models ----
-models <- list("S2 cells + ecdysone"= readRDS("db/linear_models/lm_DSCP_ECD_ecd_pair.rds"),
-               "OSC cells"= readRDS("db/linear_models/lm_DSCP_OSC_osc_pairs.rds"))
-
-# # Extract formulas and compute rsq ----
-# coefs <- lapply(models, function(x) formatC(coef(x), 2))
-# .f <- lapply(coefs, function(x) gsub(" ", "", paste0("y=", x[1], "*5'+", x[2], "*3'", x[3], "*5'*3'")))
-# rsq <- lapply(names(dat), function(cdition) 
-#   dat[[cdition]][, {
-#   arsq <- vl_model_eval(`Additive model`, log2FoldChange)$Rsquare
-#   arsq <- 1-(((1-arsq)*(.N-1))/(.N-2-1))
-#   arsq <- paste0("Add. R2= ", round(arsq, 2))
-#   mrsq <- vl_model_eval(`Linear model`, log2FoldChange)$Rsquare
-#   mrsq <- 1-(((1-mrsq)*(.N-1))/(.N-2-1))
-#   mrsq <- paste0("Fit. mult. R2=", round(mrsq, 2), " (", .f[[cdition]], ")")
-#   .(arsq, mrsq)
-# }])
+models <- list("S2 cells + ecdysone"= readRDS("db/linear_models/lm_DSCP_ECD_full_dataset.rds"),
+               "OSC cells"= readRDS("db/linear_models/lm_DSCP_OSC_full_dataset.rds"))
 
 # Fitted curves ----
 mult <- data.table(indL= seq(0, 10, .1))
@@ -34,7 +22,6 @@ mult[, `OSC cells`:= predict(models$`OSC cells`, .SD)]
 
 # Plot ----
 Cc <- c("tomato", "royalblue", "limegreen", "grey30")
-# Cc <- rev(viridis::viridis(4))
 
 pdf("pdf/draft/super_additivity_OSC_ECD.pdf", 9, 3)
 mat <- matrix(c(1,1,1,1,2,4,3,5,6,6,6,6), nrow= 2)

@@ -37,6 +37,7 @@ pl[, {
   axis(1, padj= -1.25)
   vl_plot_coeff(type = "rsq",
                 value = mean_rsq,
+                adjusted = T,
                 cex= 7/12,
                 inset= c(-0.1, 0))
 }]

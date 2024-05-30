@@ -3,7 +3,7 @@ require(vlfunctions)
 
 # Import data ----
 dat <- readRDS("db/linear_models/FC_DSCP_long_spacer_act_pairs_lm_predictions.rds")
-
+  
 # Import models ----
 model <- readRDS("db/linear_models/lm_DSCP_long_spacer_act_pairs.rds")
 
@@ -32,8 +32,8 @@ dat[, {
        padj = -1.25,
        gap.axis = 0)
   # Fitting lines
-  clip(min(`Additive model`),
-       max(`Additive model`),
+  clip(min(`Additive model`, na.rm= T),
+       max(`Additive model`, na.rm= T),
        min(log2FoldChange),
        max(log2FoldChange))
   lines(mult$add,

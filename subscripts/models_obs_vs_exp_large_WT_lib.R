@@ -7,7 +7,6 @@ dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
 
 # Linear ----
 model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
-adj.rsqlm <- summary(model)$adj.r.square
 eq <- model$coefficients
 eq <- round(eq, 1)
 eq <- paste0("Predicted= ", eq[1], "+", eq[2], "*5'+", eq[3], "*3'", eq[4], "*5':3'")
@@ -24,15 +23,9 @@ pl[, xlab:= switch(as.character(variable),
                    "Multiplicative model"= "5' x 3' activities (log2)",
                    "Linear model"= "Predicted activity (log2)"), variable]
 
-# Compute ajusted Rsquared ----
-pl[, nPred:= switch(as.character(variable), 
-                   "Additive model"= 2,
-                   "Multiplicative model"= 2,
-                   "Linear model"= 3), variable]
-pl <- pl[, Rsq:= {
-  rsq <- vl_model_eval(Observed, value)$Rsquare
-  .(1-(((1-rsq)*(.N-1))/(.N-nPred-1)))
-}, .(variable, nPred)]
+# Compute R-squared non-fitted models ----
+pl[variable=="Linear model", Rsq:= summary(model)$adj.r.square]
+pl[is.na(Rsq), Rsq:= vl_model_eval(Observed, value)$Rsquare, variable]
 
 # Plot ----
 pdf("pdf/draft/Modelling_obs_vs_expected_large_WT_lib.pdf",
@@ -96,6 +89,7 @@ pl[, {
   # R2
   vl_plot_coeff(value = Rsq,
                 inset= c(-0.075, 0.07),
+                adjusted= variable=="Linear model",
                 cex= 6/12)
   # Equation
   if(variable=="Linear model")

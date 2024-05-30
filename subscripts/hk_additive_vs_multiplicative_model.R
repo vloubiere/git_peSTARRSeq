@@ -17,14 +17,8 @@ pl[, xlab:= switch(as.character(variable),
                    "Additive model"= "5' + 3' activities (log2)",
                    "Multiplicative model"= "5' x 3' activities (log2)"), variable]
 
-# Compute ajusted Rsquared ----
-pl[, nPred:= switch(as.character(variable), 
-                    "Additive model"= 2,
-                    "Multiplicative model"= 2), variable]
-pl <- pl[, Rsq:= {
-  rsq <- vl_model_eval(Observed, value)$Rsquare
-  .(1-(((1-rsq)*(.N-1))/(.N-nPred-1)))
-}, .(variable, nPred)]
+# Compute Rsquared ----
+pl[, Rsq:= vl_model_eval(Observed, value)$Rsquare, variable]
 
 # Plot ----
 pdf("pdf/draft/Modelling_obs_vs_expected_focused_RpS12_lib.pdf",

@@ -6,10 +6,25 @@ require(vlfunctions)
 dat <- readRDS("db/FC_tables/DSCP_ECD_WT_FC_DESeq2.rds")
 dat <- dat[!grepl("^control", L) & !grepl("^control", R)]
 
+# Select activity-matched enhancers for ECD ----
+ecdL <- vl_select_act_matched(unique(dat[grepl("^ecd", L), .(L, indL)]),
+                              unique(dat[grepl("^dev", L), .(L, indL)]),
+                              "indL")
+ecdL <- ecdL$L
+ecdR <- vl_select_act_matched(unique(dat[grepl("^ecd", R), .(R, indR)]),
+                              unique(dat[grepl("^dev", R), .(R, indR)]),
+                              "indR")
+ecdR <- ecdR$R
+dat[, group:= fcase(grepl("^ecd", L) & grepl("^ecd", R), "Ecd./Ecd.",
+                    grepl("^ecd", L) & R %in% ecdR, "Ecd./S2",
+                    L %in% ecdL & grepl("^ecd", R), "S2/Ecd.",
+                    L %in% ecdL & R %in% ecdR, "S2/S2")]
+dat[, group:= factor(group, c("Ecd./Ecd.", "Ecd./S2", "S2/Ecd.", "S2/S2"))]
+
 # Predicted values ----
 dat[, `Additive model`:= log2(2^indL+2^indR-1)]
 dat[, `Multiplicative model`:= indL+indR]
-model <- lm(log2FoldChange~indL*indR, dat)
+model <- lm(log2FoldChange ~ indL * indR, dat)
 dat[, `Linear model`:= predict(model)]
 dat[, residuals:= log2FoldChange-`Linear model`]
 
