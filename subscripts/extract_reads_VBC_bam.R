@@ -6,9 +6,15 @@ require(data.table)
 meta <- read_xlsx("Rdata/vl_sequencing_metadata.xlsx")
 meta <- as.data.table(meta)
 
-# generate fq names and command lines ----
+# generate fq names ----
 meta[, fq1:= paste0("/scratch/stark/vloubiere/fastq/", gsub(".bam$", "", basename(BAM_path)), "_", i5, "_1.fq.gz")]
 meta[, fq2:= paste0("/scratch/stark/vloubiere/fastq/", gsub(".bam$", "", basename(BAM_path)), "_", i5, "_2.fq.gz")]
+
+# SAVE ----
+saveRDS(meta,
+        "Rdata/metadata.rds")
+
+# Command lines ----
 meta[, cmd:= {
   if(any(!file.exists(c(fq1, fq2))))
   {
@@ -22,6 +28,7 @@ meta[, cmd:= {
   }else
     as.character(NA)
 }, .(BAM_path, i5, fq1, fq2)]
+
 
 # Submit ----
 cores <- 2
@@ -40,7 +47,3 @@ if(nrow(run))
   }, cmd]
 }
 meta$cmd <- NULL
-
-# SAVE ----
-saveRDS(meta,
-        "Rdata/metadata.rds")

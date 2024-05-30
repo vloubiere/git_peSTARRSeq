@@ -1,8 +1,7 @@
 setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 
 # Import data ----
-dat <- readRDS("db/FC_tables/DSCP_large_WT_FC_DESeq2.rds")
-dat <- dat[!grepl("control", L) & !grepl("control", R)]
+dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
 
 # Match pairs to their reversed counterpart ----
 pair <- merge(dat,

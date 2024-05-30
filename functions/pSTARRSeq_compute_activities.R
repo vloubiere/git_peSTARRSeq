@@ -91,7 +91,7 @@ if(method=="DESeq2")
                             row.names = "name")
   dds <- DESeqDataSetFromMatrix(countData= DF,
                                 colData= sampleTable,
-                                design= ~rep+cdition)
+                                design= ~cdition)
   sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[grepl("^control.*__control.*", rownames(DF)),]))
   dds <- DESeq(dds)
   # Differential expression

@@ -91,8 +91,15 @@ if(!file.exists("db/motif_counts/lib8_motifs_enrichments.rds"))
 selMot <- enr[padj<1e-5 & set_hit>=5, .SD[which.min(padj)], .(cl, cluster)]
 selMot <- selMot[, .SD[1], motif_ID]
 selMot$cl <- selMot$pval <- selMot$log2OR <- selMot$padj <- NULL
+
 selCounts <- counts[dat$group!="rdm", selMot$motif_ID, with= F]
 selCounts[, ID:= dat[group!="rdm", ID]]
 setcolorder(selCounts, "ID")
 saveRDS(selCounts, 
         "db/motif_counts/twist008_motif_counts_selected.rds")
+
+selCounts <- counts[dat$group=="rdm", selMot$motif_ID, with= F]
+selCounts[, ID:= dat[group=="rdm", ID]]
+setcolorder(selCounts, "ID")
+saveRDS(selCounts, 
+        "db/motif_counts/twist008_motif_counts_selected_negative_controls.rds")

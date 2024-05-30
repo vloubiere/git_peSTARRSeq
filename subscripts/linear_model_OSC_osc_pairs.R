@@ -27,8 +27,8 @@ dat[, `Multiplicative model`:= indL+indR]
 
 # Train linear model ----
 model <- lm(log2FoldChange~0+indL*indR, dat)
-dat[, `Linear model`:= predict(model)]
+dat[, `Linear model`:= predict(model, .SD)]
 dat[, residuals:= log2FoldChange-`Linear model`]
 
-saveRDS(model, "db/linear_models/lm_DSCP_OSC_WT.rds")
-saveRDS(dat, "db/linear_models/FC_DSCP_OSC_WT_lm_predictions.rds")
+saveRDS(model, "db/linear_models/lm_DSCP_OSC_osc_pairs.rds")
+saveRDS(dat, "db/linear_models/FC_DSCP_OSC_osc_pairs_lm_predictions.rds")

@@ -14,6 +14,7 @@ dat[, R:= paste0(groupR, R)]
 model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
 dat[, `linear model`:= predict(model, .SD)]
 dat[, residuals:= log2FoldChange-`linear model`]
+dat <- dat[indL>0 & padjL>0 & indR>0 & padjR>0]
 
 # Merge WT and mutant variants ----
 pl <- merge(dat[mutL=="WT" & mutR=="WT", .(L, R, indL, indR, log2FoldChange, `linear model`, residuals)],
@@ -23,16 +24,20 @@ pl <- merge(dat[mutL=="WT" & mutR=="WT", .(L, R, indL, indR, log2FoldChange, `li
 
 # Retrieve combinations of interest ----
 # Pasting Trl/Twist motifs in enhancers with no motifs
-pl[grepl("^noMotifAct", L) & grepl("^noMotifAct", R), 
-   cdition:= fcase(grepl("add.*Trl", mutL) & grepl("add.*Trl", mutR), "Added Trl motifs",
-                   grepl("add.*Twist", mutL) & grepl("add.*Twist", mutR), "Added Twist motifs")]
-# Pasting Dref motif in dev enhancers
-pl[grepl("^noMotifAct", L) & grepl("^noMotifAct", R) & grepl("add.*Dref", mutL) & grepl("add.*Dref", mutR), cdition:= "Added Dref motifs"]
-# Mutate motifs in enhancers that contain them
-pl[grepl("mut.*Trl", mutL) & grepl("mut.*Trl", mutR), cdition:= "Mutated Trl motifs",]
-pl[grepl("mut.*Twist", mutL) & grepl("mut.*Twist", mutR), cdition:= "Mutated Twist motifs"]
-# pl[grepl("mut.*Dref", mutL) & grepl("mut.*Dref", mutR), cdition:= "Mutated Dref motifs"] # NOT USED
+pl[,cdition:= fcase(grepl("add.*Trl", mutL) & grepl("add.*Trl", mutR), "Added Trl motifs",
+                    grepl("add.*Twist", mutL) & grepl("add.*Twist", mutR), "Added Twist motifs",
+                    grepl("add.*Dref", mutL) & grepl("add.*Dref", mutR), "Added Dref motifs",
+                    grepl("mut.*Trl", mutL) & grepl("mut.*Trl", mutR) & residuals_wt>0, "Mutated Trl motifs",
+                    grepl("mut.*Twist", mutL) & grepl("mut.*Twist", mutR) & residuals_wt>0, "Mutated Twist motifs")]
+# # Pasting Dref motif in dev enhancers
+# pl[grepl("^noMotifAct", L) & grepl("^noMotifAct", R) & grepl("add.*Dref", mutL) & grepl("add.*Dref", mutR), cdition:= "Added Dref motifs"]
+# # Mutate motifs in enhancers that contain them
+# cutoff <- log2(1.5)
+# pl[grepl("mut.*Trl", mutL) & grepl("mut.*Trl", mutR) & residuals_wt>0 & indL_mut>cutoff & indR_mut>cutoff, cdition:= "Mutated Trl motifs",]
+# pl[grepl("mut.*Twist", mutL) & grepl("mut.*Twist", mutR) & residuals_wt>0 & indL_mut>cutoff & indR_mut>cutoff, cdition:= "Mutated Twist motifs"]
+# # pl[grepl("mut.*Dref", mutL) & grepl("mut.*Dref", mutR), cdition:= "Mutated Dref motifs"] # NOT USED
 pl <- pl[!is.na(cdition)]
+
 
 # Plotting function adds legend to residuals boxplot ----
 leg <- function(cdition, n)

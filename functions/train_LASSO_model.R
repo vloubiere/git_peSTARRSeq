@@ -78,12 +78,13 @@ for(response in c("log2FoldChange", "residuals"))
   # Adjusted rsq ----
   coefficients <- coef(model, s = model$best_lambda)
   nPredictors <- sum(coefficients != 0) - 1 # Intercept should not be counted
-  nObs <- if(any(data$set=="test")) sum(data$set=="test") else nrow(dat)
+  nObs <- if(any(data$set=="test")) sum(data$set=="test") else nrow(data)
   model$adj.rsq <- 1 - ((1 - rsquared) * (nObs - 1) / (nObs - nPredictors - 1))
   
   # Save ----
   res[[response]] <- model
 }
+res[["data"]] <- data
 
 # Save results ----
 saveRDS(res, output)

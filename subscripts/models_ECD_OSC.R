@@ -2,14 +2,14 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(vlfunctions)
 
 # Import data ----
-ECD <- readRDS("db/linear_models/FC_DSCP_ECD_WT_lm_predictions.rds")
-OSC <- readRDS("db/linear_models/FC_DSCP_OSC_WT_lm_predictions.rds")
+ECD <- readRDS("db/linear_models/FC_DSCP_ECD_ecd_pairs_lm_predictions.rds")
+OSC <- readRDS("db/linear_models/FC_DSCP_OSC_osc_pairs_lm_predictions.rds")
 dat <- list("S2 cells + ecdysone"= ECD,
             "OSC cells"= OSC)
 
 # Import models ----
-models <- list("S2 cells + ecdysone"= readRDS("db/linear_models/lm_DSCP_ECD_WT.rds"),
-               "OSC cells"= readRDS("db/linear_models/lm_DSCP_OSC_WT.rds"))
+models <- list("S2 cells + ecdysone"= readRDS("db/linear_models/lm_DSCP_ECD_ecd_pair.rds"),
+               "OSC cells"= readRDS("db/linear_models/lm_DSCP_OSC_osc_pairs.rds"))
 
 # # Extract formulas and compute rsq ----
 # coefs <- lapply(models, function(x) formatC(coef(x), 2))
@@ -36,10 +36,12 @@ mult[, `OSC cells`:= predict(models$`OSC cells`, .SD)]
 Cc <- c("tomato", "royalblue", "limegreen", "grey30")
 # Cc <- rev(viridis::viridis(4))
 
-pdf("pdf/draft/super_additivity_OSC_ECD.pdf", 6, 3)
-vl_par(mfrow= c(1,2),
-       mgp= c(1, .35, 0),
-       font.main= 1)
+pdf("pdf/draft/super_additivity_OSC_ECD.pdf", 9, 3)
+mat <- matrix(c(1,1,1,1,2,4,3,5,6,6,6,6), nrow= 2)
+layout(mat)
+vl_par(mgp= c(1, .35, 0),
+       font.main= 1,
+       cex.main= 8/12)
 for(cdition in c("S2 cells + ecdysone", "OSC cells"))
 {
   # random order before plotting ----
@@ -84,9 +86,40 @@ for(cdition in c("S2 cells + ecdysone", "OSC cells"))
            cex= .4,
            xpd= T)
     
+    # Individual plots
+    xl <- par("usr")[1:2]
+    yl <- par("usr")[3:4]
+    par(mai= c(.45,.45,.45,.45),
+        cex.axis= 5/12,
+        lwd= .75)
+    pl[, {
+      plot(`Additive model`,
+           log2FoldChange,
+           pch= 16,
+           col= adjustcolor(Cc[group], .2),
+           cex= .2,
+           main= group,
+           xaxt= "n",
+           xlab= "Predicted additive (log2)",
+           ylab= "Combined activity (log2)",
+           xlim= xl,
+           ylim= yl)
+      axis(1, padj= -2.75)
+      # Add fitted lines
+      clip(min(`Additive model`),
+           max(`Additive model`),
+           min(log2FoldChange),
+           max(log2FoldChange))
+      lines(mult$add,
+            mult[[cdition]])
+      abline(0, 1, lty= "11")
+    }, group]
+    
     # Boxplot quantif
     par(mai= c(.9 , 1.2, 1.1, 1.3),
-        pty= "m")
+        pty= "m",
+        cex.axis= 7/12,
+        lwd= 1)
     vl_boxplot(log2FoldChange-`Additive model`~group,
                .SD,
                tilt.names= T,

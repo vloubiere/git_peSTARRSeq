@@ -20,7 +20,7 @@ set <- rbind(set, fullData)
 set <- set[set==1]
 
 # Predict act and residuals ----
-set[, output:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/rf_models/",
+set[, output:= paste0("db/rf_models/",
                       ifelse(set==0, "full_dataset", paste0("fold", set)), "_ECD_WT_lasso.rds")]
 
 # Command ----
@@ -33,13 +33,14 @@ set[, cmd:= {
     # [required] 4/ .rds input data file containing the response variables \n"
     # [required] 5/ .rds output file \n
     paste("/software/f2022/software/r/4.3.0-foss-2022b/bin/Rscript",
-          "/groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/functions/train_random_forest_model.R",
+          "git_peSTARRSeq/functions/train_rf_model.R",
           excludeL,
           excludeR,
-          "/groups/stark/vloubiere/projects/pe_STARRSeq/db/motif_counts/twist008_motif_counts_selected.rds",
-          "/groups/stark/vloubiere/projects/pe_STARRSeq/db/linear_models/FC_DSCP_ECD_WT_lm_predictions_full_data_LASSO.rds",
+          "db/motif_counts/twist008_motif_counts_selected.rds",
+          "db/linear_models/FC_DSCP_ECD_WT_lm_predictions_full_data_LASSO.rds",
           output)
-  }
+  }else
+    as.character(NA)
 }, output]
 
 # Submits ----

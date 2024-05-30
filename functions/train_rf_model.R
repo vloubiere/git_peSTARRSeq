@@ -32,6 +32,7 @@ output <- args[5]
 data[, set:= fcase(!(L %in% excludeL) & !(R %in% excludeR), "train",
                    (L %in% excludeL) & (R %in% excludeR), "test",
                    default = "notUsed")]
+# data <- data[set=="train"][1:200] # For tests
 
 # Counts matrix (keep left and right counts separated) ----
 motL <- counts[data$L, on= "ID"][, -1]
@@ -55,8 +56,7 @@ for(response in c("log2FoldChange", "residuals"))
   # Train model ----
   model <- randomForest(x= counts[data$set=="train",],
                         y= data[set=="train"][[response]],
-                        importance= TRUE,
-                        keep.forest= T)
+                        importance= TRUE)
   
   # Predict ----
   predVar <- paste0("rf_predicted_", response)
@@ -65,6 +65,7 @@ for(response in c("log2FoldChange", "residuals"))
   # Save ----
   res[[response]] <- model
 }
+res[["data"]] <- data
 
 # Save results ----
 saveRDS(res, output)

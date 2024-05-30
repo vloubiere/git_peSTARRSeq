@@ -2,8 +2,10 @@ setwd("/groups/stark/vloubiere/projects/pe_STARRSeq/")
 require(data.table)
 require(vlfunctions)
 
+dat.file <- "db/linear_models/FC_DSCP_ECD_full_dataset_lm_predictions.rds"
+
 # Import data ---- (test sets already present in the #set column)
-dat <- readRDS("db/linear_models/FC_DSCP_large_WT_lm_predictions.rds")
+dat <- readRDS(dat.file)
 
 # Full dataset (no pairs exclude, all pairs predicted) ----
 fullData <- data.table(set= 0,
@@ -16,11 +18,10 @@ set <- dat[, {
     excludeR= paste0(unique(R), collapse = ","))
 }, set]
 set <- rbind(set, fullData)
-set <- set[set==1]
 
 # Predict act and residuals ----
-set[, output:= paste0("db/rf_models/",
-                      ifelse(set==0, "full_dataset", paste0("fold", set)), "_large_WT_lasso.rds")]
+set[, output:= paste0("db/lasso_models/",
+                      ifelse(set==0, "full_dataset", paste0("fold", set)), "_ECD_lasso.rds")]
 
 # Command ----
 set[, cmd:= {
@@ -32,11 +33,11 @@ set[, cmd:= {
     # [required] 4/ .rds input data file containing the response variables \n"
     # [required] 5/ .rds output file \n
     paste("/software/f2022/software/r/4.3.0-foss-2022b/bin/Rscript",
-          "git_peSTARRSeq/functions/train_rf_model.R",
+          "git_peSTARRSeq/functions/train_LASSO_model.R",
           excludeL,
           excludeR,
           "db/motif_counts/twist008_motif_counts_selected.rds",
-          "db/linear_models/FC_DSCP_large_WT_lm_predictions.rds",
+          dat.file,
           output)
   }else
     as.character(NA)
@@ -48,10 +49,10 @@ if(nrow(run))
 {
   run[,{
     vl_bsub(cmd,
-            cores = 8L,
-            m = 120,
-            t = "2-00:00:00",
-            name = "rfLarge",
+            cores = 4L,
+            m = 20,
+            t = "08:00:00",
+            name = "lasECD",
             o = "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/",
             e = "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/")
   }, .(cmd, set)]

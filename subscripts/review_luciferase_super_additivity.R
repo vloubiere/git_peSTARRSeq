@@ -7,9 +7,7 @@ luc[indL>1 & indR>1, {
        log2FoldChange,
        # ylim= range(c(additive, log2FoldChange)),
        xlab= "Predicted additive (5'+3')",
-       ylab= "Combined activity",
-       xlim= c(4,8),
-       ylim= c(4,8))
+       ylab= "Combined activity")
   .lo <- loess(log2FoldChange~additive)
   lines(.lo$x, .lo$fitted, lty= "11")
   abline(0, 1, lty= "11")

@@ -8,26 +8,31 @@ dat <- readRDS("db/motif_effect/motif_impact_act_res.rds")
 dat[, V1:= gsub("__L$", "", V1)]
 dat[, V2:= gsub("__R$", "", V2)]
 
-# Add names ----
-names <- readRDS("db/motif_counts/lib8_motifs_enrichments.rds")
-cols <- c("V1", "V2")
-dat[, (cols):= lapply(.SD, function(x) gsub("__L$|__R$", "", x)), .SDcols= cols]
-dat[names, V1:= i.name, on= "V1==motif_ID"]
-dat[names, V2:= i.name, on= "V2==motif_ID"]
+# Select combinations of interest ----
+sel <- data.table(name= c("GATA", "AP-1", "Twist", "Trl", "SREBP"),
+                  motif_ID= c("cisbp__M4320",
+                              "cisbp__M6317",
+                              "flyfactorsurvey__CG16778_SANGER_5_FBgn0003715",
+                              "homer__CTCTCTCTCY_GAGA-repeat",
+                              "cisbp__M2388"))
+cmb <- data.table(V1= c("GATA", "AP-1", "Twist", "Trl", "SREBP", "AP-1", "GATA", "AP-1", "GATA"),
+                  V2= c("GATA", "AP-1", "Twist", "Trl", "SREBP", "Twist", "Trl", "GATA", "SREBP"))
+cmb[, label:= paste0(V1, "/", V2)]
+cmb <- merge(cmb, sel, by.x= "V1", by.y= "name", all.x= T)
+cmb <- merge(cmb, sel, by.x= "V2", by.y= "name", all.x= T)
+cmb$V1 <- cmb$V2 <- NULL
 
-# Add colors for pairs of interest ----
-dat[V1 %in% c("AP-1", "GATA", "SREBP", "Twist", "Trl") & V1==V2, label:= paste0(V1, "/", V2)]
-dat[V1=="AP-1" & V2 %in% c("AP-1", "GATA", "SREBP", "Twist", "Trl"), label:= paste0(V1, "/", V2)]
-dat[V1=="GATA" & V2=="SREBP", label:= paste0(V1, "/", V2)]
+# Merge to data ----
+dat <- merge(dat, cmb, by.x= c("V1", "V2"), by.y= c("motif_ID.x", "motif_ID.y"), all.x= T)
 dat[!is.na(label), col:= ifelse(V1==V2, "tomato", "limegreen")]
 dat[, yadj:= 0.01]
 dat[, x:= ifelse(V1==V2, 1, 2)]
 
 # Plot ----
 pdf("pdf/draft/motif_homotypic_vs_hetero_act_vs_res.pdf", 
-    width = 3,
+    width = 3.15,
     height = 3)
-par(mai = c(.7, 1, .7, .5), 
+par(mai = rep(.9, 4), 
     mgp= c(1.25, 0.25, 0),
     cex.lab= 8/12,
     cex.axis= 7/12,
@@ -65,5 +70,5 @@ dat[!is.na(col), {
        cex= 5/12,
        offset= .05,
        xpd= T)
-}]
+},.(x, `Mean residuals [motif / no motif] (log2)`, col, yadj)]
 dev.off()

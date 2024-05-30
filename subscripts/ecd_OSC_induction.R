@@ -15,14 +15,16 @@ pl <- list("ECD - ECD"= S2[grepl("^ecd", L) & grepl("^ecd", R), log2FoldChange],
 # Melt ----
 Cc <- c("lightgrey", "cornflowerblue", "lightgrey", "limegreen")
 pdf("pdf/draft/ecd_OSC_induction.pdf", 3, 3)
-vl_par(mgp= c(1, .35, 0))
+vl_par(mgp= c(1, .35, 0),
+       mai= c(.9, .5, .9, 1.3))
 vl_boxplot(pl,
            at= c(0.9,1.1,1.9,2.1),
            xaxt= "n",
            ylab= "Activity (log2)",
            lwd= .75,
            boxwex= .2,
-           col= adjustcolor(Cc, .6))
+           col= adjustcolor(Cc, .6),
+           compute.pval= list(c(1,2), c(3,4)))
 abline(h= 0,
        lty= "13",
        lwd= .75)
