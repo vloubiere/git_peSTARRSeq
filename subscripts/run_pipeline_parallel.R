@@ -7,14 +7,17 @@ meta <- readRDS("Rdata/metadata.rds")
 
 # Output filenames ---
 meta[, index:= {
-  switch(library,
-         "T8"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8", # WT oligo pool
-         "T12"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12", # Focused oligo pool
-         "T15"= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_lib/twist15") # Mutated oligo pool
-}, library]
-meta[, bam:= paste0("/scratch/stark/vloubiere/bam/", screen, "_", cdition, "_", rep, ".bam")]
-meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", screen, "_", cdition, "_", rep, ".txt")]
-
+  fcase(library=="T8", "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist8_lib/twist8", # WT oligo pool
+        library=="T12", "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist12_lib/twist12", # Focused oligo pool
+        vllib=="vllib029", "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_mutant_lib/twist15", # Mutated oligo pool
+        vllib=="vllib030", "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_DHS_lib/twist15") # DHS oligo pool
+}]
+meta[, nMismMatch:= 4]
+meta[, Trim3:= 0]
+meta[, Trim5:= 0]
+meta[, bam:= paste0("/scratch/stark/vloubiere/bam/test2/", screen, "_", cdition, "_", rep, ".bam")]
+meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/test2/", screen, "_", cdition, "_", rep, ".txt")]
+meta <- meta[vllib=="vllib029"]
 # Save processed metadata ----
 saveRDS(meta,
         "Rdata/metadata_processed.rds")
@@ -26,7 +29,10 @@ meta[, cmd:= {
   # [required] 3/ A list of coma-separated _1.fq files containing read 1 \n
   # [required] 4/ A list of coma-separated _2.fq files containing read 2 \n
   # [required] 5/ Output bam file (.bam)\n
-  # [required] 6/ Output .txt file where UMI-collapsed counts will be stored \n")
+  # [required] 6/ Output .txt file where UMI-collapsed counts will be stored \n
+  # [required] 7/ Number of allowed mismatches \n
+  # [required] 8/ Trim5 \n
+  # [required] 9/ Trim3 \n")
   if(!file.exists(umi_counts))
   {
     paste("/software/f2022/software/r/4.3.0-foss-2022b/bin/Rscript /groups/stark/vloubiere/projects/pe_STARRSeq/git_peSTARRSeq/functions/pSTARRSeq_pipeline.R",
@@ -35,10 +41,13 @@ meta[, cmd:= {
           paste0(unique(fq1), collapse = ","),
           paste0(unique(fq2), collapse = ","),
           bam,
-          umi_counts)
+          umi_counts,
+          nMismMatch,
+          Trim5,
+          Trim3)
   }else
     as.character(NA)
-}, .(type, index, bam, umi_counts)]
+}, .(type, index, bam, umi_counts, nMismMatch, Trim5, Trim3)]
 
 # Submit ----
 cores <- 12

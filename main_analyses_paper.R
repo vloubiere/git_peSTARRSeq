@@ -165,3 +165,5 @@ file.edit("git_peSTARRSeq/subscripts/ham_luciferase_data_processing.R") # Lucife
 file.edit("git_peSTARRSeq/subscripts/review_ham_enhancer_homotypic_pairs_luciferase.R")
 # Downsample WT lib ----
 file.edit("git_peSTARRSeq/subscripts/downsample_large_WT_lib.R") # Downsample WT library -> affects result?
+# Comapre alignment strategies ----
+file.edit("git_peSTARRSeq/subscripts/compare_alignment_strat.R")

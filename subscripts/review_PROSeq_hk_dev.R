@@ -54,38 +54,66 @@ dat[strand=="-", dist.to.end:= start-start.transcript]
 dat[, TSS_rep1:= vl_covBed(dat, meta$file[1])]
 dat[, TSS_rep2:= vl_covBed(dat, meta$file[2])]
 dat <- vl_resizeBed(dat, "end", 0, 249)
-dat[, downstream_rep1:= vl_covBed(dat, meta$file[1])]
-dat[, downstream_rep2:= vl_covBed(dat, meta$file[2])]
+# dat[, downstream_rep1:= vl_covBed(dat, meta$file[1])]
+# dat[, downstream_rep2:= vl_covBed(dat, meta$file[2])]
+dat[, TSS_mean:= rowMeans(.SD), .SDcols= patterns("^TSS_rep")]
+dat[, mean:= rowMeans(.SD), .SDcols= patterns("^rep")]
+
+# Select active genes ----
+act <- dat[TSS_rep1>0 & TSS_rep2>0 & !is.na(class)]
+
+# Comute enrichment class top 10% ----
+count <- table(act[TSS_mean>quantile(TSS_mean, 0.9), class])
+enr <- act[, {
+  .t <- table(factor(act$TSS_mean>quantile(act$TSS_mean, 0.9), levels = c(T, F)),
+              factor(act$class==class, levels= c(T,F)))
+  .f <- fisher.test(.t,
+                    alternative = "greater")
+  c(.f[c("estimate", "p.value")],
+    list(label= paste0(class, " (", .t[1,1], "/", sum(.t[1,]), ")")))
+}, class]
 
 # Plot ----
-pdf("pdf/draft/review_PROSeq_hk_vs_dev_genes.pdf", 9, 3)
-vl_par(mai= c(.9, 1.2, 1.2, 1.2),
+pdf("pdf/draft/review_PROSeq_hk_vs_dev_genes.pdf", 6, 3)
+vl_par(mai= c(.9, 1, 1.2, .5),
        mfrow= c(1,3))
-vl_boxplot(log2(rep1+rep2)~class,
-           dat[rep1>0 & rep2>0],
-           compute.pval= list(c(1,2)),
-           notch= T,
-           tilt.names= T,
-           ylab= "PRO-Seq counts (log2)",
-           violin= T,
-           col= "red",
-           main= "Oliver")
+# vl_boxplot(log2(rep1+rep2)~class,
+#            dat[rep1>0 & rep2>0],
+#            compute.pval= list(c(1,2)),
+#            notch= T,
+#            tilt.names= T,
+#            ylab= "PRO-Seq counts (log2)",
+#            violin= T,
+#            col= "red",
+#            main= "Oliver")
 vl_boxplot(log2(TSS_rep1+TSS_rep2)~class,
-           dat[TSS_rep1>0 & TSS_rep2>0],
+           act,
            compute.pval= list(c(1,2)),
            notch= T,
            tilt.names= T,
            ylab= "PRO-Seq counts (log2)",
            violin= T,
            col= "lightgrey",
-           main= "Me")
-vl_boxplot(log2(downstream_rep1+downstream_rep2)~class,
-           dat[rep1>0 & rep2>0],
-           compute.pval= list(c(1,2)),
-           notch= T,
-           tilt.names= T,
-           ylab= "PRO-Seq counts (log2)",
-           violin= T,
-           col= "lightgrey",
-           main= "Downstream")
+           main= "Vincent")
+vl_barplot(count,
+           bar.labels = count,
+           ylab= "Number of genes",
+           names.arg = paste0(names(count), " (", count, ")"),
+           main= "Top 10% act. genes")
+vl_barplot(enr$estimate,
+           bar.labels = paste0("p=", formatC(enr$p.value, format = "e", digits = 1)),
+           bar.labels.cex = .5,
+           ylab= "Odd ratio",
+           names.arg= enr$label,
+           main= "Top 10% act. genes", )
+abline(h=1, lty= 3)
+# vl_boxplot(log2(downstream_rep1+downstream_rep2)~class,
+#            dat[rep1>0 & rep2>0],
+#            compute.pval= list(c(1,2)),
+#            notch= T,
+#            tilt.names= T,
+#            ylab= "PRO-Seq counts (log2)",
+#            violin= T,
+#            col= "lightgrey",
+#            main= "Downstream")
 dev.off()

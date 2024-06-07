@@ -7,8 +7,8 @@ args = commandArgs(trailingOnly=TRUE)
 # Takes as input umi collapsed counts and computes log2FoldChange, using either DESeq2 approach or log2 ratios
 
 # test if there is at least 2 args: if not, return an error
-if (length(args)!=7) {
-  stop(paste0(length(args), " / 7 required arguments should be provided:\n",
+if (length(args)!=8) {
+  stop(paste0(length(args), " / 8 required arguments should be provided:\n",
               paste0(args, "\n"),
               "Please specify:\n
               [required] 1/ A list of comma-separated list of input counts (each file considered as a separate replicate) \n
@@ -16,8 +16,9 @@ if (length(args)!=7) {
               [required] 3/ The method to be used. One of 'DESeq2' or 'ratio' (the later one tolerates one replicate) \n
               [required] 4/ Regexpr to be applied to 5' (Left) IDs \n
               [required] 5/ Regexpr to be applied to 3' (Right) IDs \n
-              [required] 6/ Output folder\n
-              [required] 7/ Output file prefix\n"))
+              [required] 6/ Regexpr to select control pairs \n
+              [required] 7/ Output folder\n
+              [required] 8/ Output file prefix\n"))
 }
 
 # .libPaths(c("/users/vincent.loubiere/R/x86_64-pc-linux-gnu-library/3.6",  "/software/2020/software/r/3.6.2-foss-2018b/lib64/R/library"))
@@ -25,10 +26,13 @@ require(DESeq2)
 require(data.table)
 
 # # Tests
-# inputs <- c("db/umi_counts/RpS12_focused_WT_input_rep1.txt", "db/umi_counts/RpS12_focused_WT_input_rep2.txt")
-# screens <- c("db/umi_counts/RpS12_focused_WT_screen_rep1.txt", "db/umi_counts/RpS12_focused_WT_screen_rep2.txt")
+# inputs <- c("db/umi_counts/DSCP_large_WT_input_rep1.txt", "db/umi_counts/DSCP_large_WT_input_rep2.txt")
+# screens <- c("db/umi_counts/DSCP_large_WT_screen_rep1.txt", "db/umi_counts/DSCP_large_WT_screen_rep2.txt")
+# method <- "DESeq2"
 # sublibRegexprL <- ".*"
 # sublibRegexprR <- ".*"
+# controlPairsRegexpr <- "^control.*__control"
+
 
 # Checks and extract variables ----
 inputs <- unique(unlist(tstrsplit(args[1], ",")))
@@ -40,8 +44,12 @@ if(method=="DESeq2" & (length(inputs)==1 | length(screens)==1))
   stop("Method DESeq2 cannot be applied with less then inputs/screen 2 replicates.")
 sublibRegexprL <- args[4]
 sublibRegexprR <- args[5]
-dds_file <- paste0(args[6], "/", args[7], "_DESeq2.dds")
-FC_file <- paste0(args[6], "/", args[7], ifelse(method=="DESeq2", "_FC_DESeq2.rds", "_FC_ratio.rds"))
+controlPairsRegexpr <- args[6]
+if(!grepl("^\\^.+__.+$", controlPairsRegexpr))
+  stop("Arg 6 (controlPairsRegexpr) should be left anchored and contain '__', such as '^control.*__control' or '^control_WT.*__control_WT'")
+controlRegexpr <- strsplit(controlPairsRegexpr, "__")[[1]][1]
+dds_file <- paste0(args[7], "/", args[8], "_DESeq2.dds")
+FC_file <- paste0(args[7], "/", args[8], ifelse(method=="DESeq2", "_FC_DESeq2.rds", "_FC_ratio.rds"))
 report_file <- gsub(".rds$", "_report.txt", FC_file)
 
 # Import counts ---
@@ -92,7 +100,7 @@ if(method=="DESeq2")
   dds <- DESeqDataSetFromMatrix(countData= DF,
                                 colData= sampleTable,
                                 design= ~cdition)
-  sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[grepl("^control.*__control.*", rownames(DF)),]))
+  sizeFactors(dds) <- estimateSizeFactorsForMatrix(as.matrix(DF[grepl(controlPairsRegexpr, rownames(DF)),]))
   dds <- DESeq(dds)
   # Differential expression
   norm <- as.data.frame(DESeq2::results(dds, contrast= c("cdition", "screen", "input")))
@@ -109,7 +117,7 @@ if(method=="DESeq2")
 }
 
 # Select usable, inactive control pairs ----
-ctlPairs <- norm[grepl("^control", L) & grepl("^control", R)]
+ctlPairs <- norm[grepl(controlRegexpr, L) & grepl(controlRegexpr, R)]
 inactCtlL <- ctlPairs[, mean(log2FoldChange), L][between(scale(V1), -1, 1), L]
 inactCtlR <- ctlPairs[, mean(log2FoldChange), R][between(scale(V1), -1, 1), R]
 norm[, ctlL:= L %in% inactCtlL]
@@ -139,8 +147,8 @@ Npairs <- paste0("Individual + combined activity of ", nrow(norm[!is.na(indL) & 
 norm <- norm[!is.na(indL) & !is.na(indR)]
 
 # Add activity classes ----
-norm[, groupL:= fcase(grepl("^control", L), "Random seq.", default = "Candidate seq.")]
-norm[, groupR:= fcase(grepl("^control", R), "Random seq.", default = "Candidate seq.")]
+norm[, groupL:= fcase(grepl(controlRegexpr, L), "Random seq.", default = "Candidate seq.")]
+norm[, groupR:= fcase(grepl(controlRegexpr, R), "Random seq.", default = "Candidate seq.")]
 
 # Split Active enhancers based on their strength ----
 norm[, actL:= fcase(between(indL, 1, 2) & padjL<0.05, "Low",

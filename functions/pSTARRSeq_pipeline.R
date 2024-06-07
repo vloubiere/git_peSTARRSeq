@@ -10,14 +10,17 @@ args = commandArgs(trailingOnly=TRUE)
 # 3/ Collapse reads based on UMI (<=1 difference) and outputs the corresponding count file
 
 # test if there is at least 2 args: if not, return an error
-if (length(args)<6) {
+if (length(args)!=9) {
   stop("Please specify:\n
        [required] 1/ The type of assay. Can be one of 'pe-STARR-Seq' or 'rev-pe-STARR-Seq' \n
        [required] 2/ The index to use for the alignment \n
        [required] 3/ A list of coma-separated _1.fq files containing read 1 \n
        [required] 4/ A list of coma-separated _2.fq files containing read 2 \n
        [required] 5/ Output bam file (.bam)\n
-       [required] 6/ Output .txt file where UMI-collapsed counts will be stored \n")
+       [required] 6/ Output .txt file where UMI-collapsed counts will be stored \n
+       [required] 7/ Number of allowed mismatches \n
+       [required] 8/ Trim5 \n
+       [required] 9/ Trim3 \n")
 }
 require(Rsubread)
 require(data.table)
@@ -31,6 +34,9 @@ fq1 <- unlist(tstrsplit(args[3], ","))
 fq2 <- unlist(tstrsplit(args[4], ","))
 bam <- args[5]
 umi_counts <- args[6]
+nMisMatch <- args[7]
+Trim5 <- args[8]
+Trim3 <- args[9]
 if(!type %in% c("pe-STARR-Seq", "rev-pe-STARR-Seq"))
   stop("First argument 'type' should be one of 'pe-STARR-Seq' or 'rev-pe-STARR-Seq'.")
 if(!grepl(".bam$", bam))
@@ -51,8 +57,10 @@ if(!file.exists(bam))
         type = "dna",
         output_format = "BAM",
         output_file = bam,
-        maxMismatches = 3,
+        maxMismatches = nMisMatch,
         unique = T,
+        nTrim5 = Trim5,
+        nTrim3 = Trim3,
         nthreads = getDTthreads())
 }else
   print(paste0("bam file ", bam, " existed and alignment was skipped!"))
@@ -68,15 +76,15 @@ fw[, idx:= rowid(read)]
 if(type=="pe-STARR-Seq")
 {
   fw <- fw[strand=="+" & idx==1]
-  .c <- .c[strand=="-", .(read, R= seqnames, start)]
+  rev <- .c[strand=="-", .(read, R= seqnames, start)]
 }else if (type=="rev-pe-STARR-Seq")
 {
   fw <- fw[strand=="-" & idx==1]
-  .c <- .c[strand=="+", .(read, R= seqnames, start)]
+  rev <- .c[strand=="+", .(read, R= seqnames, start)]
 }
 # Extract paired reads
 .c <- merge(fw[, .(read, L= seqnames, start)],
-            .c,
+            rev,
             by= "read")
 if(type=="pe-STARR-Seq")
 {

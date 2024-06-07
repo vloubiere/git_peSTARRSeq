@@ -26,6 +26,12 @@ meta[, sublibRegexprR:= fcase(vllib=="vllib002", "_.*_",
                               vllib=="vllib016", "_A_",
                               vllib=="vllib029", "_A_",
                               vllib=="vllib030", "_B_")]
+meta[, sublibRegexprControlPairs:= fcase(vllib=="vllib002", "^control.*__control",
+                                         vllib=="vllib006", "^control.*__control",
+                                         vllib=="vllib015", "^control.*__control",
+                                         vllib=="vllib016", "^control.*__control",
+                                         vllib=="vllib029", "^control_WT.*__control_WT",
+                                         vllib=="vllib030", "^control.*__control")]
 
 # Input and output file names ----
 meta[, dds_file:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/dds/", screen, "_DESeq2.dds")]
@@ -52,11 +58,12 @@ meta[, DESeq2_cmd:= {
           "DESeq2",
           sublibRegexprL,
           sublibRegexprR,
+          sublibRegexprControlPairs,
           dirname(FC_DESeq2_file),
           gsub("_FC_DESeq2.rds", "", basename(FC_DESeq2_file)))
   }else
     as.character(NA)
-}, .(umi_counts_screen, umi_counts_input, sublibRegexprL, sublibRegexprR, FC_DESeq2_file)]
+}, .(umi_counts_screen, umi_counts_input, sublibRegexprL, sublibRegexprR, sublibRegexprControlPairs, FC_DESeq2_file)]
 
 # Compute log2FoldChange using ratio ----
 meta[, ratio_cmd:= {
@@ -78,6 +85,7 @@ meta[, ratio_cmd:= {
           "ratio",
           sublibRegexprL,
           sublibRegexprR,
+          sublibRegexprControlPairs,
           dirname(FC_DESeq2_file),
           gsub("_FC_ratio.rds", "", basename(FC_ratio_file)))
   }else
