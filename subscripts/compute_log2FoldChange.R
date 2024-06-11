@@ -3,10 +3,10 @@ require(vlfunctions)
 require(readxl)
 require(data.table)
 
-# Import metadata
+# Import metadata ----
 meta <- readRDS("Rdata/metadata_processed.rds")
 
-# Cat umi counts files
+# Cat umi counts files ----
 meta <- meta[, .(umi_counts= paste0(unique(umi_counts), collapse= ",")), .(screen, vllib, cdition)]
 meta <- merge(meta[cdition=="screen"],
               meta[cdition=="input", .(vllib, umi_counts)],

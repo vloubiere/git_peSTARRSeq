@@ -12,12 +12,12 @@ meta[, index:= {
         vllib=="vllib029", "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_mutant_lib/twist15", # Mutated oligo pool
         vllib=="vllib030", "/groups/stark/vloubiere/projects/pe_STARRSeq/db/subread_indexes/twist15_DHS_lib/twist15") # DHS oligo pool
 }]
-meta[, nMismMatch:= 4]
 meta[, Trim3:= 0]
 meta[, Trim5:= 0]
-meta[, bam:= paste0("/scratch/stark/vloubiere/bam/test2/", screen, "_", cdition, "_", rep, ".bam")]
-meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/test2/", screen, "_", cdition, "_", rep, ".txt")]
-meta <- meta[vllib=="vllib029"]
+meta[, nMismMatch:= ifelse(vllib=="vllib029", 5, 3)]
+meta[, bam:= paste0("/scratch/stark/vloubiere/bam/", screen, "_", cdition, "_", rep, ".bam")]
+meta[, umi_counts:= paste0("/groups/stark/vloubiere/projects/pe_STARRSeq/db/umi_counts/", screen, "_", cdition, "_", rep, ".txt")]
+
 # Save processed metadata ----
 saveRDS(meta,
         "Rdata/metadata_processed.rds")
@@ -56,9 +56,9 @@ run <- meta[!is.na(cmd)]
 if(nrow(run))
 {
   run[, {
-    vl_bsub(cmd, 
-            cores= cores, 
-            m = mem, 
+    vl_bsub(cmd,
+            cores= cores,
+            m = mem,
             name = "vlloub", 
             t = '3-00:00:00',
             o= "/groups/stark/vloubiere/projects/pe_STARRSeq/db/logs/",

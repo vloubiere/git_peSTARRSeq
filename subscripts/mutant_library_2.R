@@ -11,34 +11,31 @@ dat[, L:= paste0(groupL, L)]
 dat[, R:= paste0(groupR, R)]
 dat <- dat[!(grepl("^control", L) & mutL=="WT") & !(grepl("^control", R) & mutR=="WT")]
 
-# Compute expected additive and fitted mult ----
-model <- lm(log2FoldChange~indL*indR, dat[grepl("WT", mutL) & grepl("WT", mutR)])
+# Compute expected additive and fitted multiplicative ----
+model <- readRDS("db/linear_models/lm_DSCP_large_WT.rds")
 dat[, `linear model`:= predict(model, .SD)]
-dat[, residuals:= log2FoldChange-`linear model`]
+dat[, `additive model`:= log2(2^indL+2^indR-1)]
+dat[, residuals:= log2FoldChange-`additive model`]
 dat <- dat[actL!="Inactive" & actR!="Inactive"]
 
+# Fitted curves ----
+mult <- data.table(indL= seq(0, 10, .1))
+mult[, indR:= indL]
+mult[, add:= log2(2^indL+2^indR-1)]
+mult[, `mult`:= predict(model, .SD)]
+
 # Merge WT and mutant variants ----
-pl <- merge(dat[mutL=="WT" & mutR=="WT", .(L, R, indL, indR, log2FoldChange, `linear model`, residuals)],
-            dat[mutL!="WT" & mutR!="WT", .(L, R, mutL, mutR, indL, indR, log2FoldChange, `linear model`, residuals)],
+pl <- merge(dat[mutL=="WT" & mutR=="WT", .(L, R, indL, indR, log2FoldChange, `linear model`, `additive model`, residuals)],
+            dat[mutL!="WT" & mutR!="WT", .(L, R, mutL, mutR, indL, indR, log2FoldChange, `linear model`, `additive model`, residuals)],
             by= c("L", "R"),
             suffixes= c("_wt", "_mut"))
-
-# Retrieve combinations of interest ----
-# Pasting Trl/Twist motifs in enhancers with no motifs
+# Retrieve combinations of interest
 pl[, cdition:= fcase(grepl("add.*Trl", mutL) & grepl("add.*Trl", mutR), "Added Trl motifs",
                      grepl("add.*Twist", mutL) & grepl("add.*Twist", mutR), "Added Twist motifs",
                      grepl("add.*Dref", mutL) & grepl("add.*Dref", mutR), "Added Dref motifs",
                      grepl("mut.*Trl", mutL) & grepl("mut.*Trl", mutR), "Mutated Trl motifs",
                      grepl("mut.*Twist", mutL) & grepl("mut.*Twist", mutR), "Mutated Twist motifs")]
-# # Pasting Dref motif in dev enhancers
-# pl[grepl("^noMotifAct", L) & grepl("^noMotifAct", R) & grepl("add.*Dref", mutL) & grepl("add.*Dref", mutR), cdition:= "Added Dref motifs"]
-# # Mutate motifs in enhancers that contain them
-# cutoff <- log2(1.5)
-# pl[grepl("mut.*Trl", mutL) & grepl("mut.*Trl", mutR) & residuals_wt>0 & indL_mut>cutoff & indR_mut>cutoff, cdition:= "Mutated Trl motifs",]
-# pl[grepl("mut.*Twist", mutL) & grepl("mut.*Twist", mutR) & residuals_wt>0 & indL_mut>cutoff & indR_mut>cutoff, cdition:= "Mutated Twist motifs"]
-# # pl[grepl("mut.*Dref", mutL) & grepl("mut.*Dref", mutR), cdition:= "Mutated Dref motifs"] # NOT USED
 pl <- pl[!is.na(cdition)]
-
 
 # Plotting function adds legend to residuals boxplot ----
 leg <- function(cdition, n)
@@ -77,33 +74,24 @@ pl[, {
   par(pty="s",
       mai= rep(.9 ,4))
   # Observed vs expected
-  xlim <- range(c(`linear model_wt`, `linear model_mut`))
-  ylim <- range(c(log2FoldChange_wt, log2FoldChange_mut))
-  wt <- unique(.SD[, .(indL_wt,
-                       indR_wt,
-                       `linear model_wt`,
-                       log2FoldChange_wt)])
-  wt[, {
-    plot(`linear model_wt`,
-         log2FoldChange_wt, 
-         main= cdition,
-         cex= .5,
-         pch= 16,
-         col= Cc[1],
-         xlim= xlim,
-         ylim= ylim,
-         xlab= "Predicted (log2)",
-         ylab= "Activity (log2)",
-         xaxt= "n")
-    axis(1, padj= -1.25)
-  }]
-  abline(0, 1, lty= "11")
-  points(`linear model_mut`,
-         log2FoldChange_mut,
-         pch= 16,
-         col= adjustcolor(Cc[2], .6),
-         cex= .5)
+  x <- c(`additive model_wt`, `additive model_mut`)
+  y <- c(`log2FoldChange_wt`, `log2FoldChange_mut`)
+  col <- rep(Cc, each= .N)
+  set.seed(1)
+  rdm <- sample(.N*2, .N*2)
+  plot(x[rdm],
+       y[rdm], 
+       main= cdition,
+       cex= .5,
+       pch= 16,
+       col= col[rdm],
+       xlab= "Predicted additive (log2)",
+       ylab= "Combined activity (log2)",
+       xaxt= "n")
   # Legend
+  axis(1, padj= -1.25)
+  abline(0, 1, lty= "11")
+  lines(mult$add, mult$mult)
   leg(cdition, .N)
   
   # Residuals

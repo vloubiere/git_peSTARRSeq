@@ -66,6 +66,8 @@ file.show("pdf/figures/Figure_2.pdf")
 file.edit("git_peSTARRSeq/subscripts/histogram_residuals_large_WT_lib.R")
 file.edit("git_peSTARRSeq/subscripts/Motif_combinations_compare_mean_act_vs_res.R")
 file.edit("git_peSTARRSeq/subscripts/mutant_library.R")
+file.edit("git_peSTARRSeq/subscripts/mutant_library_2.R")
+file.edit("git_peSTARRSeq/subscripts/mutant_library_3.R")
 file.edit("git_peSTARRSeq/subscripts/activity_dist_enhancer_pairs_activity_matched_controls.R")
 pdftools::pdf_combine(c("pdf/draft/histogram_residuals.pdf",
                         "pdf/draft/motif_impact_act_vs_res.pdf",
@@ -167,3 +169,5 @@ file.edit("git_peSTARRSeq/subscripts/review_ham_enhancer_homotypic_pairs_lucifer
 file.edit("git_peSTARRSeq/subscripts/downsample_large_WT_lib.R") # Downsample WT library -> affects result?
 # Comapre alignment strategies ----
 file.edit("git_peSTARRSeq/subscripts/compare_alignment_strat.R")
+# Look at difference between mutated and WT sequences ----
+file.edit("git_peSTARRSeq/subscripts/diff_WT_mut.R")
